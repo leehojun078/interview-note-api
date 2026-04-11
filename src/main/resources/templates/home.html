@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head}"></head>
+<body>
+<nav th:replace="~{fragments/layout :: navbar}"></nav>
+
+<main>
+    <div class="container">
+        <!-- Hero Section -->
+        <div style="text-align: center; padding: 3rem 0;">
+            <h1 style="font-size: 2.5rem; margin-bottom: 1rem;">
+                🎯 AI 기반 면접 복기 앱
+            </h1>
+            <p style="font-size: 1.25rem; color: #6B7280; margin-bottom: 2rem;">
+                면접 질문에 답변하고 AI 피드백으로 실력을 향상시키세요
+            </p>
+            <div style="display: flex; gap: 1rem; justify-content: center;">
+                <a th:href="@{/questions}" class="btn btn-primary" style="font-size: 1.125rem; padding: 1rem 2rem;">
+                    질문 연습 시작하기 →
+                </a>
+                <a th:href="@{/reviews}" class="btn btn-secondary" style="font-size: 1.125rem; padding: 1rem 2rem;">
+                    내 복기 이력
+                </a>
+            </div>
+        </div>
+
+        <!-- 최근 답변 -->
+        <div th:if="${not #lists.isEmpty(recentReviews)}" style="margin-top: 3rem;">
+            <h2>최근 답변</h2>
+            <div th:each="review : ${recentReviews}" class="card">
+                <div style="display: flex; justify-content: space-between; align-items: start;">
+                    <div style="flex: 1;">
+                        <h3 th:text="${review.questionContent}">질문 내용</h3>
+                        <span class="badge badge-category" th:text="${review.category}">카테고리</span>
+                    </div>
+                    <div style="text-align: right;">
+                        <div style="font-size: 1.5rem; font-weight: bold; color: #2563EB;"
+                             th:text="${#numbers.formatDecimal(review.averageScore, 1, 1)} + '점'">
+                            3.5점
+                        </div>
+                        <div style="font-size: 0.875rem; color: #6B7280;"
+                             th:text="${#temporals.format(review.answeredAt, 'yyyy-MM-dd HH:mm')}">
+                            2026-04-11 14:30
+                        </div>
+                    </div>
+                </div>
+                <div style="margin-top: 1rem;">
+                    <a th:href="@{/reviews/{id}(id=${review.answerId})}" class="btn btn-secondary">
+                        상세 보기
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- 빈 상태 -->
+        <div th:if="${#lists.isEmpty(recentReviews)}" style="text-align: center; padding: 3rem 0;">
+            <p style="font-size: 1.125rem; color: #6B7280; margin-bottom: 1rem;">
+                아직 답변한 질문이 없습니다
+            </p>
+            <a th:href="@{/questions}" class="btn btn-primary">
+                첫 질문 시작하기
+            </a>
+        </div>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>

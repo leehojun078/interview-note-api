@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head}"></head>
+<body>
+<nav th:replace="~{fragments/layout :: navbar}"></nav>
+
+<main>
+    <div class="container">
+        <h1>면접 질문 목록</h1>
+
+        <!-- 필터 -->
+        <div class="card" style="margin-bottom: 2rem;">
+            <form th:action="@{/questions}" method="get" style="display: flex; gap: 1rem; align-items: end;">
+                <div style="flex: 1;">
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">카테고리</label>
+                    <select name="category" style="width: 100%; padding: 0.5rem; border: 1px solid #D1D5DB; border-radius: 6px;">
+                        <option value="">전체</option>
+                        <option value="기술역량" th:selected="${selectedCategory == '기술역량'}">기술역량</option>
+                        <option value="문제해결" th:selected="${selectedCategory == '문제해결'}">문제해결</option>
+                        <option value="협업경험" th:selected="${selectedCategory == '협업경험'}">협업경험</option>
+                    </select>
+                </div>
+                <div style="flex: 1;">
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">난이도</label>
+                    <select name="difficulty" style="width: 100%; padding: 0.5rem; border: 1px solid #D1D5DB; border-radius: 6px;">
+                        <option value="">전체</option>
+                        <option value="EASY" th:selected="${selectedDifficulty == 'EASY'}">쉬움</option>
+                        <option value="MEDIUM" th:selected="${selectedDifficulty == 'MEDIUM'}">보통</option>
+                        <option value="HARD" th:selected="${selectedDifficulty == 'HARD'}">어려움</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary">필터 적용</button>
+            </form>
+        </div>
+
+        <!-- 질문 카드 목록 -->
+        <div th:each="question : ${questions}" class="card" style="cursor: pointer;"
+             th:onclick="|location.href='@{/questions/{id}/answer(id=${question.id})}'|">
+            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.75rem;">
+                <h3 th:text="${question.content}" style="margin: 0; flex: 1;">질문 내용</h3>
+                <span class="badge"
+                      th:classappend="${question.difficulty == 'EASY'} ? 'badge-easy' : (${question.difficulty == 'MEDIUM'} ? 'badge-medium' : 'badge-hard')"
+                      th:text="${question.difficulty == 'EASY'} ? '쉬움' : (${question.difficulty == 'MEDIUM'} ? '보통' : '어려움')">
+                    난이도
+                </span>
+            </div>
+            <div style="display: flex; gap: 0.5rem;">
+                <span class="badge badge-category" th:text="${question.category}">카테고리</span>
+                <span style="font-size: 0.875rem; color: #6B7280;" th:text="${question.targetJob}">직무</span>
+            </div>
+        </div>
+
+        <!-- 빈 상태 -->
+        <div th:if="${#lists.isEmpty(questions)}" style="text-align: center; padding: 3rem 0;">
+            <p style="font-size: 1.125rem; color: #6B7280;">
+                조건에 맞는 질문이 없습니다
+            </p>
+        </div>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>

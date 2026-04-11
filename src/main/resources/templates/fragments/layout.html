@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:fragment="head">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${title} ?: '면접 복기 앱'">면접 복기 앱</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background-color: #F9FAFB;
+            color: #111827;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* Navigation */
+        nav {
+            background-color: #2563EB;
+            color: white;
+            padding: 1rem 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        nav .container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        nav .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        nav ul {
+            list-style: none;
+            display: flex;
+            gap: 2rem;
+        }
+
+        nav a {
+            color: white;
+            text-decoration: none;
+            font-weight: 500;
+            transition: opacity 0.2s;
+        }
+
+        nav a:hover {
+            opacity: 0.8;
+        }
+
+        /* Main Content */
+        main {
+            padding: 2rem 0;
+            min-height: calc(100vh - 200px);
+        }
+
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 1.5rem;
+            color: #1F2937;
+        }
+
+        h2 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: #374151;
+        }
+
+        h3 {
+            font-size: 1.25rem;
+            margin-bottom: 0.75rem;
+            color: #4B5563;
+        }
+
+        /* Card */
+        .card {
+            background: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            margin-bottom: 1rem;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        /* Button */
+        .btn {
+            display: inline-block;
+            padding: 0.75rem 1.5rem;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.2s;
+            border: none;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+
+        .btn-primary {
+            background-color: #2563EB;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: #1D4ED8;
+        }
+
+        .btn-secondary {
+            background-color: transparent;
+            color: #6B7280;
+            border: 1px solid #D1D5DB;
+        }
+
+        .btn-secondary:hover {
+            background-color: #F3F4F6;
+        }
+
+        /* Badge */
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .badge-easy {
+            background-color: #D1FAE5;
+            color: #065F46;
+        }
+
+        .badge-medium {
+            background-color: #FEF3C7;
+            color: #92400E;
+        }
+
+        .badge-hard {
+            background-color: #FEE2E2;
+            color: #991B1B;
+        }
+
+        .badge-category {
+            background-color: #DBEAFE;
+            color: #1E40AF;
+        }
+
+        /* Footer */
+        footer {
+            background-color: #F3F4F6;
+            padding: 2rem 0;
+            margin-top: 4rem;
+            text-align: center;
+            color: #6B7280;
+        }
+
+        /* 반응형 */
+        @media (max-width: 768px) {
+            nav ul {
+                gap: 1rem;
+            }
+
+            h1 {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+<nav th:fragment="navbar">
+    <div class="container">
+        <div class="logo">📝 면접 복기</div>
+        <ul>
+            <li><a th:href="@{/}">홈</a></li>
+            <li><a th:href="@{/questions}">질문 연습</a></li>
+            <li><a th:href="@{/reviews}">복기 이력</a></li>
+        </ul>
+    </div>
+</nav>
+
+<footer th:fragment="footer">
+    <div class="container">
+        <p>&copy; 2026 면접 복기 앱 | Spring Boot + Kotlin + AI</p>
+    </div>
+</footer>
+</body>
+</html>

@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head}"></head>
+<body>
+<nav th:replace="~{fragments/layout :: navbar}"></nav>
+
+<main>
+    <div class="container">
+        <h1>AI 평가 결과</h1>
+
+        <!-- 평균 점수 -->
+        <div class="card" style="background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%); color: white; text-align: center;">
+            <h2 style="color: white; margin-bottom: 0.5rem;">평균 점수</h2>
+            <div style="font-size: 3rem; font-weight: bold;" th:text="${#numbers.formatDecimal(averageScore, 1, 1)} + ' / 5.0'">
+                3.5 / 5.0
+            </div>
+        </div>
+
+        <!-- 질문 -->
+        <div class="card">
+            <h3>질문</h3>
+            <p th:text="${answer.questionContent}" style="font-size: 1.125rem; font-weight: 500;">질문 내용</p>
+        </div>
+
+        <!-- 내 답변 -->
+        <div class="card">
+            <h3>내 답변</h3>
+            <p th:text="${answer.answerText}" style="white-space: pre-wrap; line-height: 1.8;">답변 내용</p>
+            <div style="margin-top: 1rem; font-size: 0.875rem; color: #6B7280;">
+                작성일: <span th:text="${#temporals.format(answer.answeredAt, 'yyyy-MM-dd HH:mm')}">2026-04-11 14:30</span>
+            </div>
+        </div>
+
+        <!-- 점수 상세 -->
+        <div class="card">
+            <h3>세부 점수</h3>
+            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem;">
+                <div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                        <span>논리성</span>
+                        <span style="font-weight: bold; color: #2563EB;" th:text="${answer.feedback.logicScore} + ' / 5'">4 / 5</span>
+                    </div>
+                    <div style="background: #E5E7EB; height: 8px; border-radius: 4px; overflow: hidden;">
+                        <div style="background: #2563EB; height: 100%; border-radius: 4px;"
+                             th:style="'width: ' + ${answer.feedback.logicScore * 20} + '%'"></div>
+                    </div>
+                </div>
+
+                <div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                        <span>구체성</span>
+                        <span style="font-weight: bold; color: #2563EB;" th:text="${answer.feedback.specificityScore} + ' / 5'">3 / 5</span>
+                    </div>
+                    <div style="background: #E5E7EB; height: 8px; border-radius: 4px; overflow: hidden;">
+                        <div style="background: #2563EB; height: 100%; border-radius: 4px;"
+                             th:style="'width: ' + ${answer.feedback.specificityScore * 20} + '%'"></div>
+                    </div>
+                </div>
+
+                <div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                        <span>직무 적합성</span>
+                        <span style="font-weight: bold; color: #2563EB;" th:text="${answer.feedback.jobFitScore} + ' / 5'">4 / 5</span>
+                    </div>
+                    <div style="background: #E5E7EB; height: 8px; border-radius: 4px; overflow: hidden;">
+                        <div style="background: #2563EB; height: 100%; border-radius: 4px;"
+                             th:style="'width: ' + ${answer.feedback.jobFitScore * 20} + '%'"></div>
+                    </div>
+                </div>
+
+                <div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                        <span>전달력</span>
+                        <span style="font-weight: bold; color: #2563EB;" th:text="${answer.feedback.deliveryScore} + ' / 5'">3 / 5</span>
+                    </div>
+                    <div style="background: #E5E7EB; height: 8px; border-radius: 4px; overflow: hidden;">
+                        <div style="background: #2563EB; height: 100%; border-radius: 4px;"
+                             th:style="'width: ' + ${answer.feedback.deliveryScore * 20} + '%'"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 강점 -->
+        <div class="card" style="border-left: 4px solid #10B981;">
+            <h3>✅ 강점</h3>
+            <ul style="list-style: none; padding: 0;">
+                <li th:each="strength : ${answer.feedback.strengths}"
+                    style="padding: 0.5rem 0; border-bottom: 1px solid #E5E7EB;">
+                    <span style="color: #10B981; margin-right: 0.5rem;">✓</span>
+                    <span th:text="${strength}">강점 항목</span>
+                </li>
+            </ul>
+        </div>
+
+        <!-- 개선점 -->
+        <div class="card" style="border-left: 4px solid #F59E0B;">
+            <h3>⚠️ 개선점</h3>
+            <ul style="list-style: none; padding: 0;">
+                <li th:each="improvement : ${answer.feedback.improvements}"
+                    style="padding: 0.5rem 0; border-bottom: 1px solid #E5E7EB;">
+                    <span style="color: #F59E0B; margin-right: 0.5rem;">→</span>
+                    <span th:text="${improvement}">개선점 항목</span>
+                </li>
+            </ul>
+        </div>
+
+        <!-- 모범답변 -->
+        <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center; cursor: pointer;"
+                 onclick="toggleModelAnswer()">
+                <h3 style="margin: 0;">💡 모범답변</h3>
+                <span id="toggleIcon" style="font-size: 1.5rem; color: #6B7280;">▼</span>
+            </div>
+            <div id="modelAnswer" style="display: none; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #E5E7EB;">
+                <p th:text="${answer.feedback.modelAnswer}" style="white-space: pre-wrap; line-height: 1.8; color: #374151;">
+                    모범답변 내용
+                </p>
+            </div>
+        </div>
+
+        <!-- 종합 코멘트 -->
+        <div class="card" style="background-color: #F9FAFB;">
+            <h3>종합 코멘트</h3>
+            <p th:text="${answer.feedback.overallComment}" style="font-size: 1.0625rem; line-height: 1.8;">
+                종합 코멘트 내용
+            </p>
+        </div>
+
+        <!-- 액션 버튼 -->
+        <div style="display: flex; gap: 1rem; justify-content: center; margin-top: 2rem;">
+            <a th:href="@{/questions}" class="btn btn-primary">
+                다른 질문 연습하기
+            </a>
+            <a th:href="@{/reviews}" class="btn btn-secondary">
+                복기 이력 보기
+            </a>
+        </div>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+
+<script>
+    function toggleModelAnswer() {
+        const modelAnswer = document.getElementById('modelAnswer');
+        const icon = document.getElementById('toggleIcon');
+
+        if (modelAnswer.style.display === 'none') {
+            modelAnswer.style.display = 'block';
+            icon.textContent = '▲';
+        } else {
+            modelAnswer.style.display = 'none';
+            icon.textContent = '▼';
+        }
+    }
+</script>
+</body>
+</html>

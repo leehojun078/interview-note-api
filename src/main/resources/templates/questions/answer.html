@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head}"></head>
+<body>
+<nav th:replace="~{fragments/layout :: navbar}"></nav>
+
+<main>
+    <div class="container">
+        <div style="margin-bottom: 1rem;">
+            <a th:href="@{/questions}" class="btn btn-secondary">← 질문 목록으로</a>
+        </div>
+
+        <h1>답변 작성</h1>
+
+        <!-- 질문 표시 -->
+        <div class="card" style="background-color: #EFF6FF; border-left: 4px solid #2563EB;">
+            <div style="display: flex; gap: 0.5rem; margin-bottom: 0.75rem;">
+                <span class="badge badge-category" th:text="${question.category}">카테고리</span>
+                <span class="badge"
+                      th:classappend="${question.difficulty == 'EASY'} ? 'badge-easy' : (${question.difficulty == 'MEDIUM'} ? 'badge-medium' : 'badge-hard')"
+                      th:text="${question.difficulty == 'EASY'} ? '쉬움' : (${question.difficulty == 'MEDIUM'} ? '보통' : '어려움')">
+                    난이도
+                </span>
+            </div>
+            <h2 th:text="${question.content}" style="margin: 0; color: #1F2937;">질문 내용</h2>
+        </div>
+
+        <!-- 답변 작성 폼 -->
+        <form th:action="@{/questions/{id}/answer(id=${question.id})}" method="post">
+            <input type="hidden" name="questionId" th:value="${question.id}" />
+
+            <div class="card">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; font-size: 1.125rem;">
+                    답변 작성
+                </label>
+                <p style="color: #6B7280; font-size: 0.875rem; margin-bottom: 1rem;">
+                    50자 이상 2000자 이하로 작성해주세요. 구체적인 예시와 경험을 포함하면 더 좋은 평가를 받을 수 있습니다.
+                </p>
+
+                <textarea
+                        name="answerText"
+                        id="answerText"
+                        rows="15"
+                        style="width: 100%; padding: 1rem; border: 1px solid #D1D5DB; border-radius: 6px; font-size: 1rem; font-family: inherit; resize: vertical;"
+                        placeholder="여기에 답변을 작성하세요..."
+                        required
+                        minlength="50"
+                        maxlength="2000"
+                        oninput="updateCharCount()"
+                ></textarea>
+
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.5rem;">
+                    <span id="charCount" style="color: #6B7280; font-size: 0.875rem;">0 / 2000자</span>
+                    <span id="charWarning" style="color: #EF4444; font-size: 0.875rem; display: none;">
+                        최소 50자 이상 작성해주세요
+                    </span>
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 1rem; justify-content: center; margin-top: 2rem;">
+                <button type="submit" class="btn btn-primary" style="padding: 1rem 3rem; font-size: 1.125rem;" id="submitBtn">
+                    제출하고 평가 받기 →
+                </button>
+            </div>
+        </form>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+
+<script>
+    function updateCharCount() {
+        const textarea = document.getElementById('answerText');
+        const charCount = document.getElementById('charCount');
+        const charWarning = document.getElementById('charWarning');
+        const submitBtn = document.getElementById('submitBtn');
+
+        const length = textarea.value.length;
+        charCount.textContent = length + ' / 2000자';
+
+        if (length < 50) {
+            charWarning.style.display = 'block';
+            submitBtn.disabled = true;
+            submitBtn.style.opacity = '0.5';
+        } else {
+            charWarning.style.display = 'none';
+            submitBtn.disabled = false;
+            submitBtn.style.opacity = '1';
+        }
+
+        if (length > 1900) {
+            charCount.style.color = '#EF4444';
+        } else {
+            charCount.style.color = '#6B7280';
+        }
+    }
+
+    // 초기 상태 설정
+    document.addEventListener('DOMContentLoaded', function() {
+        document.getElementById('submitBtn').disabled = true;
+        document.getElementById('submitBtn').style.opacity = '0.5';
+        document.getElementById('charWarning').style.display = 'block';
+    });
+</script>
+</body>
+</html>

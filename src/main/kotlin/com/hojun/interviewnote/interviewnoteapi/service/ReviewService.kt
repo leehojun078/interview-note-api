@@ -21,19 +21,20 @@ class ReviewService(
         val answers = interviewAnswerRepository.findAllByOrderByCreatedAtDesc()
 
         return answers.mapNotNull { answer ->
-            val question = questionRepository.findById(answer.questionId).orElse(null) ?: return@mapNotNull null
-            val feedback = aiFeedbackRepository.findByInterviewAnswerId(answer.id) ?: return@mapNotNull null
+            val question = questionRepository.findById(answer.questionId).orElse(null)
+            val feedback = aiFeedbackRepository.findByInterviewAnswerId(answer.id)
 
-            val averageScore = (feedback.logicScore + feedback.specificityScore +
-                    feedback.jobFitScore + feedback.deliveryScore) / 4.0
-
-            ReviewSummaryDto(
-                answerId = answer.id,
-                questionContent = question.content,
-                category = question.category,
-                answeredAt = answer.createdAt,
-                averageScore = averageScore
-            )
+            if (question != null && feedback != null) {
+                ReviewSummaryDto(
+                    answerId = answer.id,
+                    questionContent = question.content,
+                    category = question.category,
+                    answeredAt = answer.createdAt,
+                    averageScore = feedback.averageScore
+                )
+            } else {
+                null
+            }
         }
     }
 }

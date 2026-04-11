@@ -5,7 +5,7 @@ import java.time.LocalDateTime
 
 @Entity
 @Table(name = "ai_feedbacks")
-data class AiFeedback(
+class AiFeedback(
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long = 0,
@@ -60,4 +60,22 @@ data class AiFeedback(
 
     @Column(nullable = false)
     val createdAt: LocalDateTime = LocalDateTime.now()
-)
+) {
+    /**
+     * 4가지 평가 점수의 평균
+     */
+    val averageScore: Double
+        get() = (logicScore + specificityScore + jobFitScore + deliveryScore) / 4.0
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is AiFeedback) return false
+        return id != 0L && id == other.id
+    }
+
+    override fun hashCode(): Int = javaClass.hashCode()
+
+    override fun toString(): String {
+        return "AiFeedback(id=$id, interviewAnswerId=$interviewAnswerId, averageScore=$averageScore)"
+    }
+}

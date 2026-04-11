@@ -1,6 +1,6 @@
 package com.hojun.interviewnote.interviewnoteapi.service
 
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.hojun.interviewnote.interviewnoteapi.domain.AiFeedback
 import com.hojun.interviewnote.interviewnoteapi.domain.InterviewAnswer
 import com.hojun.interviewnote.interviewnoteapi.domain.Question
@@ -12,9 +12,23 @@ import java.time.LocalDateTime
 @Service
 @Transactional
 class AiFeedbackService(
-    private val aiFeedbackRepository: AiFeedbackRepository
+    private val aiFeedbackRepository: AiFeedbackRepository,
+    private val objectMapper: ObjectMapper
 ) {
-    private val objectMapper = jacksonObjectMapper()
+
+    companion object {
+        // 답변 길이 기준
+        private const val ANSWER_LENGTH_THRESHOLD_HIGH = 500
+        private const val ANSWER_LENGTH_THRESHOLD_MEDIUM = 300
+
+        // 더미 점수
+        private const val DUMMY_SCORE_HIGH = 4
+        private const val DUMMY_SCORE_MEDIUM = 3
+        private const val DUMMY_SCORE_LOW = 2
+
+        // 토큰 추정 계수 (대략 4글자 = 1토큰)
+        private const val TOKEN_ESTIMATION_FACTOR = 4
+    }
 
     /**
      * Phase 1: 더미 AI 피드백 생성
@@ -25,9 +39,9 @@ class AiFeedbackService(
 
         // 답변 길이에 따라 점수 조정 (간단한 로직)
         val baseScore = when {
-            answerLength >= 500 -> 4
-            answerLength >= 300 -> 3
-            else -> 2
+            answerLength >= ANSWER_LENGTH_THRESHOLD_HIGH -> DUMMY_SCORE_HIGH
+            answerLength >= ANSWER_LENGTH_THRESHOLD_MEDIUM -> DUMMY_SCORE_MEDIUM
+            else -> DUMMY_SCORE_LOW
         }
 
         val strengths = listOf(
@@ -75,8 +89,8 @@ class AiFeedbackService(
             jobField = question.jobField,
             modelName = "dummy-model-v1",
             promptVersion = "v1.0-dummy",
-            tokenUsageInput = answerLength / 4, // 대략적인 토큰 수
-            tokenUsageOutput = modelAnswer.length / 4,
+            tokenUsageInput = answerLength / TOKEN_ESTIMATION_FACTOR,
+            tokenUsageOutput = modelAnswer.length / TOKEN_ESTIMATION_FACTOR,
             rawResponse = "{\"dummy\": true, \"message\": \"This is a dummy response for Phase 1\"}",
             createdAt = LocalDateTime.now()
         )

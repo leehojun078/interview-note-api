@@ -254,6 +254,17 @@ Controller → Service → Repository
 
 ## Coding Guidelines
 
+### Code Style
+- **Google Kotlin Style Guide 준수**: 모든 Kotlin 코드는 [Google Kotlin Style Guide](https://developer.android.com/kotlin/style-guide)를 따릅니다
+  - 들여쓰기: 4 spaces
+  - 최대 줄 길이: 100자 (단, URL이나 긴 문자열은 예외)
+  - Import 순서: 알파벳 순, 와일드카드 import 금지
+  - 함수/변수명: camelCase
+  - 상수명: UPPER_SNAKE_CASE
+  - 클래스명: PascalCase
+  - Nullable 타입: 명시적으로 `?` 사용, `!!` 최소화
+  - 확장 함수/프로퍼티 적극 활용
+
 ### DO
 - ✅ 작은 단위로 기능 분할
 - ✅ 각 레이어의 책임 명확히 분리
@@ -261,6 +272,10 @@ Controller → Service → Repository
 - ✅ 원본 응답(rawResponse) 반드시 저장
 - ✅ 프롬프트 버전 관리
 - ✅ 테스트 작성 (최소한 Service 레이어)
+- ✅ Magic Number 대신 상수 사용
+- ✅ DRY 원칙 준수 (중복 코드 제거)
+- ✅ Spring Bean 주입 활용 (ObjectMapper 등)
+- ✅ 명시적 예외 처리 (커스텀 예외 클래스)
 
 ### DON'T
 - ❌ Controller에서 직접 OpenAI 호출
@@ -269,6 +284,10 @@ Controller → Service → Repository
 - ❌ 처음부터 복잡한 구조 설계
 - ❌ 프론트엔드/백엔드 분리 (MVP 단계)
 - ❌ 과도한 추상화나 미래 확장성 고려
+- ❌ `mapNotNull`과 `return@mapNotNull null` 조합 사용
+- ❌ ObjectMapper 등 중복 인스턴스 생성
+- ❌ Nullable 강제 언랩핑 (`!!`) 남용
+- ❌ JPA 엔티티에 data class 사용 (equals/hashCode 문제)
 
 ## Scalability Considerations
 

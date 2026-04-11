@@ -4,6 +4,8 @@ import com.hojun.interviewnote.interviewnoteapi.domain.InterviewAnswer
 import com.hojun.interviewnote.interviewnoteapi.dto.AnswerSubmitDto
 import com.hojun.interviewnote.interviewnoteapi.dto.AnswerWithFeedbackDto
 import com.hojun.interviewnote.interviewnoteapi.dto.FeedbackDto
+import com.hojun.interviewnote.interviewnoteapi.exception.AnswerNotFoundException
+import com.hojun.interviewnote.interviewnoteapi.exception.FeedbackNotFoundException
 import com.hojun.interviewnote.interviewnoteapi.repository.InterviewAnswerRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -20,13 +22,18 @@ class InterviewService(
      * 답변 제출 및 AI 평가
      */
     fun submitAnswer(dto: AnswerSubmitDto): AnswerWithFeedbackDto {
+        val questionId = dto.questionId
+            ?: throw IllegalArgumentException("질문 ID는 필수입니다")
+        val answerText = dto.answerText
+            ?: throw IllegalArgumentException("답변은 필수입니다")
+
         // 1. 질문 존재 여부 확인
-        val question = questionService.findById(dto.questionId!!)
+        val question = questionService.findById(questionId)
 
         // 2. 답변 저장
         val answer = InterviewAnswer(
-            questionId = dto.questionId,
-            answerText = dto.answerText!!,
+            questionId = questionId,
+            answerText = answerText,
             createdAt = LocalDateTime.now(),
             updatedAt = LocalDateTime.now()
         )
@@ -51,12 +58,12 @@ class InterviewService(
      */
     fun getAnswerWithFeedback(answerId: Long): AnswerWithFeedbackDto {
         val answer = interviewAnswerRepository.findById(answerId)
-            .orElseThrow { IllegalArgumentException("답변을 찾을 수 없습니다: $answerId") }
+            .orElseThrow { AnswerNotFoundException(answerId) }
 
         val question = questionService.findById(answer.questionId)
 
         val aiFeedback = aiFeedbackService.findByInterviewAnswerId(answerId)
-            ?: throw IllegalStateException("평가 결과를 찾을 수 없습니다: $answerId")
+            ?: throw FeedbackNotFoundException(answerId)
 
         return AnswerWithFeedbackDto(
             answerId = answer.id,

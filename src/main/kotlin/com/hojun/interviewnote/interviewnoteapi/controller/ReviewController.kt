@@ -36,12 +36,7 @@ class ReviewController(
         val answerWithFeedback = interviewService.getAnswerWithFeedback(answerId)
 
         model.addAttribute("answer", answerWithFeedback)
-
-        // 평균 점수 계산
-        val feedback = answerWithFeedback.feedback
-        val averageScore = (feedback.logicScore + feedback.specificityScore +
-                feedback.jobFitScore + feedback.deliveryScore) / 4.0
-        model.addAttribute("averageScore", averageScore)
+        model.addAttribute("averageScore", answerWithFeedback.feedback.averageScore)
 
         return "reviews/detail"
     }

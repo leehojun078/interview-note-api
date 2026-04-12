@@ -1,0 +1,71 @@
+package com.hojun.interviewnote.interviewnoteapi.service.ratelimit
+
+import com.github.benmanes.caffeine.cache.Cache
+import com.github.benmanes.caffeine.cache.Caffeine
+import com.hojun.interviewnote.interviewnoteapi.exception.RateLimitExceededException
+import org.slf4j.LoggerFactory
+import org.springframework.stereotype.Service
+import java.time.LocalDateTime
+import java.util.concurrent.TimeUnit
+
+/**
+ * Rate Limiting 서비스
+ *
+ * IP 주소당 시간당 요청 횟수를 제한하여 악의적 사용을 방지합니다.
+ * Caffeine Cache를 사용한 in-memory 저장 방식으로 구현되었습니다.
+ */
+@Service
+class RateLimitService {
+
+    private val logger = LoggerFactory.getLogger(javaClass)
+
+    companion object {
+        private const val MAX_REQUESTS_PER_HOUR = 33
+        private const val WINDOW_DURATION_MINUTES = 60L
+    }
+
+    // IP별 요청 기록 (1시간 자동 만료)
+    private val requestCache: Cache<String, MutableList<LocalDateTime>> = Caffeine.newBuilder()
+        .expireAfterWrite(WINDOW_DURATION_MINUTES, TimeUnit.MINUTES)
+        .build()
+
+    /**
+     * 요청 허용 여부 확인 및 기록
+     *
+     * @param ip 클라이언트 IP 주소
+     * @throws RateLimitExceededException 한도 초과 시
+     */
+    fun checkAndRecordRequest(ip: String) {
+        val now = LocalDateTime.now()
+        val cutoffTime = now.minusMinutes(WINDOW_DURATION_MINUTES)
+
+        // 현재 IP의 요청 기록 가져오기
+        val requests = requestCache.get(ip) { mutableListOf() }!!
+
+        // 1시간 이내 요청만 필터링
+        requests.removeIf { it.isBefore(cutoffTime) }
+
+        // 한도 확인
+        if (requests.size >= MAX_REQUESTS_PER_HOUR) {
+            val resetTime = requests.first().plusMinutes(WINDOW_DURATION_MINUTES)
+            logger.warn("Rate limit 초과 - IP: $ip, 현재 요청 수: ${requests.size}/$MAX_REQUESTS_PER_HOUR")
+            throw RateLimitExceededException(ip, MAX_REQUESTS_PER_HOUR, resetTime)
+        }
+
+        // 요청 기록
+        requests.add(now)
+        logger.debug("요청 기록 - IP: $ip, 현재 요청 수: ${requests.size}/$MAX_REQUESTS_PER_HOUR")
+    }
+
+    /**
+     * 특정 IP의 현재 요청 수 조회 (테스트용)
+     */
+    fun getCurrentRequestCount(ip: String): Int {
+        val now = LocalDateTime.now()
+        val cutoffTime = now.minusMinutes(WINDOW_DURATION_MINUTES)
+        val requests = requestCache.getIfPresent(ip) ?: return 0
+
+        requests.removeIf { it.isBefore(cutoffTime) }
+        return requests.size
+    }
+}

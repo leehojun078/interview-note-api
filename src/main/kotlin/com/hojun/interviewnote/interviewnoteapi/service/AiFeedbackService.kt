@@ -1,10 +1,17 @@
 package com.hojun.interviewnote.interviewnoteapi.service
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.hojun.interviewnote.interviewnoteapi.config.OpenAiProperties
 import com.hojun.interviewnote.interviewnoteapi.domain.AiFeedback
 import com.hojun.interviewnote.interviewnoteapi.domain.InterviewAnswer
 import com.hojun.interviewnote.interviewnoteapi.domain.Question
+import com.hojun.interviewnote.interviewnoteapi.exception.AiException
 import com.hojun.interviewnote.interviewnoteapi.repository.AiFeedbackRepository
+import com.hojun.interviewnote.interviewnoteapi.service.ai.AiClient
+import com.hojun.interviewnote.interviewnoteapi.service.ai.PromptBuilder
+import com.hojun.interviewnote.interviewnoteapi.service.ai.ResponseParser
+import com.hojun.interviewnote.interviewnoteapi.service.cache.DuplicateRequestCache
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
@@ -13,8 +20,15 @@ import java.time.LocalDateTime
 @Transactional
 class AiFeedbackService(
     private val aiFeedbackRepository: AiFeedbackRepository,
-    private val objectMapper: ObjectMapper
+    private val objectMapper: ObjectMapper,
+    private val aiClient: AiClient,
+    private val promptBuilder: PromptBuilder,
+    private val responseParser: ResponseParser,
+    private val openAiProperties: OpenAiProperties,
+    private val duplicateRequestCache: DuplicateRequestCache
 ) {
+
+    private val logger = LoggerFactory.getLogger(javaClass)
 
     companion object {
         // 답변 길이 기준
@@ -31,8 +45,81 @@ class AiFeedbackService(
     }
 
     /**
+     * Phase 2: 실제 AI 피드백 생성
+     * OpenAI API를 호출하여 피드백을 생성합니다.
+     * 실패 시 fallback으로 더미 피드백을 반환합니다.
+     */
+    fun generateFeedback(answer: InterviewAnswer, question: Question): AiFeedback {
+        return try {
+            logger.info("AI 피드백 생성 시작 - answerId: ${answer.id}, questionId: ${question.id}")
+
+            // 1. 캐시 확인 (중복 방지)
+            val cached = duplicateRequestCache.findCached(question.id, answer.answerText)
+            if (cached != null) {
+                logger.info("캐시된 피드백 반환 - 피드백 ID: ${cached.id}")
+                return cached
+            }
+
+            // 2. 프롬프트 생성
+            val systemPrompt = promptBuilder.buildSystemPrompt(question.jobField, question.targetJob)
+            val userPrompt = promptBuilder.buildUserPrompt(question, answer.answerText)
+
+            // 3. AI 클라이언트 호출
+            val rawResponse = aiClient.requestFeedback(systemPrompt, userPrompt)
+
+            // 4. 응답 파싱
+            val parsedFeedback = responseParser.parseOpenAiResponse(rawResponse, rawResponse)
+
+            // 5. 해시 생성
+            val answerTextHash = duplicateRequestCache.generateHash(question.id, answer.answerText)
+
+            // 6. AiFeedback 엔티티 생성
+            val aiFeedback = AiFeedback(
+                interviewAnswerId = answer.id,
+                logicScore = parsedFeedback.logicScore,
+                specificityScore = parsedFeedback.specificityScore,
+                jobFitScore = parsedFeedback.jobFitScore,
+                deliveryScore = parsedFeedback.deliveryScore,
+                strengths = objectMapper.writeValueAsString(parsedFeedback.strengths),
+                improvements = objectMapper.writeValueAsString(parsedFeedback.improvements),
+                modelAnswer = parsedFeedback.modelAnswer,
+                overallComment = parsedFeedback.overallComment,
+                jobField = question.jobField,
+                modelName = openAiProperties.model,
+                promptVersion = openAiProperties.promptVersion,
+                tokenUsageInput = estimateTokens(systemPrompt + userPrompt),
+                tokenUsageOutput = estimateTokens(rawResponse),
+                rawResponse = rawResponse,
+                answerTextHash = answerTextHash,
+                createdAt = LocalDateTime.now()
+            )
+
+            // 7. 저장 및 반환
+            val savedFeedback = aiFeedbackRepository.save(aiFeedback)
+            logger.info("AI 피드백 생성 완료 - feedbackId: ${savedFeedback.id}")
+            savedFeedback
+
+        } catch (e: AiException) {
+            // AI 오류 발생 시 fallback으로 더미 피드백 생성
+            logger.warn("AI 피드백 생성 실패, 더미 피드백으로 fallback - 오류: ${e.message}", e)
+            generateDummyFeedback(answer, question)
+        } catch (e: Exception) {
+            // 예상치 못한 오류 발생 시에도 fallback
+            logger.error("예상치 못한 오류 발생, 더미 피드백으로 fallback - 오류: ${e.message}", e)
+            generateDummyFeedback(answer, question)
+        }
+    }
+
+    /**
+     * 토큰 수 추정 (대략 4글자 = 1토큰)
+     */
+    private fun estimateTokens(text: String): Int {
+        return text.length / TOKEN_ESTIMATION_FACTOR
+    }
+
+    /**
      * Phase 1: 더미 AI 피드백 생성
-     * Phase 2에서 실제 OpenAI API로 교체 예정
+     * Phase 2에서는 fallback용으로 사용됩니다.
      */
     fun generateDummyFeedback(answer: InterviewAnswer, question: Question): AiFeedback {
         val answerLength = answer.answerText.length

@@ -58,6 +58,10 @@ class AiFeedback(
     @Column(nullable = false, columnDefinition = "TEXT")
     val rawResponse: String,
 
+    // Phase 2D: 중복 요청 방지를 위한 해시 (questionId + answerText의 SHA-256)
+    @Column(name = "answer_text_hash", length = 64)
+    val answerTextHash: String? = null,
+
     @Column(nullable = false)
     val createdAt: LocalDateTime = LocalDateTime.now()
 ) {

@@ -39,8 +39,8 @@ class InterviewService(
         )
         val savedAnswer = interviewAnswerRepository.save(answer)
 
-        // 3. AI 피드백 생성 (Phase 1: 더미)
-        val aiFeedback = aiFeedbackService.generateDummyFeedback(savedAnswer, question)
+        // 3. AI 피드백 생성 (Phase 2: 실제 AI 또는 fallback)
+        val aiFeedback = aiFeedbackService.generateFeedback(savedAnswer, question)
 
         // 4. 결합된 DTO 반환
         return AnswerWithFeedbackDto(

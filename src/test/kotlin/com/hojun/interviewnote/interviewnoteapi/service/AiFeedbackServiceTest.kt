@@ -1,10 +1,15 @@
 package com.hojun.interviewnote.interviewnoteapi.service
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.hojun.interviewnote.interviewnoteapi.config.OpenAiProperties
 import com.hojun.interviewnote.interviewnoteapi.domain.AiFeedback
 import com.hojun.interviewnote.interviewnoteapi.domain.InterviewAnswer
 import com.hojun.interviewnote.interviewnoteapi.domain.Question
 import com.hojun.interviewnote.interviewnoteapi.repository.AiFeedbackRepository
+import com.hojun.interviewnote.interviewnoteapi.service.ai.AiClient
+import com.hojun.interviewnote.interviewnoteapi.service.ai.PromptBuilder
+import com.hojun.interviewnote.interviewnoteapi.service.ai.ResponseParser
+import com.hojun.interviewnote.interviewnoteapi.service.cache.DuplicateRequestCache
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -24,6 +29,21 @@ class AiFeedbackServiceTest {
 
     @Mock
     private lateinit var objectMapper: ObjectMapper
+
+    @Mock
+    private lateinit var aiClient: AiClient
+
+    @Mock
+    private lateinit var promptBuilder: PromptBuilder
+
+    @Mock
+    private lateinit var responseParser: ResponseParser
+
+    @Mock
+    private lateinit var openAiProperties: OpenAiProperties
+
+    @Mock
+    private lateinit var duplicateRequestCache: DuplicateRequestCache
 
     @InjectMocks
     private lateinit var aiFeedbackService: AiFeedbackService

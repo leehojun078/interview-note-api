@@ -3,6 +3,7 @@ package com.hojun.interviewnote.interviewnoteapi.controller
 import com.hojun.interviewnote.interviewnoteapi.dto.AnswerWithFeedbackDto
 import com.hojun.interviewnote.interviewnoteapi.dto.FeedbackDto
 import com.hojun.interviewnote.interviewnoteapi.service.InterviewService
+import com.hojun.interviewnote.interviewnoteapi.service.ratelimit.RateLimitService
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.whenever
@@ -23,6 +24,9 @@ class AnswerControllerTest {
 
     @MockitoBean
     private lateinit var interviewService: InterviewService
+
+    @MockitoBean
+    private lateinit var rateLimitService: RateLimitService
 
     private fun createAnswerWithFeedback(): AnswerWithFeedbackDto {
         val feedback = FeedbackDto(

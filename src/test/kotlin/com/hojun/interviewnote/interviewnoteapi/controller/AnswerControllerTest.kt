@@ -5,6 +5,8 @@ import com.hojun.interviewnote.interviewnoteapi.dto.FeedbackDto
 import com.hojun.interviewnote.interviewnoteapi.exception.RateLimitExceededException
 import com.hojun.interviewnote.interviewnoteapi.service.InterviewService
 import com.hojun.interviewnote.interviewnoteapi.service.ratelimit.RateLimitService
+import com.hojun.interviewnote.interviewnoteapi.service.validation.AnswerValidator
+import com.hojun.interviewnote.interviewnoteapi.service.validation.ValidationResult
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doThrow
@@ -30,6 +32,15 @@ class AnswerControllerTest {
 
     @MockitoBean
     private lateinit var rateLimitService: RateLimitService
+
+    @MockitoBean
+    private lateinit var answerValidator: AnswerValidator
+
+    @org.junit.jupiter.api.BeforeEach
+    fun setUp() {
+        // 기본적으로 모든 답변은 검증 통과로 설정
+        whenever(answerValidator.validate(any())).thenReturn(ValidationResult.Valid)
+    }
 
     private fun createAnswerWithFeedback(): AnswerWithFeedbackDto {
         val feedback = FeedbackDto(

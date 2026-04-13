@@ -13,13 +13,17 @@ class QuestionService(
     private val questionRepository: QuestionRepository
 ) {
     fun findAll(category: String?, difficulty: String?): List<QuestionDto> {
+        // 빈 문자열을 null로 처리
+        val validCategory = category?.takeIf { it.isNotBlank() }
+        val validDifficulty = difficulty?.takeIf { it.isNotBlank() }
+
         val questions = when {
-            category != null && difficulty != null ->
-                questionRepository.findByCategoryAndDifficultyAndIsActiveTrue(category, difficulty)
-            category != null ->
-                questionRepository.findByCategoryAndIsActiveTrue(category)
-            difficulty != null ->
-                questionRepository.findByDifficultyAndIsActiveTrue(difficulty)
+            validCategory != null && validDifficulty != null ->
+                questionRepository.findByCategoryAndDifficultyAndIsActiveTrue(validCategory, validDifficulty)
+            validCategory != null ->
+                questionRepository.findByCategoryAndIsActiveTrue(validCategory)
+            validDifficulty != null ->
+                questionRepository.findByDifficultyAndIsActiveTrue(validDifficulty)
             else ->
                 questionRepository.findByIsActiveTrue()
         }

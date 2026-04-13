@@ -54,8 +54,8 @@ class ResponseParser(
     companion object {
         private const val MIN_SCORE = 1
         private const val MAX_SCORE = 5
-        private const val MIN_FEEDBACK_ITEMS = 2
-        private const val MAX_FEEDBACK_ITEMS = 3
+        private const val MIN_FEEDBACK_ITEMS = 1  // AI가 1개만 반환할 수도 있음
+        private const val MAX_FEEDBACK_ITEMS = 5  // 유연하게 최대 5개까지 허용
         private const val MIN_MODEL_ANSWER_LENGTH = 100
         private const val MAX_MODEL_ANSWER_LENGTH = 1000
     }

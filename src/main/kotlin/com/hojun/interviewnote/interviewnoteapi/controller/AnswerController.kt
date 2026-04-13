@@ -4,17 +4,21 @@ import com.hojun.interviewnote.interviewnoteapi.dto.AnswerSubmitDto
 import com.hojun.interviewnote.interviewnoteapi.exception.RateLimitExceededException
 import com.hojun.interviewnote.interviewnoteapi.service.InterviewService
 import com.hojun.interviewnote.interviewnoteapi.service.ratelimit.RateLimitService
+import com.hojun.interviewnote.interviewnoteapi.service.validation.AnswerValidator
+import com.hojun.interviewnote.interviewnoteapi.service.validation.ValidationResult
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.validation.Valid
 import org.springframework.stereotype.Controller
 import org.springframework.ui.Model
 import org.springframework.validation.BindingResult
 import org.springframework.web.bind.annotation.*
+import org.springframework.web.servlet.mvc.support.RedirectAttributes
 
 @Controller
 class AnswerController(
     private val interviewService: InterviewService,
-    private val rateLimitService: RateLimitService
+    private val rateLimitService: RateLimitService,
+    private val answerValidator: AnswerValidator
 ) {
     /**
      * 답변 제출 처리
@@ -25,7 +29,8 @@ class AnswerController(
         @Valid @ModelAttribute dto: AnswerSubmitDto,
         bindingResult: BindingResult,
         model: Model,
-        request: HttpServletRequest
+        request: HttpServletRequest,
+        redirectAttributes: RedirectAttributes
     ): String {
         // Phase 2D: Rate Limit 체크
         try {
@@ -35,12 +40,26 @@ class AnswerController(
             return "redirect:/questions/$questionId/answer?error=ratelimit"
         }
 
+        // Bean Validation 체크
         if (bindingResult.hasErrors()) {
             model.addAttribute("errors", bindingResult.allErrors)
             return "redirect:/questions/$questionId/answer?error=validation"
         }
 
+        // Phase 3A: 답변 품질 사전 검증
+        val validationResult = answerValidator.validate(dto.answerText ?: "")
+        if (validationResult is ValidationResult.Invalid) {
+            redirectAttributes.addFlashAttribute("validationError", validationResult.message)
+            return "redirect:/questions/$questionId/answer?error=invalid_answer"
+        }
+
+        // 답변 제출 및 AI 평가
         val result = interviewService.submitAnswer(dto)
+
+        // Phase 3A: 저품질 경고 체크
+        if (result.feedback.averageScore < 1.5) {
+            return "redirect:/answers/${result.answerId}/feedback?warning=low_quality"
+        }
 
         return "redirect:/answers/${result.answerId}/feedback"
     }
@@ -64,12 +83,18 @@ class AnswerController(
     @GetMapping("/answers/{answerId}/feedback")
     fun feedback(
         @PathVariable answerId: Long,
+        @RequestParam(required = false) warning: String?,
         model: Model
     ): String {
         val answerWithFeedback = interviewService.getAnswerWithFeedback(answerId)
 
         model.addAttribute("answer", answerWithFeedback)
         model.addAttribute("averageScore", answerWithFeedback.feedback.averageScore)
+
+        // Phase 3A: 저품질 경고
+        if (warning == "low_quality") {
+            model.addAttribute("lowQualityWarning", true)
+        }
 
         return "answers/feedback"
     }

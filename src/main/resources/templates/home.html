@@ -1,63 +1,83 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{fragments/layout :: head}"></head>
-<body>
+<body class="bg-gray-50 text-gray-900 min-h-screen flex flex-col">
 <nav th:replace="~{fragments/layout :: navbar}"></nav>
+<div th:replace="~{fragments/layout :: toast}"></div>
 
-<main>
-    <div class="container">
+<main class="flex-1 py-8">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <!-- Hero Section -->
-        <div style="text-align: center; padding: 3rem 0;">
-            <h1 style="font-size: 2.5rem; margin-bottom: 1rem;">
+        <div class="text-center py-12">
+            <h1 class="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
                 🎯 AI 기반 면접 복기 앱
             </h1>
-            <p style="font-size: 1.25rem; color: #6B7280; margin-bottom: 2rem;">
+            <p class="text-xl text-gray-600 mb-8">
                 면접 질문에 답변하고 AI 피드백으로 실력을 향상시키세요
             </p>
-            <div style="display: flex; gap: 1rem; justify-content: center;">
-                <a th:href="@{/questions}" class="btn btn-primary" style="font-size: 1.125rem; padding: 1rem 2rem;">
+            <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                <a th:href="@{/questions}"
+                   class="inline-block bg-primary hover:bg-primary-dark text-white font-semibold text-lg px-8 py-3 rounded-lg transition shadow-md hover:shadow-lg">
                     질문 연습 시작하기 →
                 </a>
-                <a th:href="@{/reviews}" class="btn btn-secondary" style="font-size: 1.125rem; padding: 1rem 2rem;">
+                <a th:href="@{/reviews}"
+                   class="inline-block bg-white hover:bg-gray-50 text-gray-700 font-semibold text-lg px-8 py-3 rounded-lg border border-gray-300 transition shadow-md hover:shadow-lg">
                     내 복기 이력
                 </a>
             </div>
         </div>
 
         <!-- 최근 답변 -->
-        <div th:if="${not #lists.isEmpty(recentReviews)}" style="margin-top: 3rem;">
-            <h2>최근 답변</h2>
-            <div th:each="review : ${recentReviews}" class="card">
-                <div style="display: flex; justify-content: space-between; align-items: start;">
-                    <div style="flex: 1;">
-                        <h3 th:text="${review.questionContent}">질문 내용</h3>
-                        <span class="badge badge-category" th:text="${review.category}">카테고리</span>
-                    </div>
-                    <div style="text-align: right;">
-                        <div style="font-size: 1.5rem; font-weight: bold; color: #2563EB;"
-                             th:text="${#numbers.formatDecimal(review.averageScore, 1, 1)} + '점'">
-                            3.5점
+        <div th:if="${not #lists.isEmpty(recentReviews)}" class="mt-12">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6">최근 답변</h2>
+            <div class="space-y-4">
+                <div th:each="review : ${recentReviews}"
+                     class="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition">
+                    <div class="flex flex-col md:flex-row md:justify-between md:items-start gap-4">
+                        <div class="flex-1">
+                            <h3 class="text-xl font-semibold text-gray-800 mb-2"
+                                th:text="${review.questionContent}">
+                                질문 내용
+                            </h3>
+                            <span class="inline-block px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium"
+                                  th:text="${review.category}">
+                                카테고리
+                            </span>
                         </div>
-                        <div style="font-size: 0.875rem; color: #6B7280;"
-                             th:text="${#temporals.format(review.answeredAt, 'yyyy-MM-dd HH:mm')}">
-                            2026-04-11 14:30
+                        <div class="text-left md:text-right">
+                            <div class="text-3xl font-bold text-primary"
+                                 th:text="${#numbers.formatDecimal(review.averageScore, 1, 1)} + '점'">
+                                3.5점
+                            </div>
+                            <div class="text-sm text-gray-500 mt-1"
+                                 th:text="${#temporals.format(review.answeredAt, 'yyyy-MM-dd HH:mm')}">
+                                2026-04-11 14:30
+                            </div>
                         </div>
                     </div>
-                </div>
-                <div style="margin-top: 1rem;">
-                    <a th:href="@{/reviews/{id}(id=${review.answerId})}" class="btn btn-secondary">
-                        상세 보기
-                    </a>
+                    <div class="mt-4">
+                        <a th:href="@{/reviews/{id}(id=${review.answerId})}"
+                           class="inline-block bg-white hover:bg-gray-50 text-gray-700 font-medium px-6 py-2 rounded-lg border border-gray-300 transition">
+                            상세 보기
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>
 
         <!-- 빈 상태 -->
-        <div th:if="${#lists.isEmpty(recentReviews)}" style="text-align: center; padding: 3rem 0;">
-            <p style="font-size: 1.125rem; color: #6B7280; margin-bottom: 1rem;">
+        <div th:if="${#lists.isEmpty(recentReviews)}" class="text-center py-12">
+            <div class="text-gray-400 mb-6">
+                <svg class="mx-auto h-24 w-24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+            </div>
+            <p class="text-xl text-gray-600 mb-6">
                 아직 답변한 질문이 없습니다
             </p>
-            <a th:href="@{/questions}" class="btn btn-primary">
+            <a th:href="@{/questions}"
+               class="inline-block bg-primary hover:bg-primary-dark text-white font-semibold px-8 py-3 rounded-lg transition shadow-md hover:shadow-lg">
                 첫 질문 시작하기
             </a>
         </div>
@@ -65,5 +85,6 @@
 </main>
 
 <footer th:replace="~{fragments/layout :: footer}"></footer>
+<script th:replace="~{fragments/layout :: toast-script}"></script>
 </body>
 </html>

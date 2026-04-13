@@ -115,12 +115,12 @@ class ResponseParserTest {
     }
 
     @Test
-    fun `parseOpenAiResponse - strengths가 2개 미만이면 예외 발생`() {
+    fun `parseOpenAiResponse - strengths가 0개이면 예외 발생`() {
         // Given
         val invalidJson = """
             {
               "scores": {"logic": 4, "specificity": 3, "jobFit": 4, "delivery": 3},
-              "strengths": ["강점1"],
+              "strengths": [],
               "improvements": ["개선1", "개선2"],
               "modelAnswer": "${"x".repeat(400)}",
               "overallComment": "코멘트"
@@ -131,16 +131,16 @@ class ResponseParserTest {
         val exception = assertThrows<AiResponseParseException> {
             responseParser.parseOpenAiResponse(invalidJson)
         }
-        assert(exception.message!!.contains("strengths는 2-3개여야 합니다"))
+        assert(exception.message!!.contains("strengths는 1-5개여야 합니다"))
     }
 
     @Test
-    fun `parseOpenAiResponse - strengths가 3개 초과하면 예외 발생`() {
+    fun `parseOpenAiResponse - strengths가 5개 초과하면 예외 발생`() {
         // Given
         val invalidJson = """
             {
               "scores": {"logic": 4, "specificity": 3, "jobFit": 4, "delivery": 3},
-              "strengths": ["강점1", "강점2", "강점3", "강점4"],
+              "strengths": ["강점1", "강점2", "강점3", "강점4", "강점5", "강점6"],
               "improvements": ["개선1", "개선2"],
               "modelAnswer": "${"x".repeat(400)}",
               "overallComment": "코멘트"
@@ -151,17 +151,17 @@ class ResponseParserTest {
         val exception = assertThrows<AiResponseParseException> {
             responseParser.parseOpenAiResponse(invalidJson)
         }
-        assert(exception.message!!.contains("strengths는 2-3개여야 합니다"))
+        assert(exception.message!!.contains("strengths는 1-5개여야 합니다"))
     }
 
     @Test
-    fun `parseOpenAiResponse - improvements가 2개 미만이면 예외 발생`() {
+    fun `parseOpenAiResponse - improvements가 0개이면 예외 발생`() {
         // Given
         val invalidJson = """
             {
               "scores": {"logic": 4, "specificity": 3, "jobFit": 4, "delivery": 3},
               "strengths": ["강점1", "강점2"],
-              "improvements": ["개선1"],
+              "improvements": [],
               "modelAnswer": "${"x".repeat(400)}",
               "overallComment": "코멘트"
             }
@@ -171,7 +171,7 @@ class ResponseParserTest {
         val exception = assertThrows<AiResponseParseException> {
             responseParser.parseOpenAiResponse(invalidJson)
         }
-        assert(exception.message!!.contains("improvements는 2-3개여야 합니다"))
+        assert(exception.message!!.contains("improvements는 1-5개여야 합니다"))
     }
 
     @Test

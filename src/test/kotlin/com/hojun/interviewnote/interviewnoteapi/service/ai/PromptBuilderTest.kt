@@ -129,9 +129,27 @@ class PromptBuilderTest {
         val result = promptBuilder.buildSystemPrompt(jobField, targetJob)
 
         // Then
-        assertTrue(result.contains("2-3개 항목"))
+        assertTrue(result.contains("0-5개"))  // strengths는 0개도 가능
+        assertTrue(result.contains("1-5개 필수"))  // improvements는 최소 1개
         assertTrue(result.contains("400-600자"))
         assertTrue(result.contains("과도한 단정이나 공격적 표현 금지"))
+    }
+
+    @Test
+    fun `buildSystemPrompt - AI Hallucination 방지 지침이 포함되어야 한다`() {
+        // Given
+        val jobField = "IT"
+        val targetJob = "백엔드 개발자"
+
+        // When
+        val result = promptBuilder.buildSystemPrompt(jobField, targetJob)
+
+        // Then
+        assertTrue(result.contains("정직한 평가"))
+        assertTrue(result.contains("사실 기반"))
+        assertTrue(result.contains("강점 검증"))
+        assertTrue(result.contains("답변에 없는 내용을 추측하거나 창작하지"))
+        assertTrue(result.contains("억지로 만들지 말고"))
     }
 
     @Test
@@ -283,8 +301,8 @@ class PromptBuilderTest {
         val result = promptBuilder.buildSystemPrompt(jobField, targetJob)
 
         // Then
-        // 너무 짧거나 너무 길지 않은지 확인 (200자 이상, 2000자 이하)
-        assertTrue(result.length in 200..2000,
+        // 너무 짧거나 너무 길지 않은지 확인 (200자 이상, 3500자 이하 - hallucination 방지 지침 추가로 증가)
+        assertTrue(result.length in 200..3500,
             "프롬프트 길이가 적절해야 함 (현재: ${result.length}자)")
     }
 

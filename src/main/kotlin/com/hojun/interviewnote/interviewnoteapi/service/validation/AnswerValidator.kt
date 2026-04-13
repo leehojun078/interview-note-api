@@ -20,10 +20,11 @@ sealed class ValidationResult {
 class AnswerValidator {
 
     companion object {
-        private const val MAX_REPEATED_CHAR_RATIO = 0.7  // 70% 이상 같은 문자
-        private const val MIN_WORD_COUNT = 10            // 최소 10개 단어
+        private const val MAX_REPEATED_CHAR_RATIO = 0.7   // 70% 이상 같은 문자
+        private const val MAX_REPEATED_WORD_RATIO = 0.4   // 40% 이상 같은 단어
+        private const val MIN_WORD_COUNT = 10             // 최소 10개 단어
         private const val MIN_MEANINGFUL_CHAR_RATIO = 0.5 // 50% 이상 의미 있는 문자
-        private const val MIN_UNIQUE_CHAR_COUNT = 5      // 최소 5개의 서로 다른 문자
+        private const val MIN_UNIQUE_CHAR_COUNT = 5       // 최소 5개의 서로 다른 문자
     }
 
     /**
@@ -42,7 +43,14 @@ class AnswerValidator {
             )
         }
 
-        // 2. 고유 문자 개수 체크
+        // 2. 반복 단어 체크 (신규)
+        if (hasExcessiveRepeatedWords(trimmed)) {
+            return ValidationResult.Invalid(
+                "같은 단어가 반복되고 있습니다. 다양한 표현으로 구체적으로 작성해주세요."
+            )
+        }
+
+        // 3. 고유 문자 개수 체크
         val uniqueChars = trimmed.filter { it.isLetterOrDigit() }.toSet().size
         if (uniqueChars < MIN_UNIQUE_CHAR_COUNT) {
             return ValidationResult.Invalid(
@@ -50,7 +58,7 @@ class AnswerValidator {
             )
         }
 
-        // 3. 최소 단어 수 체크
+        // 4. 최소 단어 수 체크
         val words = trimmed.split(Regex("\\s+")).filter { it.isNotBlank() }
         if (words.size < MIN_WORD_COUNT) {
             return ValidationResult.Invalid(
@@ -58,7 +66,7 @@ class AnswerValidator {
             )
         }
 
-        // 4. 의미 있는 문자 비율 체크
+        // 5. 의미 있는 문자 비율 체크
         if (!hasSufficientMeaningfulChars(trimmed)) {
             return ValidationResult.Invalid(
                 "의미 있는 문장으로 작성해주세요. 숫자나 특수문자만으로는 답변할 수 없습니다."
@@ -85,6 +93,32 @@ class AnswerValidator {
         val maxCount = charCounts.values.maxOrNull() ?: 0
 
         return maxCount > withoutSpaces.length * MAX_REPEATED_CHAR_RATIO
+    }
+
+    /**
+     * 단어 단위 반복 체크
+     *
+     * 예: "여기는 여기는 여기는"처럼 같은 단어가 40% 이상이면 true
+     */
+    private fun hasExcessiveRepeatedWords(text: String): Boolean {
+        val words = text.trim()
+            .split(Regex("\\s+"))
+            .filter { it.isNotBlank() }
+
+        // 단어가 5개 미만이면 체크 안 함
+        if (words.size < 5) return false
+
+        // 각 단어의 출현 횟수 계산 (대소문자 무시)
+        val wordCounts = words
+            .map { it.lowercase() }
+            .groupingBy { it }
+            .eachCount()
+
+        val maxWordCount = wordCounts.values.maxOrNull() ?: 0
+        val wordRepeatRatio = maxWordCount.toDouble() / words.size
+
+        // 같은 단어가 40% 이상이면 true
+        return wordRepeatRatio > MAX_REPEATED_WORD_RATIO
     }
 
     /**

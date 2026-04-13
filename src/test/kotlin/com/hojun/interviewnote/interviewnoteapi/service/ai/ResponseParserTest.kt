@@ -115,23 +115,24 @@ class ResponseParserTest {
     }
 
     @Test
-    fun `parseOpenAiResponse - strengths가 0개이면 예외 발생`() {
-        // Given
-        val invalidJson = """
+    fun `parseOpenAiResponse - strengths가 0개일 때 정상 처리 (답변이 부실한 경우)`() {
+        // Given - 답변이 부실하면 strengths가 0개일 수 있음
+        val validJson = """
             {
-              "scores": {"logic": 4, "specificity": 3, "jobFit": 4, "delivery": 3},
+              "scores": {"logic": 1, "specificity": 1, "jobFit": 1, "delivery": 1},
               "strengths": [],
-              "improvements": ["개선1", "개선2"],
+              "improvements": ["구체적인 내용 부족", "반복 표현 피하기"],
               "modelAnswer": "${"x".repeat(400)}",
-              "overallComment": "코멘트"
+              "overallComment": "답변이 추상적입니다"
             }
         """.trimIndent()
 
-        // When & Then
-        val exception = assertThrows<AiResponseParseException> {
-            responseParser.parseOpenAiResponse(invalidJson)
-        }
-        assert(exception.message!!.contains("strengths는 1-5개여야 합니다"))
+        // When
+        val result = responseParser.parseOpenAiResponse(validJson)
+
+        // Then
+        assertEquals(0, result.strengths.size)
+        assertEquals(2, result.improvements.size)
     }
 
     @Test
@@ -151,12 +152,12 @@ class ResponseParserTest {
         val exception = assertThrows<AiResponseParseException> {
             responseParser.parseOpenAiResponse(invalidJson)
         }
-        assert(exception.message!!.contains("strengths는 1-5개여야 합니다"))
+        assert(exception.message!!.contains("strengths는 0-5개여야 합니다"))
     }
 
     @Test
     fun `parseOpenAiResponse - improvements가 0개이면 예외 발생`() {
-        // Given
+        // Given - improvements는 최소 1개 필수
         val invalidJson = """
             {
               "scores": {"logic": 4, "specificity": 3, "jobFit": 4, "delivery": 3},
@@ -171,7 +172,7 @@ class ResponseParserTest {
         val exception = assertThrows<AiResponseParseException> {
             responseParser.parseOpenAiResponse(invalidJson)
         }
-        assert(exception.message!!.contains("improvements는 1-5개여야 합니다"))
+        assert(exception.message!!.contains("improvements는 최소 1개 이상이어야 합니다"))
     }
 
     @Test

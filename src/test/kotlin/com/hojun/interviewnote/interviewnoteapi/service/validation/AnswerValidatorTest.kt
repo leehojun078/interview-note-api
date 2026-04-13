@@ -181,4 +181,50 @@ class AnswerValidatorTest {
         // Then
         assertTrue(result is ValidationResult.Valid)
     }
+
+    // ===== 단어 반복 체크 테스트 (Phase 2 추가) =====
+
+    @Test
+    fun `validate - 단어 반복이 40% 이상이면 Invalid 반환`() {
+        // Given - "여기는"이 11개 중 7개 (63.6%)
+        val invalidAnswer = "제가 중요하게 여기는 여기는 여기는 여기는 여기는 여기는 여기는 입니다"
+
+        // When
+        val result = validator.validate(invalidAnswer)
+
+        // Then
+        assertTrue(result is ValidationResult.Invalid)
+        if (result is ValidationResult.Invalid) {
+            assertTrue(result.message.contains("같은 단어가 반복"))
+        }
+    }
+
+    @Test
+    fun `validate - 단어 반복이 40% 미만이면 Valid 반환`() {
+        // Given - "Spring"이 10개 중 3개 (30%)
+        val validAnswer = "저는 Spring Boot를 사용하여 Spring Security와 Spring Data JPA로 RESTful API를 개발한 경험이 있습니다"
+
+        // When
+        val result = validator.validate(validAnswer)
+
+        // Then
+        assertTrue(result is ValidationResult.Valid)
+    }
+
+    @Test
+    fun `validate - 정상적인 답변에서 자주 쓰이는 단어는 허용`() {
+        // Given - "개발"이라는 단어가 여러 번 나오지만 의미 있는 답변
+        val validAnswer = """
+            저는 백엔드 개발 경험이 3년 있습니다.
+            주로 웹 애플리케이션 개발을 했고,
+            최근에는 마이크로서비스 개발도 경험했습니다.
+            개발 과정에서 TDD를 적용하여 품질을 높였습니다.
+        """.trimIndent()
+
+        // When
+        val result = validator.validate(validAnswer)
+
+        // Then
+        assertTrue(result is ValidationResult.Valid)
+    }
 }

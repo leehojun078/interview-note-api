@@ -54,8 +54,9 @@ class ResponseParser(
     companion object {
         private const val MIN_SCORE = 1
         private const val MAX_SCORE = 5
-        private const val MIN_FEEDBACK_ITEMS = 1  // AI가 1개만 반환할 수도 있음
-        private const val MAX_FEEDBACK_ITEMS = 5  // 유연하게 최대 5개까지 허용
+        private const val MIN_STRENGTHS_ITEMS = 0    // 강점은 0개도 가능 (답변이 부실할 경우)
+        private const val MIN_IMPROVEMENTS_ITEMS = 1  // 개선점은 최소 1개 필수
+        private const val MAX_FEEDBACK_ITEMS = 5      // 유연하게 최대 5개까지 허용
         private const val MIN_MODEL_ANSWER_LENGTH = 100
         private const val MAX_MODEL_ANSWER_LENGTH = 1000
     }
@@ -70,11 +71,11 @@ class ResponseParser(
 
             // 검증
             validateScores(response.scores)
-            validateFeedbackItems(response.strengths, "strengths")
-            validateFeedbackItems(response.improvements, "improvements")
+            validateStrengths(response.strengths)
+            validateImprovements(response.improvements)
             validateModelAnswer(response.modelAnswer)
 
-            logger.info("OpenAI 응답 파싱 성공")
+            logger.info("OpenAI 응답 파싱 성공 - strengths: ${response.strengths.size}개, improvements: ${response.improvements.size}개")
 
             return ParsedFeedback(
                 logicScore = response.scores.logic,
@@ -109,12 +110,27 @@ class ResponseParser(
         }
     }
 
-    private fun validateFeedbackItems(items: List<String>, fieldName: String) {
-        require(items.size in MIN_FEEDBACK_ITEMS..MAX_FEEDBACK_ITEMS) {
-            "${fieldName}는 ${MIN_FEEDBACK_ITEMS}-${MAX_FEEDBACK_ITEMS}개여야 합니다 (현재: ${items.size}개)"
+    /**
+     * strengths 검증 (0개도 허용 - 답변이 부실할 경우)
+     */
+    private fun validateStrengths(items: List<String>) {
+        require(items.size in MIN_STRENGTHS_ITEMS..MAX_FEEDBACK_ITEMS) {
+            "strengths는 ${MIN_STRENGTHS_ITEMS}-${MAX_FEEDBACK_ITEMS}개여야 합니다 (현재: ${items.size}개)"
         }
         require(items.all { it.isNotBlank() }) {
-            "${fieldName}에 빈 항목이 포함되어 있습니다"
+            "strengths에 빈 항목이 포함되어 있습니다"
+        }
+    }
+
+    /**
+     * improvements 검증 (최소 1개 필수 - 사용자에게 피드백 제공)
+     */
+    private fun validateImprovements(items: List<String>) {
+        require(items.size in MIN_IMPROVEMENTS_ITEMS..MAX_FEEDBACK_ITEMS) {
+            "improvements는 최소 ${MIN_IMPROVEMENTS_ITEMS}개 이상이어야 합니다 (현재: ${items.size}개)"
+        }
+        require(items.all { it.isNotBlank() }) {
+            "improvements에 빈 항목이 포함되어 있습니다"
         }
     }
 

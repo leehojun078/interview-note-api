@@ -1,0 +1,337 @@
+# 면접 리뷰 웹 애플리케이션 (Interview Review API)
+
+취업 준비생을 위한 AI 기반 면접 답변 평가 및 리뷰 서비스
+
+[![Kotlin](https://img.shields.io/badge/Kotlin-1.9.25-blue.svg)](https://kotlinlang.org)
+[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5.14-brightgreen.svg)](https://spring.io/projects/spring-boot)
+[![OpenAI](https://img.shields.io/badge/OpenAI-gpt--4o--mini-orange.svg)](https://openai.com)
+
+## 📋 목차
+
+- [프로젝트 소개](#프로젝트-소개)
+- [주요 기능](#주요-기능)
+- [기술 스택](#기술-스택)
+- [시작하기](#시작하기)
+- [OpenAI API 설정](#openai-api-설정)
+- [실행 방법](#실행-방법)
+- [비용 정보](#비용-정보)
+- [프로젝트 구조](#프로젝트-구조)
+- [개발 문서](#개발-문서)
+
+---
+
+## 프로젝트 소개
+
+면접 질문에 텍스트로 답변하면, **AI가 평가와 개선 포인트, 모범답변을 제공**하는 웹 애플리케이션입니다.
+
+### 핵심 가치
+
+- **실사용성**: 실제 면접 준비에 도움이 되는 서비스
+- **리뷰 중심**: 단순 질문 은행이 아닌, 답변 개선 과정을 기록
+- **AI 평가**: OpenAI GPT-4o-mini를 활용한 객관적 피드백
+- **비용 최적화**: 중복 방지 및 Rate Limiting으로 API 비용 절감
+
+---
+
+## 주요 기능
+
+### ✅ Phase 1 (완료)
+- 📝 면접 질문 조회 (카테고리별, 난이도별)
+- ✍️ 답변 작성 및 저장
+- 📊 리뷰 이력 조회
+- 🎯 더미 AI 피드백 (초기 개발용)
+
+### ✅ Phase 2 (완료)
+- 🤖 **실제 OpenAI API 연동** (gpt-4o-mini)
+- 📈 **4가지 평가 기준**: 논리성, 구체성, 직무적합성, 전달력
+- 💡 **AI 생성 모범답변** (400-600자)
+- ⚡ **중복 요청 방지** (24시간 캐싱, 1,700배+ 속도 향상)
+- 🛡️ **Rate Limiting** (IP당 33회/시간)
+- 🔄 **Fallback 메커니즘** (API 오류 시 자동 대체)
+
+---
+
+## 기술 스택
+
+### Backend
+- **Language**: Kotlin 1.9.25 (Java 21)
+- **Framework**: Spring Boot 3.5.14
+- **ORM**: Spring Data JPA + Hibernate
+- **Database**: H2 (개발) / PostgreSQL (프로덕션)
+- **Migration**: Flyway
+- **Build Tool**: Gradle (Kotlin DSL)
+
+### AI Integration
+- **AI Model**: OpenAI GPT-4o-mini
+- **HTTP Client**: RestTemplate (직접 구현)
+- **Response Format**: JSON Mode (구조화된 응답)
+- **Cache**: SHA-256 해시 기반 중복 방지
+- **Rate Limiting**: Caffeine Cache
+
+### Frontend
+- **Template Engine**: Thymeleaf
+- **UI Enhancement**: HTMX (예정)
+
+### Testing
+- **Framework**: JUnit 5, Spring Boot Test
+- **Mocking**: Mockito Kotlin
+
+---
+
+## 시작하기
+
+### 사전 요구사항
+
+- **Java 21** 이상
+- **Gradle** (래퍼 포함)
+- **OpenAI API 키** (무료 또는 유료 계정)
+
+### 클론 및 빌드
+
+```bash
+# 저장소 클론
+git clone <repository-url>
+cd interview-note-api
+
+# 빌드
+./gradlew build
+
+# 테스트
+./gradlew test
+```
+
+---
+
+## OpenAI API 설정
+
+### 1. API 키 발급
+
+1. [OpenAI Platform](https://platform.openai.com/signup) 가입
+2. [API Keys](https://platform.openai.com/api-keys) 페이지에서 새 키 생성
+3. 생성된 키를 안전하게 보관
+
+### 2. 환경변수 설정
+
+#### 방법 A: `.env` 파일 (권장)
+
+프로젝트 루트에 `.env` 파일 생성:
+
+```bash
+# .env
+OPENAI_API_KEY=sk-proj-your-api-key-here
+```
+
+**⚠️ 주의**: `.env` 파일은 `.gitignore`에 추가되어 있어 Git에 커밋되지 않습니다.
+
+#### 방법 B: 시스템 환경변수
+
+**macOS/Linux**:
+```bash
+export OPENAI_API_KEY=sk-proj-your-api-key-here
+```
+
+**Windows (PowerShell)**:
+```powershell
+$env:OPENAI_API_KEY="sk-proj-your-api-key-here"
+```
+
+### 3. Spring Boot 설정 확인
+
+`src/main/resources/application.properties`에서 설정 확인:
+
+```properties
+# OpenAI Configuration
+openai.api-key=${OPENAI_API_KEY}
+openai.model=gpt-4o-mini
+openai.prompt-version=v1.0
+openai.max-tokens=800
+openai.temperature=0.7
+openai.timeout=30000
+```
+
+---
+
+## 실행 방법
+
+### 터미널에서 실행
+
+```bash
+# .env 파일 로드 후 실행
+export $(cat .env | grep -v '^#' | xargs)
+./gradlew bootRun
+```
+
+애플리케이션이 `http://localhost:8080`에서 실행됩니다.
+
+### IntelliJ IDEA에서 실행
+
+1. `InterviewNoteApiApplication.kt` 우클릭
+2. `Modify Run Configuration...` 선택
+3. **Environment variables** 섹션에 추가:
+   ```
+   OPENAI_API_KEY=sk-proj-your-api-key-here
+   ```
+4. `Run` 클릭
+
+### H2 콘솔 접근
+
+개발 중 데이터베이스 확인:
+
+```
+URL: http://localhost:8080/h2-console
+JDBC URL: jdbc:h2:mem:interviewdb
+Username: sa
+Password: (비어있음)
+```
+
+---
+
+## 비용 정보
+
+### OpenAI API 비용 (gpt-4o-mini 기준)
+
+**요금** (2026년 1월 기준):
+- 입력: $0.15 / 1M 토큰
+- 출력: $0.60 / 1M 토큰
+
+**1회 평가 비용**:
+```
+입력 토큰: ~300 (프롬프트 + 답변)
+출력 토큰: ~200 (평가 JSON)
+
+입력 비용: 300 × $0.15 / 1M = $0.000045
+출력 비용: 200 × $0.60 / 1M = $0.00012
+──────────────────────────────────────
+총 비용: ~$0.0002 (약 0.2원)
+```
+
+### 월간 비용 추정
+
+| 일일 평가 수 | 월간 평가 수 | 비용 (캐시 없음) | 비용 (캐시 50%) |
+|------------|------------|----------------|----------------|
+| 10회 | 300회 | $0.06 | $0.03 |
+| 100회 | 3,000회 | $0.60 | $0.30 |
+| 1,000회 | 30,000회 | $6.00 | $3.00 |
+
+### Rate Limit 보호
+
+**최대 비용 (단일 IP)**:
+```
+33회/시간 × 24시간 = 792회/일
+792회/일 × 30일 = 23,760회/월
+23,760회 × $0.0002 = $4.75/월
+```
+
+### 비용 절감 기능
+
+1. **중복 요청 방지** (24시간 캐싱)
+   - 동일 질문 + 답변 재평가 차단
+   - API 호출 0회 (캐시 히트 시)
+   - 속도: 1,700배+ 빠름
+
+2. **Rate Limiting** (IP당 33회/시간)
+   - 악의적 사용 방지
+   - 예산 초과 방지
+
+3. **Fallback 메커니즘**
+   - API 오류 시 더미 피드백 제공
+   - 사용자 경험 보장
+
+---
+
+## 프로젝트 구조
+
+```
+src/
+├── main/
+│   ├── kotlin/.../interviewnoteapi/
+│   │   ├── config/
+│   │   │   ├── ObjectMapperConfig.kt
+│   │   │   └── OpenAiConfig.kt
+│   │   ├── controller/
+│   │   │   ├── AnswerController.kt
+│   │   │   ├── QuestionController.kt
+│   │   │   └── ReviewController.kt
+│   │   ├── domain/
+│   │   │   ├── AiFeedback.kt
+│   │   │   ├── InterviewAnswer.kt
+│   │   │   └── Question.kt
+│   │   ├── dto/
+│   │   ├── exception/
+│   │   │   ├── AiExceptions.kt
+│   │   │   ├── GlobalExceptionHandler.kt
+│   │   │   └── RateLimitExceededException.kt
+│   │   ├── repository/
+│   │   ├── service/
+│   │   │   ├── ai/
+│   │   │   │   ├── AiClient.kt
+│   │   │   │   ├── OpenAiClientImpl.kt
+│   │   │   │   ├── PromptBuilder.kt
+│   │   │   │   └── ResponseParser.kt
+│   │   │   ├── cache/
+│   │   │   │   └── DuplicateRequestCache.kt
+│   │   │   ├── ratelimit/
+│   │   │   │   └── RateLimitService.kt
+│   │   │   ├── AiFeedbackService.kt
+│   │   │   ├── InterviewService.kt
+│   │   │   └── QuestionService.kt
+│   │   └── InterviewNoteApiApplication.kt
+│   └── resources/
+│       ├── db/migration/
+│       │   ├── V1__Create_tables.sql
+│       │   ├── V2__Insert_initial_questions.sql
+│       │   └── V3__add_answer_text_hash.sql
+│       ├── templates/
+│       └── application.properties
+└── test/
+    └── kotlin/.../interviewnoteapi/
+        ├── controller/
+        ├── service/
+        └── integration/
+            └── Phase2EManualTest.kt
+```
+
+---
+
+## 개발 문서
+
+프로젝트 세부 사항은 다음 문서를 참조하세요:
+
+- **[CLAUDE.md](./CLAUDE.md)** - 프로젝트 전체 가이드 (아키텍처, 도메인 모델, 코딩 규칙)
+- **[phase2_implementation_plan.md](./phase2_implementation_plan.md)** - Phase 2 AI 연동 상세 설계
+
+---
+
+## 테스트
+
+### 단위 테스트
+
+```bash
+./gradlew test
+```
+
+### 통합 테스트 (실제 OpenAI API)
+
+```bash
+# Phase 2E 테스트 (수동)
+export $(cat .env | grep -v '^#' | xargs)
+./gradlew test --tests "*Phase2EManualTest"
+```
+
+**⚠️ 주의**: 실제 OpenAI API를 호출하므로 비용이 발생합니다.
+
+---
+
+## 라이선스
+
+이 프로젝트는 개인 포트폴리오용으로 제작되었습니다.
+
+---
+
+## 문의
+
+프로젝트 관련 문의사항이 있으시면 이슈를 등록해주세요.
+
+---
+
+**Built with ❤️ using Kotlin & Spring Boot**

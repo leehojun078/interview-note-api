@@ -23,7 +23,7 @@ data class ParsedFeedback(
 /**
  * OpenAI JSON 응답 구조 (내부용)
  */
-private data class OpenAiResponse(
+internal data class OpenAiResponse(
     val scores: Scores,
     val strengths: List<String>,
     val improvements: List<String>,

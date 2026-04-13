@@ -104,7 +104,7 @@ class OpenAiClientImpl(
     /**
      * OpenAI API 요청 본문
      */
-    private data class OpenAiRequest(
+    internal data class OpenAiRequest(
         val model: String,
         val messages: List<Message>,
         val temperature: Double,
@@ -117,7 +117,7 @@ class OpenAiClientImpl(
     /**
      * 메시지
      */
-    private data class Message(
+    internal data class Message(
         val role: String,
         val content: String
     )
@@ -125,14 +125,14 @@ class OpenAiClientImpl(
     /**
      * 응답 형식
      */
-    private data class ResponseFormat(
+    internal data class ResponseFormat(
         val type: String
     )
 
     /**
      * OpenAI API 응답
      */
-    private data class OpenAiResponse(
+    internal data class OpenAiResponse(
         val id: String?,
         val choices: List<Choice>,
         val usage: Usage?
@@ -141,7 +141,7 @@ class OpenAiClientImpl(
     /**
      * 선택지
      */
-    private data class Choice(
+    internal data class Choice(
         val message: Message?,
         @JsonProperty("finish_reason")
         val finishReason: String?
@@ -150,7 +150,7 @@ class OpenAiClientImpl(
     /**
      * 토큰 사용량
      */
-    private data class Usage(
+    internal data class Usage(
         @JsonProperty("prompt_tokens")
         val promptTokens: Int?,
         @JsonProperty("completion_tokens")

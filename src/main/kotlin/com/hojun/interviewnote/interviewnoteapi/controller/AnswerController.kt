@@ -1,6 +1,7 @@
 package com.hojun.interviewnote.interviewnoteapi.controller
 
 import com.hojun.interviewnote.interviewnoteapi.dto.AnswerSubmitDto
+import com.hojun.interviewnote.interviewnoteapi.exception.RateLimitExceededException
 import com.hojun.interviewnote.interviewnoteapi.service.InterviewService
 import com.hojun.interviewnote.interviewnoteapi.service.ratelimit.RateLimitService
 import jakarta.servlet.http.HttpServletRequest
@@ -27,8 +28,12 @@ class AnswerController(
         request: HttpServletRequest
     ): String {
         // Phase 2D: Rate Limit 체크
-        val clientIp = getClientIp(request)
-        rateLimitService.checkAndRecordRequest(clientIp)
+        try {
+            val clientIp = getClientIp(request)
+            rateLimitService.checkAndRecordRequest(clientIp)
+        } catch (e: RateLimitExceededException) {
+            return "redirect:/questions/$questionId/answer?error=ratelimit"
+        }
 
         if (bindingResult.hasErrors()) {
             model.addAttribute("errors", bindingResult.allErrors)

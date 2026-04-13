@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <!-- 개발 환경: 콘솔에 사람이 읽기 쉬운 형식으로 출력 -->
+    <springProfile name="dev">
+        <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+            <encoder>
+                <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+            </encoder>
+        </appender>
+        <root level="DEBUG">
+            <appender-ref ref="CONSOLE"/>
+        </root>
+        <logger name="com.hojun.interviewnote" level="DEBUG"/>
+        <logger name="org.springframework.web" level="DEBUG"/>
+    </springProfile>
+
+    <!-- 프로덕션 환경: JSON 형식으로 구조화된 로그 출력 -->
+    <springProfile name="prod">
+        <appender name="JSON" class="ch.qos.logback.core.ConsoleAppender">
+            <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+                <!-- MDC에서 requestId, ip, userId 포함 -->
+                <includeMdcKeyName>requestId</includeMdcKeyName>
+                <includeMdcKeyName>ip</includeMdcKeyName>
+                <includeMdcKeyName>userId</includeMdcKeyName>
+
+                <!-- 로그 필드 커스터마이징 -->
+                <fieldNames>
+                    <timestamp>timestamp</timestamp>
+                    <version>version</version>
+                    <message>message</message>
+                    <logger>logger</logger>
+                    <thread>thread</thread>
+                    <level>level</level>
+                    <levelValue>levelValue</levelValue>
+                </fieldNames>
+
+                <!-- 추가 컨텍스트 정보 -->
+                <customFields>{"application":"interview-note-api"}</customFields>
+            </encoder>
+        </appender>
+
+        <root level="INFO">
+            <appender-ref ref="JSON"/>
+        </root>
+        <logger name="com.hojun.interviewnote" level="INFO"/>
+        <logger name="org.springframework.web" level="INFO"/>
+    </springProfile>
+
+    <!-- 기본 프로파일 (프로파일 미지정 시) -->
+    <springProfile name="default">
+        <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+            <encoder>
+                <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+            </encoder>
+        </appender>
+        <root level="INFO">
+            <appender-ref ref="CONSOLE"/>
+        </root>
+        <logger name="com.hojun.interviewnote" level="DEBUG"/>
+    </springProfile>
+</configuration>

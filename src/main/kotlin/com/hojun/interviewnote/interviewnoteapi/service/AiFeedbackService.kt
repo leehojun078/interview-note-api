@@ -11,6 +11,8 @@ import com.hojun.interviewnote.interviewnoteapi.service.ai.AiClient
 import com.hojun.interviewnote.interviewnoteapi.service.ai.PromptBuilder
 import com.hojun.interviewnote.interviewnoteapi.service.ai.ResponseParser
 import com.hojun.interviewnote.interviewnoteapi.service.cache.DuplicateRequestCache
+import io.micrometer.core.instrument.MeterRegistry
+import io.micrometer.core.instrument.Timer
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -25,10 +27,18 @@ class AiFeedbackService(
     private val promptBuilder: PromptBuilder,
     private val responseParser: ResponseParser,
     private val openAiProperties: OpenAiProperties,
-    private val duplicateRequestCache: DuplicateRequestCache
+    private val duplicateRequestCache: DuplicateRequestCache,
+    private val meterRegistry: MeterRegistry
 ) {
 
     private val logger = LoggerFactory.getLogger(javaClass)
+
+    // 메트릭 정의 (lazy 초기화로 테스트 호환성 확보)
+    private val aiCallsCounter by lazy { meterRegistry.counter("ai.calls.total") }
+    private val aiCallsTimer by lazy { meterRegistry.timer("ai.calls.duration") }
+    private val cacheHitsCounter by lazy { meterRegistry.counter("cache.hits", "type", "duplicate_request") }
+    private val cacheMissesCounter by lazy { meterRegistry.counter("cache.misses", "type", "duplicate_request") }
+    private val tokenUsageCounter by lazy { meterRegistry.counter("ai.tokens.total") }
 
     companion object {
         // 답변 길이 기준
@@ -56,24 +66,42 @@ class AiFeedbackService(
             // 1. 캐시 확인 (중복 방지)
             val cached = duplicateRequestCache.findCached(question.id, answer.answerText)
             if (cached != null) {
+                cacheHitsCounter.increment()
                 logger.info("캐시된 피드백 반환 - 피드백 ID: ${cached.id}")
                 return cached
             }
+            cacheMissesCounter.increment()
 
             // 2. 프롬프트 생성
             val systemPrompt = promptBuilder.buildSystemPrompt(question.jobField, question.targetJob)
             val userPrompt = promptBuilder.buildUserPrompt(question, answer.answerText)
 
-            // 3. AI 클라이언트 호출
-            val rawResponse = aiClient.requestFeedback(systemPrompt, userPrompt)
+            // 3. AI 클라이언트 호출 (메트릭 기록)
+            val (rawResponse, parsedFeedback) = aiCallsTimer.recordCallable {
+                aiCallsCounter.increment()
+                logger.info("AI 호출 시작 - questionId: ${question.id}, answerLength: ${answer.answerText.length}")
 
-            // 4. 응답 파싱
-            val parsedFeedback = responseParser.parseOpenAiResponse(rawResponse, rawResponse)
+                val response = aiClient.requestFeedback(systemPrompt, userPrompt)
+
+                // 4. 응답 파싱
+                val feedback = responseParser.parseOpenAiResponse(response, response)
+
+                logger.info("AI 호출 완료 - questionId: ${question.id}")
+                Pair(response, feedback)
+            }!!
 
             // 5. 해시 생성
             val answerTextHash = duplicateRequestCache.generateHash(question.id, answer.answerText)
 
-            // 6. AiFeedback 엔티티 생성
+            // 6. 토큰 사용량 추정
+            val tokenUsageInput = estimateTokens(systemPrompt + userPrompt)
+            val tokenUsageOutput = estimateTokens(rawResponse)
+            val totalTokens = tokenUsageInput + tokenUsageOutput
+
+            // 토큰 사용량 메트릭 기록
+            tokenUsageCounter.increment(totalTokens.toDouble())
+
+            // 7. AiFeedback 엔티티 생성
             val aiFeedback = AiFeedback(
                 interviewAnswerId = answer.id,
                 logicScore = parsedFeedback.logicScore,
@@ -87,16 +115,16 @@ class AiFeedbackService(
                 jobField = question.jobField,
                 modelName = openAiProperties.model,
                 promptVersion = openAiProperties.promptVersion,
-                tokenUsageInput = estimateTokens(systemPrompt + userPrompt),
-                tokenUsageOutput = estimateTokens(rawResponse),
+                tokenUsageInput = tokenUsageInput,
+                tokenUsageOutput = tokenUsageOutput,
                 rawResponse = rawResponse,
                 answerTextHash = answerTextHash,
                 createdAt = LocalDateTime.now()
             )
 
-            // 7. 저장 및 반환
+            // 8. 저장 및 반환
             val savedFeedback = aiFeedbackRepository.save(aiFeedback)
-            logger.info("AI 피드백 생성 완료 - feedbackId: ${savedFeedback.id}")
+            logger.info("AI 피드백 생성 완료 - feedbackId: ${savedFeedback.id}, totalTokens: $totalTokens")
             savedFeedback
 
         } catch (e: AiException) {

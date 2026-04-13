@@ -10,16 +10,22 @@ import com.hojun.interviewnote.interviewnoteapi.service.ai.AiClient
 import com.hojun.interviewnote.interviewnoteapi.service.ai.PromptBuilder
 import com.hojun.interviewnote.interviewnoteapi.service.ai.ResponseParser
 import com.hojun.interviewnote.interviewnoteapi.service.cache.DuplicateRequestCache
+import io.micrometer.core.instrument.Counter
+import io.micrometer.core.instrument.MeterRegistry
+import io.micrometer.core.instrument.Timer
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.InjectMocks
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
+import org.mockito.Mockito.lenient
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.whenever
 import java.time.LocalDateTime
+import java.util.concurrent.Callable
 
 @ExtendWith(MockitoExtension::class)
 class AiFeedbackServiceTest {
@@ -45,8 +51,29 @@ class AiFeedbackServiceTest {
     @Mock
     private lateinit var duplicateRequestCache: DuplicateRequestCache
 
+    @Mock
+    private lateinit var meterRegistry: MeterRegistry
+
+    @Mock
+    private lateinit var mockCounter: Counter
+
+    @Mock
+    private lateinit var mockTimer: Timer
+
     @InjectMocks
     private lateinit var aiFeedbackService: AiFeedbackService
+
+    @BeforeEach
+    fun setUp() {
+        // MeterRegistry Mock 설정 (lenient로 설정하여 UnnecessaryStubbingException 방지)
+        lenient().`when`(meterRegistry.counter(any<String>())).thenReturn(mockCounter)
+        lenient().`when`(meterRegistry.counter(any<String>(), any<String>(), any<String>())).thenReturn(mockCounter)
+        lenient().`when`(meterRegistry.timer(any<String>())).thenReturn(mockTimer)
+        lenient().`when`(mockTimer.recordCallable(any<Callable<Any>>())).thenAnswer { invocation ->
+            val callable = invocation.getArgument<Callable<Any>>(0)
+            callable.call()
+        }
+    }
 
     private fun createAnswer(answerText: String): InterviewAnswer {
         return InterviewAnswer(

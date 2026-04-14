@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  # PostgreSQL 데이터베이스
+  postgres:
+    image: postgres:15-alpine
+    container_name: interview-postgres
+    environment:
+      POSTGRES_DB: interviewdb
+      POSTGRES_USER: interviewuser
+      POSTGRES_PASSWORD: interviewpass
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U interviewuser -d interviewdb"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - interview-network
+
+  # Spring Boot 애플리케이션
+  app:
+    build: .
+    container_name: interview-note-api
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/interviewdb
+      SPRING_DATASOURCE_USERNAME: interviewuser
+      SPRING_DATASOURCE_PASSWORD: interviewpass
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/actuator/health/liveness"]
+      interval: 30s
+      timeout: 3s
+      start_period: 40s
+      retries: 3
+    networks:
+      - interview-network
+
+volumes:
+  postgres_data:
+
+networks:
+  interview-network:
+    driver: bridge

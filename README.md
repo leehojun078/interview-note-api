@@ -49,6 +49,11 @@
 - 🛡️ **Rate Limiting** (IP당 33회/시간)
 - 🔄 **Fallback 메커니즘** (API 오류 시 자동 대체)
 
+### ✅ Phase 3 (완료)
+- 🎨 **UI/UX 개선**: Tailwind CSS, HTMX, 에러 페이지
+- 📊 **로깅 & 모니터링**: JSON 로그, Prometheus 메트릭, Health Check
+- 🐳 **Docker 컨테이너화**: Multi-stage 빌드, Docker Compose, 환경별 설정
+
 ---
 
 ## 기술 스택
@@ -70,7 +75,18 @@
 
 ### Frontend
 - **Template Engine**: Thymeleaf
-- **UI Enhancement**: HTMX (예정)
+- **UI Framework**: Tailwind CSS
+- **UI Enhancement**: HTMX
+
+### Monitoring & Logging
+- **Logging**: Logback + Logstash Encoder (JSON)
+- **Metrics**: Micrometer + Prometheus
+- **Health Check**: Spring Boot Actuator
+
+### DevOps
+- **Container**: Docker (Multi-stage build)
+- **Orchestration**: Docker Compose
+- **Environments**: dev (H2) / prod (PostgreSQL)
 
 ### Testing
 - **Framework**: JUnit 5, Spring Boot Test
@@ -186,6 +202,77 @@ Password: (비어있음)
 
 ---
 
+## Docker로 실행 (권장)
+
+### 사전 요구사항
+
+- Docker 20.10 이상
+- Docker Compose v2.0 이상
+
+### 빠른 시작
+
+**1. 환경변수 설정**
+
+```bash
+# .env 파일 생성
+cp .env.example .env
+
+# .env 파일 편집
+vim .env
+```
+
+`.env` 파일 내용:
+```bash
+OPENAI_API_KEY=sk-proj-your-actual-api-key-here
+SPRING_PROFILES_ACTIVE=prod
+```
+
+**2. Docker Compose로 실행**
+
+```bash
+# 전체 스택 실행 (PostgreSQL + 애플리케이션)
+docker-compose up -d
+
+# 로그 확인
+docker-compose logs -f app
+
+# 상태 확인
+docker-compose ps
+```
+
+**3. 애플리케이션 접속**
+
+- **웹**: http://localhost:8080
+- **Health Check**: http://localhost:8080/actuator/health
+- **Prometheus 메트릭**: http://localhost:8080/actuator/prometheus
+
+**4. 중지**
+
+```bash
+# 중지
+docker-compose down
+
+# 중지 및 데이터 삭제
+docker-compose down -v
+```
+
+### 개발 환경으로 실행
+
+```bash
+# .env 파일에서 프로파일 변경
+SPRING_PROFILES_ACTIVE=dev
+
+# 재시작
+docker-compose restart app
+```
+
+### 이미지 크기
+
+- **빌드 이미지**: ~180MB (Alpine Linux + JRE 21)
+- **최적화**: Multi-stage 빌드, Gradle 캐싱
+
+---
+
 ## 비용 정보
 
 ### OpenAI API 비용 (gpt-4o-mini 기준)
@@ -298,7 +385,9 @@ src/
 프로젝트 세부 사항은 다음 문서를 참조하세요:
 
 - **[CLAUDE.md](./CLAUDE.md)** - 프로젝트 전체 가이드 (아키텍처, 도메인 모델, 코딩 규칙)
+- **[SETUP_GUIDE.md](./SETUP_GUIDE.md)** - 환경 설정 가이드 (OpenAI API, IntelliJ 등)
 - **[phase2_implementation_plan.md](./phase2_implementation_plan.md)** - Phase 2 AI 연동 상세 설계
+- **[phase3_implementation_plan.md](./phase3_implementation_plan.md)** - Phase 3 완성도 향상 계획
 
 ---
 

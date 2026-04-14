@@ -8,7 +8,9 @@
 2. [OpenAI API 키 설정](#2-openai-api-키-설정)
 3. [개발 환경별 실행 방법](#3-개발-환경별-실행-방법)
 4. [데이터베이스 설정](#4-데이터베이스-설정)
-5. [문제 해결](#5-문제-해결)
+5. [Docker로 실행 (권장)](#5-docker로-실행-권장)
+6. [문제 해결](#6-문제-해결)
+7. [프로덕션 배포 가이드](#7-프로덕션-배포-가이드)
 
 ---
 
@@ -214,7 +216,278 @@ export SPRING_PROFILES_ACTIVE=prod
 
 ---
 
-## 5. 문제 해결
+## 5. Docker로 실행 (권장)
+
+Docker를 사용하면 환경 설정을 자동화하고 일관된 실행 환경을 보장할 수 있습니다.
+
+### 사전 요구사항
+
+**Docker 설치**:
+- **macOS**: [Docker Desktop for Mac](https://docs.docker.com/desktop/install/mac-install/)
+- **Windows**: [Docker Desktop for Windows](https://docs.docker.com/desktop/install/windows-install/)
+- **Linux**: [Docker Engine](https://docs.docker.com/engine/install/)
+
+**버전 확인**:
+```bash
+docker --version   # 20.10 이상
+docker-compose --version  # v2.0 이상
+```
+
+### 빠른 시작
+
+#### 1. 환경변수 설정
+
+```bash
+# .env 파일 생성
+cp .env.example .env
+
+# .env 파일 편집
+vim .env  # 또는 원하는 에디터 사용
+```
+
+`.env` 파일 내용:
+```bash
+OPENAI_API_KEY=sk-proj-your-actual-api-key-here
+SPRING_PROFILES_ACTIVE=prod
+SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/interviewdb
+SPRING_DATASOURCE_USERNAME=interviewuser
+SPRING_DATASOURCE_PASSWORD=interviewpass
+```
+
+#### 2. Docker Compose로 실행
+
+```bash
+# 전체 스택 실행 (PostgreSQL + 애플리케이션)
+docker-compose up -d
+
+# 로그 확인
+docker-compose logs -f app
+
+# 상태 확인
+docker-compose ps
+```
+
+**기대 출력**:
+```
+NAME                  STATUS         PORTS
+interview-postgres    Up (healthy)   0.0.0.0:5432->5432/tcp
+interview-note-api    Up (healthy)   0.0.0.0:8080->8080/tcp
+```
+
+#### 3. 애플리케이션 접속
+
+- **웹 애플리케이션**: http://localhost:8080
+- **Health Check**: http://localhost:8080/actuator/health
+- **Prometheus 메트릭**: http://localhost:8080/actuator/prometheus
+
+#### 4. 중지 및 재시작
+
+```bash
+# 중지
+docker-compose down
+
+# 중지 및 데이터 삭제 (완전 초기화)
+docker-compose down -v
+
+# 재시작
+docker-compose restart app
+
+# 특정 서비스만 재시작
+docker-compose restart postgres
+```
+
+### 개발 환경으로 실행
+
+**H2 데이터베이스 사용** (PostgreSQL 없이):
+
+```bash
+# .env 파일 수정
+SPRING_PROFILES_ACTIVE=dev
+
+# 애플리케이션만 실행 (PostgreSQL 제외)
+docker-compose up -d app
+# 또는
+docker run -d \
+  --name interview-note-api \
+  -p 8080:8080 \
+  -e SPRING_PROFILES_ACTIVE=dev \
+  -e OPENAI_API_KEY=sk-proj-... \
+  interview-note-api:latest
+```
+
+### 이미지 빌드 및 관리
+
+```bash
+# 이미지 빌드
+docker build -t interview-note-api:latest .
+
+# 이미지 크기 확인
+docker images interview-note-api
+# 예상: ~180MB
+
+# 캐시 없이 재빌드
+docker-compose build --no-cache
+
+# 이미지 삭제
+docker rmi interview-note-api:latest
+```
+
+### 데이터베이스 관리
+
+#### PostgreSQL 접속
+
+```bash
+# 컨테이너 내부 psql 접속
+docker-compose exec postgres psql -U interviewuser -d interviewdb
+
+# SQL 실행 예시
+\dt  # 테이블 목록
+SELECT * FROM questions LIMIT 5;
+\q   # 종료
+```
+
+#### 데이터베이스 백업
+
+```bash
+# 백업
+docker-compose exec postgres pg_dump -U interviewuser interviewdb > backup_$(date +%Y%m%d).sql
+
+# 복원
+docker-compose exec -T postgres psql -U interviewuser -d interviewdb < backup_20260414.sql
+```
+
+#### 데이터 초기화
+
+```bash
+# 모든 데이터 삭제 (볼륨 포함)
+docker-compose down -v
+
+# 재시작 (Flyway가 자동으로 마이그레이션 실행)
+docker-compose up -d
+```
+
+### 로그 확인
+
+```bash
+# 전체 로그
+docker-compose logs
+
+# 애플리케이션 로그만
+docker-compose logs app
+
+# PostgreSQL 로그만
+docker-compose logs postgres
+
+# 실시간 로그 (tail -f)
+docker-compose logs -f app
+
+# 최근 100줄만
+docker-compose logs --tail=100 app
+```
+
+### 메트릭 및 모니터링
+
+#### Prometheus 메트릭 수집
+
+```bash
+# 메트릭 확인
+curl http://localhost:8080/actuator/prometheus
+
+# 특정 메트릭 필터링
+curl http://localhost:8080/actuator/prometheus | grep ai_calls
+```
+
+**주요 메트릭**:
+- `ai_calls_total` - AI API 호출 횟수
+- `ai_calls_duration_seconds` - AI API 호출 지연 시간
+- `cache_hits_total` - 캐시 히트 횟수
+- `http_server_requests_seconds` - HTTP 요청 메트릭
+
+#### Health Check
+
+```bash
+# 전체 헬스 체크
+curl http://localhost:8080/actuator/health | jq .
+
+# Liveness probe
+curl http://localhost:8080/actuator/health/liveness
+
+# Readiness probe
+curl http://localhost:8080/actuator/health/readiness
+```
+
+### Docker Compose 고급 사용법
+
+#### 환경별 설정 파일
+
+```bash
+# 개발 환경
+docker-compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+
+# 프로덕션 환경
+docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+```
+
+#### 스케일링
+
+```bash
+# 애플리케이션 컨테이너 3개 실행
+docker-compose up -d --scale app=3
+
+# 로드 밸런서 필요 (별도 설정)
+```
+
+### 문제 해결 (Docker)
+
+#### 컨테이너가 시작되지 않음
+
+```bash
+# 상태 확인
+docker-compose ps
+
+# 로그 확인
+docker-compose logs app
+
+# 컨테이너 내부 접속
+docker-compose exec app sh
+```
+
+#### 포트 충돌
+
+```bash
+# 포트 8080이 이미 사용 중인 경우
+# docker-compose.yml 수정:
+ports:
+  - "8081:8080"  # 호스트 포트 변경
+```
+
+#### 데이터베이스 연결 오류
+
+```bash
+# PostgreSQL 상태 확인
+docker-compose logs postgres
+
+# PostgreSQL 재시작
+docker-compose restart postgres
+
+# 연결 테스트
+docker-compose exec app sh
+nc -zv postgres 5432
+```
+
+#### 이미지 빌드 실패
+
+```bash
+# 빌드 캐시 삭제
+docker builder prune
+
+# 전체 재빌드
+docker-compose build --no-cache --pull
+```
+
+---
+
+## 6. 문제 해결
 
 ### 문제 1: "더미 피드백"만 반환됨
 
@@ -328,25 +601,189 @@ export $(cat .env | grep -v '^#' | xargs)
 
 ---
 
-## 7. 배포 전 체크리스트
+## 7. 프로덕션 배포 가이드
 
+### Docker를 사용한 프로덕션 배포
+
+#### 1. 환경변수 설정
+
+**프로덕션 서버에서**:
+```bash
+# .env 파일 생성 (민감 정보는 Secret Manager 사용 권장)
+cat > .env << EOF
+OPENAI_API_KEY=sk-proj-production-key-here
+SPRING_PROFILES_ACTIVE=prod
+SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/interviewdb
+SPRING_DATASOURCE_USERNAME=interviewuser
+SPRING_DATASOURCE_PASSWORD=strong-password-here
+EOF
+
+chmod 600 .env  # 파일 권한 제한
+```
+
+#### 2. Docker Compose로 배포
+
+```bash
+# 이미지 빌드
+docker-compose build
+
+# 프로덕션 모드로 실행
+docker-compose up -d
+
+# 헬스 체크
+curl http://localhost:8080/actuator/health
+```
+
+#### 3. 리버스 프록시 설정 (Nginx)
+
+**nginx.conf 예시**:
+```nginx
+server {
+    listen 80;
+    server_name your-domain.com;
+
+    location / {
+        proxy_pass http://localhost:8080;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    # Actuator 엔드포인트 보호
+    location /actuator {
+        deny all;
+        return 403;
+    }
+}
+```
+
+#### 4. SSL/TLS 설정 (Let's Encrypt)
+
+```bash
+# Certbot 설치
+sudo apt-get install certbot python3-certbot-nginx
+
+# SSL 인증서 발급
+sudo certbot --nginx -d your-domain.com
+
+# 자동 갱신 설정
+sudo certbot renew --dry-run
+```
+
+### AWS ECS 배포
+
+```bash
+# ECR에 이미지 푸시
+aws ecr get-login-password --region ap-northeast-2 | \
+  docker login --username AWS --password-stdin <account-id>.dkr.ecr.ap-northeast-2.amazonaws.com
+
+docker tag interview-note-api:latest \
+  <account-id>.dkr.ecr.ap-northeast-2.amazonaws.com/interview-note-api:latest
+
+docker push \
+  <account-id>.dkr.ecr.ap-northeast-2.amazonaws.com/interview-note-api:latest
+```
+
+### 모니터링 설정
+
+#### Prometheus + Grafana
+
+**docker-compose.monitoring.yml**:
+```yaml
+version: '3.8'
+services:
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+```
+
+**prometheus.yml**:
+```yaml
+scrape_configs:
+  - job_name: 'interview-note-api'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['app:8080']
+```
+
+### 배포 전 체크리스트
+
+#### 보안
 - [ ] `.env` 파일이 `.gitignore`에 포함되어 있음
-- [ ] 프로덕션 환경변수 설정 (서버/컨테이너)
-- [ ] PostgreSQL 데이터베이스 준비
+- [ ] 프로덕션 API 키 사용 (개발 키와 분리)
+- [ ] 데이터베이스 비밀번호 강력하게 설정
+- [ ] Actuator 엔드포인트 접근 제한
+- [ ] HTTPS 인증서 구성
+- [ ] 보안 헤더 설정 (CSP, HSTS 등)
+
+#### 데이터베이스
+- [ ] PostgreSQL 설치 및 설정
+- [ ] 데이터베이스 백업 자동화
 - [ ] Flyway 마이그레이션 테스트
+- [ ] Connection Pool 최적화
+
+#### 애플리케이션
+- [ ] 프로덕션 프로필 활성화 (`SPRING_PROFILES_ACTIVE=prod`)
+- [ ] 로그 레벨 조정 (INFO 이상)
 - [ ] Rate Limit 설정 확인
 - [ ] OpenAI API 예산 알림 설정
-- [ ] 로그 레벨 조정 (INFO 이상)
-- [ ] 보안 헤더 설정
-- [ ] HTTPS 인증서 구성
+- [ ] 타임존 설정 (Asia/Seoul)
+
+#### 모니터링
+- [ ] Prometheus 메트릭 수집 설정
+- [ ] Grafana 대시보드 구성
+- [ ] 로그 집계 설정 (ELK Stack 등)
+- [ ] 알림 설정 (오류, 과부하 등)
+
+#### Docker
+- [ ] 이미지 크기 최적화 확인 (<200MB)
+- [ ] Health check 정상 동작 확인
+- [ ] 재시작 정책 설정 (`restart: unless-stopped`)
+- [ ] 볼륨 백업 계획 수립
+
+### 성능 최적화
+
+#### JVM 튜닝
+
+**Dockerfile에서**:
+```dockerfile
+ENTRYPOINT ["java", \
+    "-Xms512m", \
+    "-Xmx1024m", \
+    "-XX:+UseG1GC", \
+    "-XX:MaxGCPauseMillis=200", \
+    "-jar", \
+    "app.jar"]
+```
+
+#### Connection Pool
+
+**application-prod.properties**:
+```properties
+spring.datasource.hikari.maximum-pool-size=20
+spring.datasource.hikari.minimum-idle=10
+spring.datasource.hikari.connection-timeout=30000
+```
 
 ---
 
 ## 추가 자료
 
-- [README.md](./README.md) - 프로젝트 개요
-- [CLAUDE.md](./CLAUDE.md) - 개발 가이드
-- [phase2_implementation_plan.md](./phase2_implementation_plan.md) - AI 연동 설계
+- **[README.md](./README.md)** - 프로젝트 개요
+- **[CLAUDE.md](./CLAUDE.md)** - 개발 가이드
+- **[phase2_implementation_plan.md](./phase2_implementation_plan.md)** - AI 연동 설계
+- **[phase3_implementation_plan.md](./phase3_implementation_plan.md)** - 프로덕션 준비 계획
 
 ---
 

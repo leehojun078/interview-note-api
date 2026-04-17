@@ -1,6 +1,6 @@
 -- Questions table
 CREATE TABLE questions (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    id BIGSERIAL PRIMARY KEY,
     job_field VARCHAR(50) NOT NULL DEFAULT 'IT',
     target_job VARCHAR(100) NOT NULL,
     category VARCHAR(100) NOT NULL,
@@ -13,7 +13,7 @@ CREATE TABLE questions (
 
 -- Interview Answers table
 CREATE TABLE interview_answers (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    id BIGSERIAL PRIMARY KEY,
     question_id BIGINT NOT NULL,
     answer_text TEXT NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -23,7 +23,7 @@ CREATE TABLE interview_answers (
 
 -- AI Feedbacks table
 CREATE TABLE ai_feedbacks (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    id BIGSERIAL PRIMARY KEY,
     interview_answer_id BIGINT NOT NULL,
     logic_score INT NOT NULL,
     specificity_score INT NOT NULL,

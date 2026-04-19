@@ -79,7 +79,7 @@ class ReviewServiceTest {
     }
 
     @Test
-    fun `복기 이력 목록을 조회한다`() {
+    fun `리뷰 이력 목록을 조회한다`() {
         // given
         val answer1 = createAnswer(1L, 1L)
         val answer2 = createAnswer(2L, 2L)

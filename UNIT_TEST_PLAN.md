@@ -135,8 +135,8 @@
 
 ### ReviewControllerTest
 **테스트 대상**:
-- ✅ `GET /reviews` - 복기 이력 목록
-- ✅ `GET /reviews/{id}` - 복기 상세
+- ✅ `GET /reviews` - 리뷰 이력 목록
+- ✅ `GET /reviews/{id}` - 리뷰 상세
 
 **테스트 전략**:
 - `@WebMvcTest(ReviewController::class)` 사용

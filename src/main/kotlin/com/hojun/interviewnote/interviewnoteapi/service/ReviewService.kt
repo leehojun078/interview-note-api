@@ -15,7 +15,7 @@ class ReviewService(
     private val aiFeedbackRepository: AiFeedbackRepository
 ) {
     /**
-     * 복기 이력 목록 조회 (모든 사용자)
+     * 리뷰 이력 목록 조회 (모든 사용자)
      * @deprecated Phase 4A-2에서 getUserReviews()로 대체됨
      */
     @Deprecated("사용자별 조회를 사용하세요", ReplaceWith("getUserReviews(userId)"))
@@ -41,7 +41,7 @@ class ReviewService(
     }
 
     /**
-     * 특정 사용자의 복기 이력 목록 조회
+     * 특정 사용자의 리뷰 이력 목록 조회
      * Phase 4A-2에서 추가: 사용자별 답변 이력 분리
      */
     fun getUserReviews(userId: Long): List<ReviewSummaryDto> {

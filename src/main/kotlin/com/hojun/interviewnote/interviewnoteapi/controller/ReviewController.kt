@@ -19,7 +19,7 @@ class ReviewController(
     private val userRepository: UserRepository
 ) {
     /**
-     * 복기 이력 목록 페이지
+     * 리뷰 이력 목록 페이지
      * Phase 4A-2에서 수정: 사용자별 리뷰 조회
      */
     @GetMapping
@@ -40,7 +40,7 @@ class ReviewController(
     }
 
     /**
-     * 복기 상세 페이지
+     * 리뷰 상세 페이지
      */
     @GetMapping("/{answerId}")
     fun detail(

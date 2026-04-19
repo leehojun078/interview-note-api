@@ -48,7 +48,7 @@ class ReviewControllerTest {
 
     @Test
     @WithMockUser(username = "user")
-    fun`복기 이력 목록을 렌더링한다`() {
+    fun`리뷰 이력 목록을 렌더링한다`() {
         // given
         val reviews = listOf(
             ReviewSummaryDto(
@@ -79,7 +79,7 @@ class ReviewControllerTest {
 
     @Test
     @WithMockUser(username = "user")
-    fun`복기 이력이 없으면 빈 목록을 렌더링한다`() {
+    fun`리뷰 이력이 없으면 빈 목록을 렌더링한다`() {
         // given
         whenever(userRepository.findByEmail("user")).thenReturn(testUser)
         whenever(reviewService.getUserReviews(1L)).thenReturn(emptyList())

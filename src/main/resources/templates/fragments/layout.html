@@ -1,9 +1,10 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head th:fragment="head">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title th:text="${title} ?: '면접 복기 앱'">면접 복기 앱</title>
+    <title th:text="${title} ?: '면접 리뷰 앱'">면접 리뷰 앱</title>
 
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -38,26 +39,54 @@
         <div class="flex justify-between items-center h-16">
             <div class="flex items-center">
                 <a th:href="@{/}" class="text-2xl font-bold hover:opacity-80 transition">
-                    📝 면접 복기
+                    📝 면접 리뷰
                 </a>
             </div>
-            <ul class="flex space-x-8">
+            <ul class="flex items-center space-x-6">
                 <li>
                     <a th:href="@{/}"
                        class="hover:opacity-80 transition font-medium">
                         홈
                     </a>
                 </li>
-                <li>
+
+                <!-- 로그인 상태에서만 보이는 메뉴 -->
+                <li sec:authorize="isAuthenticated()">
                     <a th:href="@{/questions}"
                        class="hover:opacity-80 transition font-medium">
                         질문 연습
                     </a>
                 </li>
-                <li>
+                <li sec:authorize="isAuthenticated()">
                     <a th:href="@{/reviews}"
                        class="hover:opacity-80 transition font-medium">
                         복기 이력
+                    </a>
+                </li>
+
+                <!-- 로그인 상태 표시 -->
+                <li sec:authorize="isAuthenticated()" class="flex items-center space-x-4 ml-4 pl-4 border-l border-white border-opacity-30">
+                    <span class="text-sm opacity-90">
+                        <span sec:authentication="name">user@example.com</span>님
+                    </span>
+                    <form th:action="@{/auth/logout}" method="post" class="inline">
+                        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                        <button type="submit"
+                                class="bg-white bg-opacity-20 hover:bg-opacity-30 px-4 py-1.5 rounded-lg transition text-sm font-medium">
+                            로그아웃
+                        </button>
+                    </form>
+                </li>
+
+                <!-- 비로그인 상태에서만 보이는 메뉴 -->
+                <li sec:authorize="!isAuthenticated()" class="flex items-center space-x-3 ml-4 pl-4 border-l border-white border-opacity-30">
+                    <a th:href="@{/auth/login}"
+                       class="hover:opacity-80 transition font-medium">
+                        로그인
+                    </a>
+                    <a th:href="@{/auth/register}"
+                       class="bg-white bg-opacity-20 hover:bg-opacity-30 px-4 py-1.5 rounded-lg transition font-medium">
+                        회원가입
                     </a>
                 </li>
             </ul>
@@ -79,8 +108,8 @@
 <footer th:fragment="footer" class="bg-gray-100 mt-auto">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div class="text-center text-gray-600">
-            <p>&copy; 2026 면접 복기 앱 | Spring Boot + Kotlin + AI</p>
-            <p class="text-sm mt-2">OpenAI GPT-4o-mini 기반 AI 피드백 시스템</p>
+            <p>&copy; 2026 면접 리뷰 앱 | Spring Boot + Kotlin + AI</p>
+            <p class="text-sm mt-2">OpenAI GPT-4o-mini 기반 AI 피드백 시스템 | Phase 4A</p>
         </div>
     </div>
 </footer>

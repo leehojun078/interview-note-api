@@ -6,12 +6,15 @@ import org.junit.jupiter.api.Test
 import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
+import org.springframework.context.annotation.Import
+import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.test.context.bean.override.mockito.MockitoBean
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.*
 
 @WebMvcTest(QuestionController::class)
+@Import(com.hojun.interviewnote.interviewnoteapi.config.SecurityConfig::class)
 class QuestionControllerTest {
 
     @Autowired
@@ -36,7 +39,8 @@ class QuestionControllerTest {
     }
 
     @Test
-    fun `필터 없이 질문 목록을 조회한다`() {
+    @WithMockUser
+    fun`필터 없이 질문 목록을 조회한다`() {
         // given
         val questions = listOf(createQuestionDto(1L), createQuestionDto(2L))
         whenever(questionService.findAll(null, null)).thenReturn(questions)
@@ -52,7 +56,8 @@ class QuestionControllerTest {
     }
 
     @Test
-    fun `카테고리 필터로 질문을 조회한다`() {
+    @WithMockUser
+    fun`카테고리 필터로 질문을 조회한다`() {
         // given
         val questions = listOf(createQuestionDto(category = "기술역량"))
         whenever(questionService.findAll("기술역량", null)).thenReturn(questions)
@@ -66,7 +71,8 @@ class QuestionControllerTest {
     }
 
     @Test
-    fun `난이도 필터로 질문을 조회한다`() {
+    @WithMockUser
+    fun`난이도 필터로 질문을 조회한다`() {
         // given
         val questions = listOf(createQuestionDto(difficulty = "EASY"))
         whenever(questionService.findAll(null, "EASY")).thenReturn(questions)
@@ -80,7 +86,8 @@ class QuestionControllerTest {
     }
 
     @Test
-    fun `카테고리와 난이도로 복합 필터링한다`() {
+    @WithMockUser
+    fun`카테고리와 난이도로 복합 필터링한다`() {
         // given
         val questions = listOf(createQuestionDto(category = "문제해결", difficulty = "HARD"))
         whenever(questionService.findAll("문제해결", "HARD")).thenReturn(questions)
@@ -98,7 +105,8 @@ class QuestionControllerTest {
     }
 
     @Test
-    fun `질문 상세 및 답변 작성 폼을 렌더링한다`() {
+    @WithMockUser
+    fun`질문 상세 및 답변 작성 폼을 렌더링한다`() {
         // given
         val question = createQuestionDto(1L)
         whenever(questionService.findDtoById(1L)).thenReturn(question)

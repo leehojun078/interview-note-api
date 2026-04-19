@@ -58,6 +58,7 @@ class Phase2EManualTest {
         val answer = interviewAnswerRepository.save(
             InterviewAnswer(
                 questionId = question.id,
+                userId = 1L,
                 answerText = """
                 Spring Boot의 가장 큰 장점은 개발 생산성입니다.
                 자동 설정 기능(Auto Configuration)으로 인해 복잡한 XML 설정 없이 빠르게 프로젝트를 시작할 수 있습니다.
@@ -141,6 +142,7 @@ class Phase2EManualTest {
         val answer = interviewAnswerRepository.save(
             InterviewAnswer(
                 questionId = question.id,
+                userId = 1L,
                 answerText = """
                     Spring Boot는 설정이 간편하고 개발 생산성이 높습니다.
                     자동 설정 기능으로 복잡한 XML 없이 바로 개발을 시작할 수 있습니다.

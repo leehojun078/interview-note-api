@@ -1,8 +1,11 @@
 package com.hojun.interviewnote.interviewnoteapi.controller
 
+import com.hojun.interviewnote.interviewnoteapi.domain.User
+import com.hojun.interviewnote.interviewnoteapi.domain.UserRole
 import com.hojun.interviewnote.interviewnoteapi.dto.AnswerWithFeedbackDto
 import com.hojun.interviewnote.interviewnoteapi.dto.FeedbackDto
 import com.hojun.interviewnote.interviewnoteapi.exception.RateLimitExceededException
+import com.hojun.interviewnote.interviewnoteapi.repository.UserRepository
 import com.hojun.interviewnote.interviewnoteapi.service.InterviewService
 import com.hojun.interviewnote.interviewnoteapi.service.ratelimit.RateLimitService
 import com.hojun.interviewnote.interviewnoteapi.service.validation.AnswerValidator
@@ -14,14 +17,18 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
+import org.springframework.context.annotation.Import
+import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.test.context.bean.override.mockito.MockitoBean
 import org.springframework.test.web.servlet.MockMvc
+import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.*
 import java.time.LocalDateTime
 
 @WebMvcTest(AnswerController::class)
+@Import(com.hojun.interviewnote.interviewnoteapi.config.SecurityConfig::class)
 class AnswerControllerTest {
 
     @Autowired
@@ -36,10 +43,25 @@ class AnswerControllerTest {
     @MockitoBean
     private lateinit var answerValidator: AnswerValidator
 
+    @MockitoBean
+    private lateinit var userRepository: UserRepository
+
+    private val testUser = User(
+        id = 1L,
+        email = "test@example.com",
+        passwordHash = "hashed",
+        name = "Test User",
+        role = UserRole.USER,
+        isActive = true,
+        createdAt = LocalDateTime.now()
+    )
+
     @org.junit.jupiter.api.BeforeEach
     fun setUp() {
         // 기본적으로 모든 답변은 검증 통과로 설정
         whenever(answerValidator.validate(any())).thenReturn(ValidationResult.Valid)
+        // 인증된 사용자 mock
+        whenever(userRepository.findByEmail("user")).thenReturn(testUser)
     }
 
     private fun createAnswerWithFeedback(): AnswerWithFeedbackDto {
@@ -65,58 +87,67 @@ class AnswerControllerTest {
     }
 
     @Test
+    @WithMockUser(username = "user")
     fun `정상적인 답변 제출시 피드백 페이지로 리다이렉트한다`() {
         // given
         val result = createAnswerWithFeedback()
-        whenever(interviewService.submitAnswer(any())).thenReturn(result)
+        whenever(interviewService.submitAnswer(any(), any())).thenReturn(result)
 
         // when & then
         mockMvc.perform(
             post("/questions/1/answer")
                 .param("questionId", "1")
                 .param("answerText", "a".repeat(100)) // 50자 이상
+                .with(csrf())
         )
             .andExpect(status().is3xxRedirection)
             .andExpect(redirectedUrl("/answers/1/feedback"))
     }
 
     @Test
+    @WithMockUser(username = "user")
     fun `답변이 50자 미만이면 Validation 에러로 리다이렉트한다`() {
         // when & then
         mockMvc.perform(
             post("/questions/1/answer")
                 .param("questionId", "1")
                 .param("answerText", "짧은 답변") // 50자 미만
+                .with(csrf())
         )
             .andExpect(status().is3xxRedirection)
             .andExpect(redirectedUrl("/questions/1/answer?error=validation"))
     }
 
     @Test
+    @WithMockUser(username = "user")
     fun `답변이 2000자 초과하면 Validation 에러로 리다이렉트한다`() {
         // when & then
         mockMvc.perform(
             post("/questions/1/answer")
                 .param("questionId", "1")
                 .param("answerText", "a".repeat(2001)) // 2000자 초과
+                .with(csrf())
         )
             .andExpect(status().is3xxRedirection)
             .andExpect(redirectedUrl("/questions/1/answer?error=validation"))
     }
 
     @Test
+    @WithMockUser(username = "user")
     fun `답변이 비어있으면 Validation 에러로 리다이렉트한다`() {
         // when & then
         mockMvc.perform(
             post("/questions/1/answer")
                 .param("questionId", "1")
                 .param("answerText", "")
+                .with(csrf())
         )
             .andExpect(status().is3xxRedirection)
             .andExpect(redirectedUrl("/questions/1/answer?error=validation"))
     }
 
     @Test
+    @WithMockUser(username = "user")
     fun `피드백 페이지를 렌더링한다`() {
         // given
         val result = createAnswerWithFeedback()
@@ -134,29 +165,31 @@ class AnswerControllerTest {
     // ========== Rate Limit 테스트 ==========
 
     @Test
+    @WithMockUser(username = "user")
     fun `답변 제출 시 Rate Limit 체크가 호출된다`() {
         // given
         val result = createAnswerWithFeedback()
-        whenever(interviewService.submitAnswer(any())).thenReturn(result)
+        whenever(interviewService.submitAnswer(any(), any())).thenReturn(result)
 
         // when
         mockMvc.perform(
             post("/questions/1/answer")
                 .param("questionId", "1")
                 .param("answerText", "a".repeat(100))
-                .header("X-Forwarded-For", "192.168.1.1")
+                .with(csrf())
         )
             .andExpect(status().is3xxRedirection)
 
         // then
-        verify(rateLimitService).checkAndRecordRequest("192.168.1.1")
+        verify(rateLimitService).checkAndRecordRequest("1")
     }
 
     @Test
+    @WithMockUser(username = "user")
     fun `Rate Limit 초과 시 에러 페이지로 리다이렉트한다`() {
         // given
         val resetTime = LocalDateTime.now().plusHours(1)
-        doThrow(RateLimitExceededException("192.168.1.1", 33, resetTime))
+        doThrow(RateLimitExceededException("1", 33, resetTime))
             .whenever(rateLimitService).checkAndRecordRequest(any())
 
         // when & then
@@ -164,57 +197,60 @@ class AnswerControllerTest {
             post("/questions/1/answer")
                 .param("questionId", "1")
                 .param("answerText", "a".repeat(100))
-                .header("X-Forwarded-For", "192.168.1.1")
+                .with(csrf())
         )
             .andExpect(status().is3xxRedirection)
             .andExpect(redirectedUrl("/questions/1/answer?error=ratelimit"))
 
-        verify(rateLimitService).checkAndRecordRequest("192.168.1.1")
+        verify(rateLimitService).checkAndRecordRequest("1")
     }
 
     @Test
-    fun `X-Forwarded-For 헤더가 없으면 RemoteAddr를 사용한다`() {
+    @WithMockUser(username = "user")
+    fun `사용자 ID 기반으로 Rate Limit이 적용된다`() {
         // given
         val result = createAnswerWithFeedback()
-        whenever(interviewService.submitAnswer(any())).thenReturn(result)
+        whenever(interviewService.submitAnswer(any(), any())).thenReturn(result)
 
         // when
         mockMvc.perform(
             post("/questions/1/answer")
                 .param("questionId", "1")
                 .param("answerText", "a".repeat(100))
-            // X-Forwarded-For 헤더 없음
+                .with(csrf())
         )
             .andExpect(status().is3xxRedirection)
 
-        // then - RemoteAddr (기본값: 127.0.0.1)이 사용됨
-        verify(rateLimitService).checkAndRecordRequest(any())
+        // then - 사용자 ID로 Rate Limit 체크
+        verify(rateLimitService).checkAndRecordRequest("1")
     }
 
     @Test
-    fun `X-Forwarded-For에 여러 IP가 있으면 첫 번째 IP를 사용한다`() {
+    @WithMockUser(username = "user")
+    fun `동일 사용자는 일관된 Rate Limit을 적용받는다`() {
         // given
         val result = createAnswerWithFeedback()
-        whenever(interviewService.submitAnswer(any())).thenReturn(result)
+        whenever(interviewService.submitAnswer(any(), any())).thenReturn(result)
 
         // when
         mockMvc.perform(
             post("/questions/1/answer")
                 .param("questionId", "1")
                 .param("answerText", "a".repeat(100))
-                .header("X-Forwarded-For", "192.168.1.1, 10.0.0.1, 172.16.0.1")
+                .with(csrf())
         )
             .andExpect(status().is3xxRedirection)
 
-        // then
-        verify(rateLimitService).checkAndRecordRequest("192.168.1.1")
+        // then - 동일한 사용자 ID로 Rate Limit 체크
+        verify(rateLimitService).checkAndRecordRequest("1")
     }
 
     @Test
+    @WithMockUser(username = "user")
     fun `Rate Limit 체크는 Validation 전에 실행된다`() {
         // given
         val resetTime = LocalDateTime.now().plusHours(1)
-        doThrow(RateLimitExceededException("192.168.1.1", 33, resetTime))
+        doThrow(RateLimitExceededException("1", 33, resetTime))
             .whenever(rateLimitService).checkAndRecordRequest(any())
 
         // when - Validation 오류가 있는 요청 (50자 미만)
@@ -222,32 +258,32 @@ class AnswerControllerTest {
             post("/questions/1/answer")
                 .param("questionId", "1")
                 .param("answerText", "짧은 답변") // Validation 실패
-                .header("X-Forwarded-For", "192.168.1.1")
+                .with(csrf())
         )
             .andExpect(status().is3xxRedirection)
             .andExpect(redirectedUrl("/questions/1/answer?error=ratelimit")) // Rate Limit 에러가 먼저
 
         // then
-        verify(rateLimitService).checkAndRecordRequest("192.168.1.1")
+        verify(rateLimitService).checkAndRecordRequest("1")
     }
 
     @Test
-    fun `IPv6 주소도 Rate Limit이 적용된다`() {
+    @WithMockUser(username = "user")
+    fun `사용자 ID 기반 Rate Limit이 정상 동작한다`() {
         // given
         val result = createAnswerWithFeedback()
-        whenever(interviewService.submitAnswer(any())).thenReturn(result)
-        val ipv6 = "2001:0db8:85a3:0000:0000:8a2e:0370:7334"
+        whenever(interviewService.submitAnswer(any(), any())).thenReturn(result)
 
         // when
         mockMvc.perform(
             post("/questions/1/answer")
                 .param("questionId", "1")
                 .param("answerText", "a".repeat(100))
-                .header("X-Forwarded-For", ipv6)
+                .with(csrf())
         )
             .andExpect(status().is3xxRedirection)
 
-        // then
-        verify(rateLimitService).checkAndRecordRequest(ipv6)
+        // then - 사용자 ID로 Rate Limit 체크
+        verify(rateLimitService).checkAndRecordRequest("1")
     }
 }

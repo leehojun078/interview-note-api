@@ -20,8 +20,9 @@ class InterviewService(
 ) {
     /**
      * 답변 제출 및 AI 평가
+     * Phase 4A-2에서 수정: userId 파라미터 추가
      */
-    fun submitAnswer(dto: AnswerSubmitDto): AnswerWithFeedbackDto {
+    fun submitAnswer(dto: AnswerSubmitDto, userId: Long): AnswerWithFeedbackDto {
         val questionId = dto.questionId
             ?: throw IllegalArgumentException("질문 ID는 필수입니다")
         val answerText = dto.answerText
@@ -30,9 +31,10 @@ class InterviewService(
         // 1. 질문 존재 여부 확인
         val question = questionService.findById(questionId)
 
-        // 2. 답변 저장
+        // 2. 답변 저장 (userId 포함)
         val answer = InterviewAnswer(
             questionId = questionId,
+            userId = userId,
             answerText = answerText,
             createdAt = LocalDateTime.now(),
             updatedAt = LocalDateTime.now()

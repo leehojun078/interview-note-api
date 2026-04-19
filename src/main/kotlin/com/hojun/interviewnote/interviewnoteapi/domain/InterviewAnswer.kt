@@ -13,6 +13,13 @@ class InterviewAnswer(
     @Column(nullable = false)
     val questionId: Long,
 
+    /**
+     * 답변 작성자 ID
+     * Phase 4A-2에서 추가됨: 사용자별 답변 이력 분리
+     */
+    @Column(name = "user_id", nullable = false)
+    val userId: Long,
+
     @Column(nullable = false, columnDefinition = "TEXT")
     val answerText: String,
 

@@ -40,12 +40,14 @@ class AiFeedbackRepositoryTest {
 
         val answer1 = InterviewAnswer(
             questionId = question.id,
+            userId = 1L,
             answerText = "답변1",
             createdAt = LocalDateTime.now(),
             updatedAt = LocalDateTime.now()
         )
         val answer2 = InterviewAnswer(
             questionId = question.id,
+            userId = 1L,
             answerText = "답변2",
             createdAt = LocalDateTime.now(),
             updatedAt = LocalDateTime.now()

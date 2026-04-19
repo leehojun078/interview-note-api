@@ -1,11 +1,17 @@
 package com.hojun.interviewnote.interviewnoteapi.controller
 
+import com.hojun.interviewnote.interviewnoteapi.domain.User
+import com.hojun.interviewnote.interviewnoteapi.domain.UserRole
 import com.hojun.interviewnote.interviewnoteapi.dto.ReviewSummaryDto
+import com.hojun.interviewnote.interviewnoteapi.repository.UserRepository
 import com.hojun.interviewnote.interviewnoteapi.service.ReviewService
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.any
 import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
+import org.springframework.context.annotation.Import
+import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.test.context.bean.override.mockito.MockitoBean
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
@@ -13,6 +19,7 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.*
 import java.time.LocalDateTime
 
 @WebMvcTest(HomeController::class)
+@Import(com.hojun.interviewnote.interviewnoteapi.config.SecurityConfig::class)
 class HomeControllerTest {
 
     @Autowired
@@ -21,7 +28,21 @@ class HomeControllerTest {
     @MockitoBean
     private lateinit var reviewService: ReviewService
 
+    @MockitoBean
+    private lateinit var userRepository: UserRepository
+
+    private val testUser = User(
+        id = 1L,
+        email = "user",
+        passwordHash = "hashed",
+        name = "Test User",
+        role = UserRole.USER,
+        isActive = true,
+        createdAt = LocalDateTime.now()
+    )
+
     @Test
+    @WithMockUser(username = "user")
     fun `루트 경로로 홈 페이지를 렌더링한다`() {
         // given
         val recentReviews = listOf(
@@ -47,20 +68,23 @@ class HomeControllerTest {
                 averageScore = 3.0
             )
         )
-        whenever(reviewService.getReviewList()).thenReturn(recentReviews)
+        whenever(userRepository.findByEmail("user")).thenReturn(testUser)
+        whenever(reviewService.getUserReviews(1L)).thenReturn(recentReviews)
 
         // when & then
         mockMvc.perform(get("/"))
             .andExpect(status().isOk)
             .andExpect(view().name("home"))
             .andExpect(model().attributeExists("recentReviews"))
-            .andExpect(model().attribute("recentReviews", recentReviews))
+            .andExpect(model().attribute("recentReviews", recentReviews.take(3)))
     }
 
     @Test
+    @WithMockUser(username = "user")
     fun `home 경로로 홈 페이지를 렌더링한다`() {
         // given
-        whenever(reviewService.getReviewList()).thenReturn(emptyList())
+        whenever(userRepository.findByEmail("user")).thenReturn(testUser)
+        whenever(reviewService.getUserReviews(1L)).thenReturn(emptyList())
 
         // when & then
         mockMvc.perform(get("/home"))
@@ -70,6 +94,7 @@ class HomeControllerTest {
     }
 
     @Test
+    @WithMockUser(username = "user")
     fun `최근 답변 3개만 표시한다`() {
         // given
         val manyReviews = (1..10).map { i ->
@@ -81,7 +106,8 @@ class HomeControllerTest {
                 averageScore = 3.5
             )
         }
-        whenever(reviewService.getReviewList()).thenReturn(manyReviews)
+        whenever(userRepository.findByEmail("user")).thenReturn(testUser)
+        whenever(reviewService.getUserReviews(1L)).thenReturn(manyReviews)
 
         // when & then
         mockMvc.perform(get("/"))

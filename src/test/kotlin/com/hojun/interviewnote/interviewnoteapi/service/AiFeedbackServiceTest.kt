@@ -79,6 +79,7 @@ class AiFeedbackServiceTest {
         return InterviewAnswer(
             id = 1L,
             questionId = 1L,
+            userId = 1L,
             answerText = answerText,
             createdAt = LocalDateTime.now(),
             updatedAt = LocalDateTime.now()

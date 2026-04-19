@@ -21,18 +21,21 @@ class InterviewAnswerRepositoryTest {
             listOf(
                 InterviewAnswer(
                     questionId = 1L,
+                    userId = 1L,
                     answerText = "첫 번째 답변입니다.",
                     createdAt = LocalDateTime.now().minusDays(2),
                     updatedAt = LocalDateTime.now().minusDays(2)
                 ),
                 InterviewAnswer(
                     questionId = 1L,
+                    userId = 1L,
                     answerText = "두 번째 답변입니다.",
                     createdAt = LocalDateTime.now().minusDays(1),
                     updatedAt = LocalDateTime.now().minusDays(1)
                 ),
                 InterviewAnswer(
                     questionId = 2L,
+                    userId = 1L,
                     answerText = "다른 질문에 대한 답변입니다.",
                     createdAt = LocalDateTime.now(),
                     updatedAt = LocalDateTime.now()

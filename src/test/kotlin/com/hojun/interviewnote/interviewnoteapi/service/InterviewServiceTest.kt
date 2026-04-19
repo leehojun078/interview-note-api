@@ -52,6 +52,7 @@ class InterviewServiceTest {
         return InterviewAnswer(
             id = 1L,
             questionId = 1L,
+            userId = 1L,
             answerText = "테스트 답변",
             createdAt = LocalDateTime.now(),
             updatedAt = LocalDateTime.now()
@@ -93,7 +94,7 @@ class InterviewServiceTest {
 
         // when & then
         val exception = assertThrows<IllegalArgumentException> {
-            interviewService.submitAnswer(dto)
+            interviewService.submitAnswer(dto, 1L)
         }
         assertThat(exception.message).isEqualTo("질문 ID는 필수입니다")
     }
@@ -108,7 +109,7 @@ class InterviewServiceTest {
 
         // when & then
         val exception = assertThrows<IllegalArgumentException> {
-            interviewService.submitAnswer(dto)
+            interviewService.submitAnswer(dto, 1L)
         }
         assertThat(exception.message).isEqualTo("답변은 필수입니다")
     }

@@ -2,12 +2,15 @@ package com.hojun.interviewnote.interviewnoteapi.controller
 
 import com.hojun.interviewnote.interviewnoteapi.dto.AnswerSubmitDto
 import com.hojun.interviewnote.interviewnoteapi.exception.RateLimitExceededException
+import com.hojun.interviewnote.interviewnoteapi.repository.UserRepository
 import com.hojun.interviewnote.interviewnoteapi.service.InterviewService
 import com.hojun.interviewnote.interviewnoteapi.service.ratelimit.RateLimitService
 import com.hojun.interviewnote.interviewnoteapi.service.validation.AnswerValidator
 import com.hojun.interviewnote.interviewnoteapi.service.validation.ValidationResult
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.validation.Valid
+import org.springframework.security.core.annotation.AuthenticationPrincipal
+import org.springframework.security.core.userdetails.UserDetails
 import org.springframework.stereotype.Controller
 import org.springframework.ui.Model
 import org.springframework.validation.BindingResult
@@ -18,10 +21,12 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes
 class AnswerController(
     private val interviewService: InterviewService,
     private val rateLimitService: RateLimitService,
-    private val answerValidator: AnswerValidator
+    private val answerValidator: AnswerValidator,
+    private val userRepository: UserRepository
 ) {
     /**
      * 답변 제출 처리
+     * Phase 4A-2에서 수정: @AuthenticationPrincipal 추가, userId 기반 Rate Limit
      */
     @PostMapping("/questions/{questionId}/answer")
     fun submitAnswer(
@@ -30,12 +35,16 @@ class AnswerController(
         bindingResult: BindingResult,
         model: Model,
         request: HttpServletRequest,
-        redirectAttributes: RedirectAttributes
+        redirectAttributes: RedirectAttributes,
+        @AuthenticationPrincipal userDetails: UserDetails
     ): String {
-        // Phase 2D: Rate Limit 체크
+        // 현재 로그인한 사용자 조회
+        val user = userRepository.findByEmail(userDetails.username)
+            ?: throw IllegalStateException("로그인한 사용자를 찾을 수 없습니다")
+
+        // Phase 4A-2: Rate Limit 체크 (IP → User ID로 변경)
         try {
-            val clientIp = getClientIp(request)
-            rateLimitService.checkAndRecordRequest(clientIp)
+            rateLimitService.checkAndRecordRequest(user.id.toString())
         } catch (e: RateLimitExceededException) {
             return "redirect:/questions/$questionId/answer?error=ratelimit"
         }
@@ -53,8 +62,8 @@ class AnswerController(
             return "redirect:/questions/$questionId/answer?error=invalid_answer"
         }
 
-        // 답변 제출 및 AI 평가
-        val result = interviewService.submitAnswer(dto)
+        // 답변 제출 및 AI 평가 (userId 전달)
+        val result = interviewService.submitAnswer(dto, user.id)
 
         // Phase 3A: 저품질 경고 체크
         if (result.feedback.averageScore < 1.5) {

@@ -35,6 +35,7 @@ class ReviewServiceTest {
         return InterviewAnswer(
             id = id,
             questionId = questionId,
+            userId = 1L,
             answerText = "테스트 답변 $id",
             createdAt = LocalDateTime.now(),
             updatedAt = LocalDateTime.now()

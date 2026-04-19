@@ -2,6 +2,8 @@
 
 This file provides guidance to Claude Code when working with the Interview Note API project.
 
+**최종 업데이트**: 2026-04-19 (Phase 1-3 완료 상태 반영)
+
 ## Project Overview
 
 **면접 리뷰 웹 애플리케이션** - 사용자가 면접 질문에 텍스트로 답변하면, AI가 평가와 개선 포인트, 모범답변을 제공하고, 사용자는 이를 저장해 리뷰할 수 있는 웹앱입니다.
@@ -19,21 +21,43 @@ This file provides guidance to Claude Code when working with the Interview Note 
 
 ## Technology Stack
 
+### Backend
 - **Language**: Kotlin 2.2.21 with Java 21 toolchain
 - **Framework**: Spring Boot 3.5.14
 - **Build Tool**: Gradle with Kotlin DSL
-- **View**: Thymeleaf (server-side rendering)
-- **UI Enhancement**: HTMX or minimal JavaScript
-- **Database**: H2 (development) → PostgreSQL (production)
-- **ORM**: Spring Data JPA
+- **Database**: H2 (development) / PostgreSQL 15 (production)
+- **ORM**: Spring Data JPA + Hibernate
 - **Migration**: Flyway
-- **AI Integration**: OpenAI API (GPT-5 mini recommended)
 - **Testing**: JUnit 5 with Spring Boot Test
+
+### AI Integration
+- **AI Model**: OpenAI gpt-4o-mini
+- **HTTP Client**: RestTemplate (직접 구현)
+- **Response Format**: JSON Mode (구조화된 응답)
+- **Cache**: Caffeine Cache (중복 방지, Rate Limiting)
+
+### Frontend (Phase 3에서 추가)
+- **Template Engine**: Thymeleaf (server-side rendering)
+- **UI Framework**: Tailwind CSS
+- **UI Enhancement**: HTMX (페이지 새로고침 없는 인터랙션)
+
+### Monitoring & Logging (Phase 3에서 추가)
+- **Logging**: Logback + Logstash Encoder (JSON 로깅)
+- **Metrics**: Micrometer + Prometheus
+- **Health Check**: Spring Boot Actuator (Liveness/Readiness probes)
+- **Request Tracing**: MDC (Mapped Diagnostic Context)
+
+### DevOps (Phase 3에서 추가)
+- **Container**: Docker (Multi-stage build, ~180MB)
+- **Orchestration**: Docker Compose
+- **Environments**: dev (H2) / prod (PostgreSQL)
 
 ### 왜 이 스택인가?
 - 단일 Spring Boot 애플리케이션으로 배포 단순화
-- Thymeleaf로 프론트엔드 복잡도 최소화
+- Thymeleaf + HTMX로 프론트엔드 복잡도 최소화 (React/Vue 없이)
 - 백엔드 역량에 집중 (프론트/백엔드 분리 안 함)
+- Docker로 환경 일관성 보장
+- Prometheus 메트릭으로 프로덕션 모니터링 가능
 - Claude Code가 컨텍스트 잡기 쉬운 구조
 
 ## MVP Scope
@@ -102,7 +126,7 @@ data class InterviewAnswer(
 #### 3. AiFeedback (AI 평가 결과)
 ```kotlin
 @Entity
-data class AiFeedback(
+class AiFeedback(  // data class → class (JPA 최적화, equals/hashCode 커스터마이징)
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long = 0,
 
@@ -126,15 +150,21 @@ data class AiFeedback(
 
     // 메타데이터
     val jobField: String = "IT",      // Question의 jobField 복사 (확장성)
-    val modelName: String,            // 예: "gpt-5-mini"
+    val modelName: String,            // 예: "gpt-4o-mini"
     val promptVersion: String,        // 프롬프트 버전 (예: "v1.0")
     val tokenUsageInput: Int,         // 입력 토큰 수
     val tokenUsageOutput: Int,        // 출력 토큰 수
     @Column(columnDefinition = "TEXT")
     val rawResponse: String,          // OpenAI 원본 응답 (디버깅용)
 
+    val answerTextHash: String?,      // SHA-256 해시 (중복 방지용, Phase 2B에서 추가)
+
     val createdAt: LocalDateTime = LocalDateTime.now()
-)
+) {
+    // 평균 점수 계산 프로퍼티 (Phase 2에서 추가)
+    val averageScore: Double
+        get() = (logicScore + specificityScore + jobFitScore + deliveryScore) / 4.0
+}
 ```
 
 ## Answer Quality Validation (답변 품질 검증)
@@ -150,11 +180,15 @@ data class AiFeedback(
 **검증 기준**:
 1. **반복 문자 체크**: 동일한 문자가 70% 이상이면 거부
    - 예: "aaaaaaa...", "bbbbbbb..."
-2. **고유 문자 개수**: 최소 5개 이상의 서로 다른 문자 필요
+2. **반복 단어 체크** (Phase 2B+에서 추가): 동일한 단어가 40% 이상이면 거부
+   - 예: "여기는 여기는 여기는 여기는..." → 거부
+   - 구현: `hasExcessiveRepeatedWords()` in `AnswerValidator.kt`
+   - AI Hallucination 방지 효과 (AI가 없는 내용을 창작하는 것 방지)
+3. **고유 문자 개수**: 최소 5개 이상의 서로 다른 문자 필요
    - 예: "aaabbbcccddd" (4개) → 거부
-3. **최소 단어 수**: 공백으로 구분된 최소 10개 단어 필요
+4. **최소 단어 수**: 공백으로 구분된 최소 10개 단어 필요
    - 예: "한 두 세 네" (4개) → 거부
-4. **의미 있는 문자 비율**: 한글/영어/기본 문장 부호가 50% 이상
+5. **의미 있는 문자 비율**: 한글/영어/기본 문장 부호가 50% 이상
    - 예: "1234!@#$%^&*" (숫자/특수문자만) → 거부
 
 **거부 시 동작**:
@@ -245,6 +279,8 @@ Bean Validation (50-2000자)
 ### 프롬프트 설계 원칙
 
 #### System Role (MVP: IT 직무용)
+
+**개선된 프롬프트** (Phase 2B+에서 Hallucination Prevention 적용):
 ```
 당신은 백엔드 개발자 면접을 준비하는 지원자를 돕는 면접 코치입니다.
 당신의 역할은 합격/불합격을 판정하는 것이 아니라, 답변을 개선하도록 구체적인 피드백을 제공하는 것입니다.
@@ -255,10 +291,29 @@ Bean Validation (50-2000자)
 - 직무 적합성(jobFit): 질문 의도와 개발 직무 연관성
 - 전달력(delivery): 기술 개념을 명확하고 이해하기 쉽게 설명하는 능력
 
+중요한 평가 지침 (Hallucination Prevention):
+1. **정직한 평가**: 답변이 반복적이거나 무의미하면 솔직하게 지적하세요
+2. **사실 기반**: 답변에 없는 내용을 추측하거나 창작하지 마세요
+3. **강점 검증**: 실제로 답변에 나타난 강점만 언급하세요
+4. **반복 표현 감지**: 같은 단어/문구가 반복되면 improvements에 지적
+5. **내용 부족 시**: 답변이 짧거나 구체성이 부족하면 strengths를 억지로 만들지 말고, improvements를 더 구체적으로 작성
+6. **엄격한 기준**: 형식적이거나 추상적인 답변은 낮은 점수를 주세요
+
+나쁜 답변 예시:
+- 반복 표현: "저는 중요하게 여기는 여기는 여기는..."
+- 추상적 답변: "저는 열심히 노력했습니다"
+- 구체성 부족: "Spring을 사용했습니다" (어떻게? 왜? 무엇을?)
+
+이런 경우:
+- strengths: 가능한 한 적게 (또는 0개도 가능)
+- improvements: 구체적이고 실질적인 개선 방향 제시
+- 점수: 1-2점 (매우 낮게)
+
 출력 규칙:
 - 반드시 JSON 형식으로 응답
 - 각 점수는 1-5 사이 정수
-- strengths와 improvements는 각각 2-3개 항목
+- **strengths는 0-5개** (답변 품질에 따라 유연하게, 낮은 품질은 0개 가능)
+- **improvements는 1-5개** (최소 1개, 많을수록 구체적)
 - modelAnswer는 400-600자 이내
 - 한국어로 답변
 - 과도한 단정이나 공격적 표현 금지
@@ -268,11 +323,17 @@ Bean Validation (50-2000자)
 MVP에서는 "IT"만 사용하지만, 나중에 "영업", "경영" 등으로 확장 시 프롬프트 템플릿만 추가하면 됩니다.
 
 ### 비용 제어 장치
-- **답변 글자 수 제한**: 최대 2000자
-- **모범답변 길이 제한**: 400-600자 (maxTokens = 800)
-- **중복 요청 방지**: 동일 questionId + answerText 조합 24시간 캐싱
-- **Rate limiting**: IP당 시간당 10회 제한 (추후 구현)
-- **메타데이터 저장**: modelName, tokenUsage, promptVersion 필수 기록
+- ✅ **답변 글자 수 제한**: 최대 2000자 (Bean Validation)
+- ✅ **모범답변 길이 제한**: 400-600자 (maxTokens = 800)
+- ✅ **중복 요청 방지**: 동일 questionId + answerText 조합 24시간 캐싱 (Phase 2B에서 구현 완료)
+  - SHA-256 해싱으로 중복 감지 (`answerTextHash` 필드)
+  - 속도 향상: 1,700배+ (5초 → 3ms)
+  - 비용: 캐시 히트 시 100% 절감
+- ✅ **Rate limiting**: IP당 33회/시간 (Caffeine Cache 기반, Phase 2B에서 구현 완료)
+  - 최대 월 비용: $4.75 (단일 IP)
+  - X-Forwarded-For 헤더 지원 (프록시 환경)
+- ✅ **메타데이터 저장**: modelName, tokenUsage, promptVersion, answerTextHash 필수 기록
+- ✅ **Fallback 메커니즘**: AI 오류 시 더미 피드백 제공 (서비스 중단 방지)
 
 ## Architecture Principles
 
@@ -280,17 +341,28 @@ MVP에서는 "IT"만 사용하지만, 나중에 "영업", "경영" 등으로 확
 ```
 Controller → Service → Repository
          ↓
+   Filter (RequestIdFilter)
+         ↓
       ViewModel/DTO
          ↓
-    OpenAI Client (별도 추상화)
+    AI Integration Layer
+    (OpenAI Client, PromptBuilder, ResponseParser)
+         ↓
+   Support Services
+   (DuplicateRequestCache, RateLimitService, AnswerValidator)
 ```
 
 ### 서비스 분리
 - **InterviewService**: 질문/답변 비즈니스 로직
-- **AiFeedbackService**: AI 평가 요청 조율
-- **OpenAiClient**: OpenAI API 호출 (교체 가능하도록 인터페이스화)
+- **AiFeedbackService**: AI 평가 요청 조율 (Fallback 포함)
+- **QuestionService**: 질문 조회 로직
+- **ReviewService**: 리뷰 이력 조회 (Phase 1에서 추가)
+- **OpenAiClient**: OpenAI API 호출 (인터페이스 기반, 교체 가능)
 - **PromptBuilder**: 프롬프트 템플릿 조합 (jobField 기반 동적 생성 가능)
-- **ResponseParser**: JSON 응답 파싱
+- **ResponseParser**: JSON 응답 파싱 및 검증
+- **DuplicateRequestCache**: 중복 요청 캐싱 (24시간, Phase 2B에서 추가)
+- **RateLimitService**: IP 기반 Rate Limiting (Phase 2B에서 추가)
+- **AnswerValidator**: 답변 품질 사전 검증 (Phase 2B에서 추가)
 
 ### 설계 원칙
 1. **Controller에서 직접 OpenAI 호출 금지** → 서비스 계층 통과 필수
@@ -299,36 +371,62 @@ Controller → Service → Repository
 4. **버전 관리** → promptVersion으로 프롬프트 변경 추적
 5. **교체 가능 구조** → 나중에 Claude API나 다른 모델로 교체 용이
 
-## Implementation Order
+## Implementation Status
 
-### Phase 1: 기반 구축 (AI 없이 전체 플로우 완성)
-1. Spring Boot 프로젝트 뼈대 생성
-2. 엔티티 3개 (Question, InterviewAnswer, AiFeedback) 정의
-3. Repository 인터페이스 생성
-4. Flyway 마이그레이션 스크립트 작성
-5. 질문 목록 페이지 구현 (Thymeleaf)
-6. 질문 상세 + 답변 작성 페이지 구현
-7. 답변 저장 기능 구현
-8. **더미 피드백으로 결과 페이지 구현** (AI 없이 하드코딩된 평가)
-9. 리뷰 이력 목록 페이지 구현
-10. 리뷰 상세 페이지 구현
+**프로젝트 현재 상태** (2026-04-19 기준): Phase 1-3 모두 완료, 프로덕션 배포 준비 완료
 
-**중요**: Phase 1 완료 시점에 AI 없이도 전체 사용자 플로우가 동작해야 함
+### ✅ Phase 1: 기반 구축 (완료)
+AI 없이 전체 플로우 완성
+1. ✅ Spring Boot 프로젝트 뼈대 생성
+2. ✅ 엔티티 3개 (Question, InterviewAnswer, AiFeedback) 정의
+3. ✅ Repository 인터페이스 생성
+4. ✅ Flyway 마이그레이션 스크립트 작성
+5. ✅ 질문 목록 페이지 구현 (Thymeleaf)
+6. ✅ 질문 상세 + 답변 작성 페이지 구현
+7. ✅ 답변 저장 기능 구현
+8. ✅ 더미 피드백으로 결과 페이지 구현 (AI 없이 하드코딩된 평가)
+9. ✅ 리뷰 이력 목록 페이지 구현
+10. ✅ 리뷰 상세 페이지 구현
 
-### Phase 2: AI 연동
-11. OpenAI API 클라이언트 구현
-12. PromptBuilder 구현
-13. ResponseParser 구현 (JSON → AiFeedback DTO)
-14. FakeAiFeedbackService를 RealAiFeedbackService로 교체
-15. 에러 처리 및 fallback 로직 추가
-16. 메타데이터(tokenUsage, modelName 등) 저장 확인
+### ✅ Phase 2: AI 연동 (완료)
+실제 OpenAI API 통합 및 비용 최적화
+11. ✅ OpenAI API 클라이언트 구현 (RestTemplate 기반)
+12. ✅ PromptBuilder 구현 (Hallucination Prevention 포함)
+13. ✅ ResponseParser 구현 (JSON → AiFeedback DTO, 엄격한 검증)
+14. ✅ RealAiFeedbackService 구현 (Fallback 메커니즘 포함)
+15. ✅ 중복 요청 방지 (SHA-256 해싱, 24시간 캐싱)
+16. ✅ Rate Limiting (IP당 33회/시간, Caffeine Cache)
+17. ✅ 답변 품질 사전 검증 (AnswerValidator - 문자/단어 반복 체크)
+18. ✅ 메타데이터 저장 (tokenUsage, modelName, answerTextHash)
 
-### Phase 3: 완성도 향상
-17. 에러 처리 개선
-18. Validation 추가 (Bean Validation)
-19. 로깅 강화
-20. UI 다듬기 (CSS 적용)
-21. 비용 제어 장치 추가 (글자 수 제한, 캐싱)
+### ✅ Phase 3: 완성도 향상 (완료)
+프로덕션 준비 및 사용자 경험 개선
+19. ✅ Tailwind CSS + HTMX 적용
+20. ✅ 에러 페이지 개선 (404, 500, Rate Limit, AI Error)
+21. ✅ JSON 구조화 로깅 (Logback + Logstash Encoder)
+22. ✅ Prometheus 메트릭 수집 (AI 호출, 캐시, HTTP)
+23. ✅ Health Check (Liveness/Readiness probes)
+24. ✅ Docker 컨테이너화 (Multi-stage build, ~180MB)
+25. ✅ Docker Compose 설정 (PostgreSQL + App)
+26. ✅ 환경별 설정 분리 (dev/prod profiles)
+27. ✅ RequestIdFilter (요청 추적, MDC)
+28. ✅ OpenAiHealthIndicator (AI 연결 상태 체크)
+
+### 📝 향후 작업 제안 (Phase 4+)
+1. **Phase 4: 사용자 관리**
+   - Spring Security 기반 로그인/회원가입
+   - JWT 토큰 인증
+   - 사용자별 답변 이력 분리
+
+2. **Phase 5: 성능 최적화**
+   - Redis 캐싱 도입
+   - DB 쿼리 최적화 (N+1 해결)
+   - CDN 정적 리소스 제공
+
+3. **Phase 6: 기능 확장**
+   - 다른 직무 질문 추가 (영업, 경영, 회계)
+   - 벡터DB + RAG 도입
+   - 실시간 채팅 기반 모의 면접
 
 ## Coding Guidelines
 
@@ -362,10 +460,10 @@ Controller → Service → Repository
 - ❌ 처음부터 복잡한 구조 설계
 - ❌ 프론트엔드/백엔드 분리 (MVP 단계)
 - ❌ 과도한 추상화나 미래 확장성 고려
-- ❌ `mapNotNull`과 `return@mapNotNull null` 조합 사용
-- ❌ ObjectMapper 등 중복 인스턴스 생성
+- ~~❌ `mapNotNull`과 `return@mapNotNull null` 조합 사용~~ (해결됨 - ReviewService 리팩토링 완료)
+- ❌ ObjectMapper 등 중복 인스턴스 생성 → ObjectMapperConfig로 중앙화
 - ❌ Nullable 강제 언랩핑 (`!!`) 남용
-- ❌ JPA 엔티티에 data class 사용 (equals/hashCode 문제)
+- ❌ JPA 엔티티에 data class 사용 → 일반 class 사용 (equals/hashCode 커스터마이징 필요)
 
 ## Scalability Considerations
 
@@ -412,6 +510,13 @@ class PromptBuilder {
 **핵심**: 구조는 확장 가능하지만, 구현은 IT에만 집중하여 MVP 복잡도를 최소화합니다.
 
 ## Working with Claude Code
+
+### 프로젝트 현재 상태 (2026-04-19 기준)
+- ✅ **Phase 1-3 모두 완료**: MVP 기반, AI 연동, 프로덕션 준비 모두 완료
+- ✅ **프로덕션 배포 준비 완료**: Docker, 모니터링, 로깅 인프라 구축 완료
+- ✅ **총 코드**: 약 2,000줄 (main) + 3,951줄 (test)
+- ✅ **테스트 커버리지**: 포괄적 (12+ 테스트 파일)
+- 📝 **향후 작업**: Phase 4 (사용자 관리) 또는 성능 최적화
 
 ### 좋은 요청 방식
 ```
@@ -463,7 +568,7 @@ export OPENAI_API_KEY=sk-...
 
 ### Optional
 ```bash
-export OPENAI_MODEL=gpt-5-mini  # Default model
+export OPENAI_MODEL=gpt-4o-mini  # Default model (실제 사용 모델)
 export PROMPT_VERSION=v1.0       # Prompt version for tracking
 ```
 
@@ -480,22 +585,44 @@ com.hojun.interviewnote.interviewnoteapi/
 │   ├── InterviewAnswerRepository.kt
 │   └── AiFeedbackRepository.kt
 ├── service/
+│   ├── ai/
+│   │   ├── AiClient.kt (인터페이스)
+│   │   ├── OpenAiClientImpl.kt
+│   │   ├── PromptBuilder.kt
+│   │   └── ResponseParser.kt
+│   ├── cache/                      (Phase 2B에서 추가)
+│   │   └── DuplicateRequestCache.kt
+│   ├── ratelimit/                  (Phase 2B에서 추가)
+│   │   └── RateLimitService.kt
+│   ├── validation/                 (Phase 2B에서 추가)
+│   │   └── AnswerValidator.kt
 │   ├── InterviewService.kt
 │   ├── AiFeedbackService.kt
-│   └── ai/
-│       ├── OpenAiClient.kt
-│       ├── PromptBuilder.kt
-│       └── ResponseParser.kt
+│   ├── QuestionService.kt
+│   └── ReviewService.kt            (Phase 1에서 추가)
 ├── controller/
 │   ├── QuestionController.kt
 │   ├── AnswerController.kt
-│   └── ReviewController.kt
+│   ├── ReviewController.kt
+│   └── HomeController.kt           (Phase 1에서 추가)
 ├── dto/
 │   ├── QuestionDto.kt
 │   ├── AnswerSubmitDto.kt
-│   └── FeedbackDto.kt
+│   ├── FeedbackDto.kt
+│   ├── AnswerWithFeedbackDto.kt
+│   └── ReviewSummaryDto.kt
+├── exception/                       (Phase 2에서 추가)
+│   ├── AiExceptions.kt (sealed class)
+│   ├── NotFoundExceptions.kt
+│   ├── RateLimitExceededException.kt
+│   └── GlobalExceptionHandler.kt
+├── filter/                          (Phase 3B에서 추가)
+│   └── RequestIdFilter.kt
+├── health/                          (Phase 3B에서 추가)
+│   └── OpenAiHealthIndicator.kt
 └── config/
-    └── OpenAiConfig.kt
+    ├── OpenAiConfig.kt
+    └── ObjectMapperConfig.kt       (Phase 2에서 추가)
 ```
 
 ## Remember

@@ -67,7 +67,25 @@ class User(
      * 마지막 로그인 일시
      * - 로그인 성공 시마다 갱신
      */
-    var lastLoginAt: LocalDateTime? = null
+    var lastLoginAt: LocalDateTime? = null,
+
+    /**
+     * 직무 분야 (Phase 5에서 추가)
+     * - nullable: 미설정 시 IT 기본값 사용
+     * - 사용자가 프로필에서 선택 가능
+     */
+    @Column(length = 50)
+    @Enumerated(EnumType.STRING)
+    var jobField: JobField? = null,
+
+    /**
+     * 경력 수준 (Phase 5에서 추가)
+     * - nullable: 미설정 가능
+     * - 사용자가 프로필에서 선택 가능
+     */
+    @Column(length = 20)
+    @Enumerated(EnumType.STRING)
+    var careerLevel: CareerLevel? = null
 ) {
     /**
      * JPA 최적화를 위한 equals/hashCode 구현
@@ -116,5 +134,14 @@ class User(
      */
     fun activate() {
         this.isActive = true
+    }
+
+    /**
+     * 직무 선호도 업데이트 (Phase 5에서 추가)
+     * - 사용자 프로필 설정에서 호출
+     */
+    fun updateJobPreferences(jobField: JobField?, careerLevel: CareerLevel?) {
+        this.jobField = jobField
+        this.careerLevel = careerLevel
     }
 }

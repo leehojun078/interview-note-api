@@ -18,34 +18,43 @@ class Phase1IntegrationTest {
     @Test
     fun `초기 질문 20개가 정상적으로 삽입되었는지 확인`() {
         // Given & When
-        val questions = questionRepository.findAll()
+        val allQuestions = questionRepository.findAll()
+        val itQuestions = allQuestions.filter { it.jobField == "IT" }
 
-        // Then
-        assertEquals(20, questions.size, "초기 질문은 20개여야 합니다")
+        // Then - Phase 5: 전체 340개 질문 확인 (IT 20개 + 신규 16개 직무 320개)
+        assertEquals(340, allQuestions.size, "전체 질문은 340개여야 합니다 (17개 직무 × 20개)")
+        assertEquals(20, itQuestions.size, "IT 직무 질문은 20개여야 합니다")
 
-        // 카테고리별 개수 확인
-        val techQuestions = questions.filter { it.category == "기술역량" }
-        val problemQuestions = questions.filter { it.category == "문제해결" }
-        val teamQuestions = questions.filter { it.category == "협업경험" }
+        // IT 직무 카테고리별 개수 확인
+        val techQuestions = itQuestions.filter { it.category == "기술역량" }
+        val problemQuestions = itQuestions.filter { it.category == "문제해결" }
+        val teamQuestions = itQuestions.filter { it.category == "협업경험" }
 
-        assertEquals(13, techQuestions.size, "기술역량 질문은 13개여야 합니다")
-        assertEquals(5, problemQuestions.size, "문제해결 질문은 5개여야 합니다")
-        assertEquals(2, teamQuestions.size, "협업경험 질문은 2개여야 합니다")
+        assertEquals(13, techQuestions.size, "IT 기술역량 질문은 13개여야 합니다")
+        assertEquals(5, problemQuestions.size, "IT 문제해결 질문은 5개여야 합니다")
+        assertEquals(2, teamQuestions.size, "IT 협업경험 질문은 2개여야 합니다")
 
         // 난이도별 개수 확인
-        val easyQuestions = questions.filter { it.difficulty == "EASY" }
-        val mediumQuestions = questions.filter { it.difficulty == "MEDIUM" }
-        val hardQuestions = questions.filter { it.difficulty == "HARD" }
+        val easyQuestions = allQuestions.filter { it.difficulty == "EASY" }
+        val mediumQuestions = allQuestions.filter { it.difficulty == "MEDIUM" }
+        val hardQuestions = allQuestions.filter { it.difficulty == "HARD" }
 
         assertTrue(easyQuestions.isNotEmpty(), "EASY 난이도 질문이 있어야 합니다")
         assertTrue(mediumQuestions.isNotEmpty(), "MEDIUM 난이도 질문이 있어야 합니다")
         assertTrue(hardQuestions.isNotEmpty(), "HARD 난이도 질문이 있어야 합니다")
 
         // 모든 질문이 활성화되어 있는지 확인
-        assertTrue(questions.all { it.isActive }, "모든 질문이 활성화되어 있어야 합니다")
+        assertTrue(allQuestions.all { it.isActive }, "모든 질문이 활성화되어 있어야 합니다")
 
-        // jobField가 IT인지 확인
-        assertTrue(questions.all { it.jobField == "IT" }, "모든 질문의 jobField는 IT여야 합니다")
+        // Phase 5: 17개 직무 모두 있는지 확인
+        val jobFields = allQuestions.map { it.jobField }.distinct().sorted()
+        assertEquals(17, jobFields.size, "17개 직무가 모두 있어야 합니다")
+
+        // 각 직무별로 20개씩 있는지 확인
+        jobFields.forEach { jobField ->
+            val questionsPerJob = allQuestions.filter { it.jobField == jobField }
+            assertEquals(20, questionsPerJob.size, "$jobField 직무는 20개 질문이 있어야 합니다")
+        }
     }
 
     @Test

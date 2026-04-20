@@ -12,20 +12,27 @@ import org.springframework.transaction.annotation.Transactional
 class QuestionService(
     private val questionRepository: QuestionRepository
 ) {
-    fun findAll(category: String?, difficulty: String?): List<QuestionDto> {
-        // 빈 문자열을 null로 처리
+    fun findAll(jobField: String?, category: String?, difficulty: String?): List<QuestionDto> {
+        // 빈 문자열을 null로 처리, jobField 기본값은 "IT"
+        val effectiveJobField = jobField?.takeIf { it.isNotBlank() } ?: "IT"
         val validCategory = category?.takeIf { it.isNotBlank() }
         val validDifficulty = difficulty?.takeIf { it.isNotBlank() }
 
         val questions = when {
             validCategory != null && validDifficulty != null ->
-                questionRepository.findByCategoryAndDifficultyAndIsActiveTrue(validCategory, validDifficulty)
+                questionRepository.findByJobFieldAndCategoryAndDifficultyAndIsActiveTrue(
+                    effectiveJobField, validCategory, validDifficulty
+                )
             validCategory != null ->
-                questionRepository.findByCategoryAndIsActiveTrue(validCategory)
+                questionRepository.findByJobFieldAndCategoryAndIsActiveTrue(
+                    effectiveJobField, validCategory
+                )
             validDifficulty != null ->
-                questionRepository.findByDifficultyAndIsActiveTrue(validDifficulty)
+                questionRepository.findByJobFieldAndDifficultyAndIsActiveTrue(
+                    effectiveJobField, validDifficulty
+                )
             else ->
-                questionRepository.findByIsActiveTrue()
+                questionRepository.findByJobFieldAndIsActiveTrue(effectiveJobField)
         }
 
         return questions.map { QuestionDto.from(it) }

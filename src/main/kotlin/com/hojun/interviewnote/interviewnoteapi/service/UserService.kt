@@ -2,6 +2,9 @@ package com.hojun.interviewnote.interviewnoteapi.service
 
 import com.hojun.interviewnote.interviewnoteapi.domain.User
 import com.hojun.interviewnote.interviewnoteapi.domain.UserRole
+import com.hojun.interviewnote.interviewnoteapi.dto.UpdateProfileRequest
+import com.hojun.interviewnote.interviewnoteapi.dto.UserProfileDto
+import com.hojun.interviewnote.interviewnoteapi.exception.UserNotFoundException
 import com.hojun.interviewnote.interviewnoteapi.repository.UserRepository
 import org.slf4j.LoggerFactory
 import org.springframework.security.crypto.password.PasswordEncoder
@@ -15,6 +18,9 @@ import org.springframework.transaction.annotation.Transactional
  * - 회원가입
  * - 사용자 조회
  * - 비밀번호 검증
+ *
+ * Phase 5에서 추가됨
+ * - 프로필 조회 및 업데이트
  */
 @Service
 @Transactional(readOnly = true)
@@ -158,5 +164,53 @@ class UserService(
     fun isValidEmail(email: String): Boolean {
         val emailRegex = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}\$".toRegex()
         return email.matches(emailRegex)
+    }
+
+    // Phase 5: 프로필 관리
+
+    /**
+     * 사용자 프로필 조회
+     *
+     * @param userId 사용자 ID
+     * @return 사용자 프로필 정보
+     * @throws UserNotFoundException 사용자가 존재하지 않는 경우
+     */
+    fun getProfile(userId: Long): UserProfileDto {
+        val user = userRepository.findById(userId)
+            .orElseThrow { UserNotFoundException("사용자를 찾을 수 없습니다: $userId") }
+
+        return UserProfileDto(
+            id = user.id,
+            email = user.email,
+            name = user.name,
+            jobField = user.jobField,
+            careerLevel = user.careerLevel,
+            createdAt = user.createdAt
+        )
+    }
+
+    /**
+     * 사용자 프로필 업데이트
+     *
+     * @param userId 사용자 ID
+     * @param request 업데이트 요청 정보
+     * @return 업데이트된 사용자
+     * @throws UserNotFoundException 사용자가 존재하지 않는 경우
+     */
+    @Transactional
+    fun updateProfile(userId: Long, request: UpdateProfileRequest): User {
+        val user = userRepository.findById(userId)
+            .orElseThrow { UserNotFoundException("사용자를 찾을 수 없습니다: $userId") }
+
+        user.changeName(request.name)
+        user.updateJobPreferences(request.jobField, request.careerLevel)
+
+        val updatedUser = userRepository.save(user)
+        logger.info(
+            "프로필 업데이트: userId={}, name={}, jobField={}, careerLevel={}",
+            userId, request.name, request.jobField, request.careerLevel
+        )
+
+        return updatedUser
     }
 }

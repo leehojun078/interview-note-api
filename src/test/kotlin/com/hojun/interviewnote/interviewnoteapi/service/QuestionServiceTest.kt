@@ -45,10 +45,10 @@ class QuestionServiceTest {
     fun `필터 없이 전체 활성화된 질문을 조회한다`() {
         // given
         val questions = listOf(createQuestion(1L), createQuestion(2L))
-        whenever(questionRepository.findByIsActiveTrue()).thenReturn(questions)
+        whenever(questionRepository.findByJobFieldAndIsActiveTrue("IT")).thenReturn(questions)
 
         // when
-        val result = questionService.findAll(null, null)
+        val result = questionService.findAll(null, null, null)
 
         // then
         assertThat(result).hasSize(2)
@@ -58,10 +58,10 @@ class QuestionServiceTest {
     fun `카테고리로 필터링하여 질문을 조회한다`() {
         // given
         val questions = listOf(createQuestion(category = "기술역량"))
-        whenever(questionRepository.findByCategoryAndIsActiveTrue("기술역량")).thenReturn(questions)
+        whenever(questionRepository.findByJobFieldAndCategoryAndIsActiveTrue("IT", "기술역량")).thenReturn(questions)
 
         // when
-        val result = questionService.findAll("기술역량", null)
+        val result = questionService.findAll(null, "기술역량", null)
 
         // then
         assertThat(result).hasSize(1)
@@ -72,10 +72,10 @@ class QuestionServiceTest {
     fun `난이도로 필터링하여 질문을 조회한다`() {
         // given
         val questions = listOf(createQuestion(difficulty = "HARD"))
-        whenever(questionRepository.findByDifficultyAndIsActiveTrue("HARD")).thenReturn(questions)
+        whenever(questionRepository.findByJobFieldAndDifficultyAndIsActiveTrue("IT", "HARD")).thenReturn(questions)
 
         // when
-        val result = questionService.findAll(null, "HARD")
+        val result = questionService.findAll(null, null, "HARD")
 
         // then
         assertThat(result).hasSize(1)
@@ -86,11 +86,11 @@ class QuestionServiceTest {
     fun `카테고리와 난이도로 복합 필터링한다`() {
         // given
         val questions = listOf(createQuestion(category = "문제해결", difficulty = "EASY"))
-        whenever(questionRepository.findByCategoryAndDifficultyAndIsActiveTrue("문제해결", "EASY"))
+        whenever(questionRepository.findByJobFieldAndCategoryAndDifficultyAndIsActiveTrue("IT", "문제해결", "EASY"))
             .thenReturn(questions)
 
         // when
-        val result = questionService.findAll("문제해결", "EASY")
+        val result = questionService.findAll(null, "문제해결", "EASY")
 
         // then
         assertThat(result).hasSize(1)

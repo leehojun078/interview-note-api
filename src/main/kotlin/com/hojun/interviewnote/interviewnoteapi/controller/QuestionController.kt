@@ -18,13 +18,15 @@ class QuestionController(
      */
     @GetMapping
     fun list(
+        @RequestParam(required = false) jobField: String?,
         @RequestParam(required = false) category: String?,
         @RequestParam(required = false) difficulty: String?,
         model: Model
     ): String {
-        val questions = questionService.findAll(category, difficulty)
+        val questions = questionService.findAll(jobField, category, difficulty)
 
         model.addAttribute("questions", questions)
+        model.addAttribute("selectedJobField", jobField ?: "")
         model.addAttribute("selectedCategory", category ?: "")
         model.addAttribute("selectedDifficulty", difficulty ?: "")
 

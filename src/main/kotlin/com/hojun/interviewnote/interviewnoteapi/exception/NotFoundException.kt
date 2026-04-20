@@ -10,3 +10,6 @@ class AnswerNotFoundException(id: Long) :
 
 class FeedbackNotFoundException(answerId: Long) :
     NotFoundException("평가 결과를 찾을 수 없습니다 (답변 ID: $answerId)")
+
+class UserNotFoundException(message: String) :
+    NotFoundException(message)

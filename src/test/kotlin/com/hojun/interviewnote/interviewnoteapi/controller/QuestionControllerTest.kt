@@ -43,7 +43,7 @@ class QuestionControllerTest {
     fun`필터 없이 질문 목록을 조회한다`() {
         // given
         val questions = listOf(createQuestionDto(1L), createQuestionDto(2L))
-        whenever(questionService.findAll(null, null)).thenReturn(questions)
+        whenever(questionService.findAll(null, null, null)).thenReturn(questions)
 
         // when & then
         mockMvc.perform(get("/questions"))
@@ -51,6 +51,7 @@ class QuestionControllerTest {
             .andExpect(view().name("questions/list"))
             .andExpect(model().attributeExists("questions"))
             .andExpect(model().attribute("questions", questions))
+            .andExpect(model().attribute("selectedJobField", ""))
             .andExpect(model().attribute("selectedCategory", ""))
             .andExpect(model().attribute("selectedDifficulty", ""))
     }
@@ -60,12 +61,13 @@ class QuestionControllerTest {
     fun`카테고리 필터로 질문을 조회한다`() {
         // given
         val questions = listOf(createQuestionDto(category = "기술역량"))
-        whenever(questionService.findAll("기술역량", null)).thenReturn(questions)
+        whenever(questionService.findAll(null, "기술역량", null)).thenReturn(questions)
 
         // when & then
         mockMvc.perform(get("/questions").param("category", "기술역량"))
             .andExpect(status().isOk)
             .andExpect(view().name("questions/list"))
+            .andExpect(model().attribute("selectedJobField", ""))
             .andExpect(model().attribute("selectedCategory", "기술역량"))
             .andExpect(model().attribute("selectedDifficulty", ""))
     }
@@ -75,12 +77,13 @@ class QuestionControllerTest {
     fun`난이도 필터로 질문을 조회한다`() {
         // given
         val questions = listOf(createQuestionDto(difficulty = "EASY"))
-        whenever(questionService.findAll(null, "EASY")).thenReturn(questions)
+        whenever(questionService.findAll(null, null, "EASY")).thenReturn(questions)
 
         // when & then
         mockMvc.perform(get("/questions").param("difficulty", "EASY"))
             .andExpect(status().isOk)
             .andExpect(view().name("questions/list"))
+            .andExpect(model().attribute("selectedJobField", ""))
             .andExpect(model().attribute("selectedCategory", ""))
             .andExpect(model().attribute("selectedDifficulty", "EASY"))
     }
@@ -90,7 +93,7 @@ class QuestionControllerTest {
     fun`카테고리와 난이도로 복합 필터링한다`() {
         // given
         val questions = listOf(createQuestionDto(category = "문제해결", difficulty = "HARD"))
-        whenever(questionService.findAll("문제해결", "HARD")).thenReturn(questions)
+        whenever(questionService.findAll(null, "문제해결", "HARD")).thenReturn(questions)
 
         // when & then
         mockMvc.perform(
@@ -100,6 +103,7 @@ class QuestionControllerTest {
         )
             .andExpect(status().isOk)
             .andExpect(view().name("questions/list"))
+            .andExpect(model().attribute("selectedJobField", ""))
             .andExpect(model().attribute("selectedCategory", "문제해결"))
             .andExpect(model().attribute("selectedDifficulty", "HARD"))
     }

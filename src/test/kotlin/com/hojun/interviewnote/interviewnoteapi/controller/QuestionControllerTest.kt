@@ -2,6 +2,7 @@ package com.hojun.interviewnote.interviewnoteapi.controller
 
 import com.hojun.interviewnote.interviewnoteapi.dto.QuestionDto
 import com.hojun.interviewnote.interviewnoteapi.service.QuestionService
+import com.hojun.interviewnote.interviewnoteapi.service.UserService
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
@@ -22,6 +23,9 @@ class QuestionControllerTest {
 
     @MockitoBean
     private lateinit var questionService: QuestionService
+
+    @MockitoBean
+    private lateinit var userService: UserService
 
     private fun createQuestionDto(
         id: Long = 1L,

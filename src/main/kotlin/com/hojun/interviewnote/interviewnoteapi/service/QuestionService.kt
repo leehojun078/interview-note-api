@@ -1,5 +1,6 @@
 package com.hojun.interviewnote.interviewnoteapi.service
 
+import com.hojun.interviewnote.interviewnoteapi.domain.JobField
 import com.hojun.interviewnote.interviewnoteapi.domain.Question
 import com.hojun.interviewnote.interviewnoteapi.dto.QuestionDto
 import com.hojun.interviewnote.interviewnoteapi.exception.QuestionNotFoundException
@@ -45,5 +46,24 @@ class QuestionService(
 
     fun findDtoById(id: Long): QuestionDto {
         return QuestionDto.from(findById(id))
+    }
+
+    /**
+     * 모든 직무의 카테고리 맵 반환
+     *
+     * Phase 5: 직무별 동적 카테고리 필터링
+     * - Key: JobField.name() (예: "IT", "SALES")
+     * - Value: List<String> (해당 직무의 카테고리 목록)
+     *
+     * 용도:
+     * - 프론트엔드에서 직무 선택 시 해당 직무의 카테고리만 표시
+     * - JavaScript로 클라이언트 사이드에서 동적 필터링
+     *
+     * @return Map<String, List<String>> 직무별 카테고리 맵
+     */
+    fun getCategoriesByAllJobFields(): Map<String, List<String>> {
+        return JobField.values().associate { jobField ->
+            jobField.name to questionRepository.findDistinctCategoriesByJobField(jobField.name)
+        }
     }
 }

@@ -650,6 +650,182 @@ fun list(
 
 ---
 
+### **Step 10.5: Dynamic Category Filtering by Job Field**
+**복잡도**: Medium | **예상 시간**: 2시간
+
+**중요도**: ⚠️ **HIGH** - 직무별 카테고리가 다른데 현재 IT 카테고리만 하드코딩되어 UX 문제 발생
+
+**문제 상황**:
+- 현재 카테고리 필터가 IT의 3개 카테고리(기술역량, 문제해결, 협업경험)만 하드코딩됨
+- 다른 직무(영업, 회계 등)를 선택해도 IT 카테고리만 표시되어 필터링 불가능
+- 각 직무별로 카테고리가 다름:
+  - IT: 기술역량, 문제해결, 협업경험
+  - 영업: 고객관리, 실적달성, 협상스킬
+  - 회계: 재무분석, 세무지식, 리스크관리
+  - (나머지 14개 직무도 각각 다름)
+
+**해결 방안**:
+- 서버에서 모든 직무의 카테고리를 Map으로 전달
+- JavaScript로 직무 선택 시 해당 직무의 카테고리만 동적으로 표시
+- 네트워크 요청 없이 빠른 응답 (HTMX 대신 JavaScript 선택)
+
+**생성할 파일**:
+- 없음 (기존 파일 수정만)
+
+**수정할 파일**:
+1. `/src/main/kotlin/.../repository/QuestionRepository.kt`
+2. `/src/main/kotlin/.../service/QuestionService.kt`
+3. `/src/main/kotlin/.../controller/QuestionController.kt`
+4. `/src/main/resources/templates/questions/list.html`
+
+**작업 내용**:
+
+**1. QuestionRepository 추가 메서드**:
+```kotlin
+interface QuestionRepository : JpaRepository<Question, Long> {
+    // 기존 메서드들...
+
+    /**
+     * 특정 직무의 고유 카테고리 목록 조회 (중복 제거, 정렬)
+     * Phase 5: 직무별 동적 카테고리 필터링
+     */
+    @Query("""
+        SELECT DISTINCT q.category
+        FROM Question q
+        WHERE q.jobField = :jobField AND q.isActive = true
+        ORDER BY q.category
+    """)
+    fun findDistinctCategoriesByJobField(@Param("jobField") jobField: String): List<String>
+}
+```
+
+**2. QuestionService 추가 메서드**:
+```kotlin
+/**
+ * 모든 직무의 카테고리 맵 반환
+ *
+ * Phase 5: 직무별 동적 카테고리 필터링
+ * - Key: JobField.name() (예: "IT", "SALES")
+ * - Value: List<String> (해당 직무의 카테고리 목록)
+ *
+ * @return Map<String, List<String>> 직무별 카테고리 맵
+ */
+fun getCategoriesByAllJobFields(): Map<String, List<String>> {
+    return JobField.values().associate { jobField ->
+        jobField.name to questionRepository.findDistinctCategoriesByJobField(jobField.name)
+    }
+}
+```
+
+**3. QuestionController 수정**:
+```kotlin
+@GetMapping
+fun list(...): String {
+    // 기존 코드...
+
+    // Phase 5: 직무별 카테고리 맵 전달 (동적 필터링용)
+    val categoriesByJobField = questionService.getCategoriesByAllJobFields()
+    model.addAttribute("categoriesByJobField", categoriesByJobField)
+
+    return "questions/list"
+}
+```
+
+**4. questions/list.html 수정**:
+```html
+<!-- 카테고리 드롭다운에 id 추가 -->
+<div>
+    <label class="block text-sm font-medium text-gray-700 mb-2">카테고리</label>
+    <select name="category" id="categorySelect"
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg...">
+        <option value="">전체</option>
+        <!-- JavaScript로 동적 생성 -->
+    </select>
+</div>
+
+<!-- 직무 드롭다운에 id 추가 -->
+<select name="jobField" id="jobFieldSelect" ...>
+
+<!-- JavaScript 추가 (페이지 하단) -->
+<script th:inline="javascript">
+    /*<![CDATA[*/
+    // 서버에서 전달받은 직무별 카테고리 맵
+    const categoriesByJobField = /*[[${categoriesByJobField}]]*/ {};
+    const selectedJobField = /*[[${selectedJobField}]]*/ '';
+    const selectedCategory = /*[[${selectedCategory}]]*/ '';
+
+    // 직무 선택 시 카테고리 업데이트
+    document.getElementById('jobFieldSelect').addEventListener('change', function() {
+        updateCategories(this.value);
+    });
+
+    function updateCategories(jobField) {
+        const categorySelect = document.getElementById('categorySelect');
+
+        // 직무가 선택되지 않았거나 빈 문자열이면 IT 기본값 사용
+        const effectiveJobField = jobField || 'IT';
+        const categories = categoriesByJobField[effectiveJobField] || [];
+
+        // 기존 옵션 제거 (전체 옵션 제외)
+        categorySelect.innerHTML = '<option value="">전체</option>';
+
+        // 새 카테고리 추가
+        categories.forEach(category => {
+            const option = document.createElement('option');
+            option.value = category;
+            option.textContent = category;
+            if (category === selectedCategory) {
+                option.selected = true;
+            }
+            categorySelect.appendChild(option);
+        });
+    }
+
+    // 페이지 로드 시 초기화
+    window.addEventListener('DOMContentLoaded', () => {
+        updateCategories(selectedJobField || 'IT');
+    });
+    /*]]>*/
+</script>
+```
+
+**예상 데이터 구조**:
+```json
+{
+  "IT": ["기술역량", "문제해결", "협업경험"],
+  "SALES": ["고객관리", "실적달성", "협상스킬"],
+  "ACCOUNTING": ["재무분석", "세무지식", "리스크관리"],
+  "MARKETING": ["캠페인기획", "시장분석", "브랜드전략"],
+  "HR": ["채용전략", "조직문화", "인재육성"],
+  ...
+}
+```
+
+**테스트**:
+- **QuestionRepository 테스트**:
+  - 각 직무별 카테고리 조회 검증
+  - 중복 제거 및 정렬 확인
+  - 비활성 질문 제외 확인
+- **QuestionService 단위 테스트**:
+  - 모든 직무의 카테고리 맵 생성 검증
+  - 빈 카테고리 처리 확인
+- **QuestionController 통합 테스트**:
+  - Model에 categoriesByJobField 포함 확인
+- **UI 수동 테스트**:
+  - IT 선택 → 기술역량/문제해결/협업경험 표시
+  - 영업 선택 → 고객관리/실적달성/협상스킬 표시
+  - 회계 선택 → 재무분석/세무지식/리스크관리 표시
+  - 직무 변경 시 기존 선택된 카테고리 초기화 확인
+
+**의존성**: Step 10 완료
+
+**Note**:
+- 이 단계는 Step 10 구현 시 누락되었던 중요 기능
+- 340개 질문 데이터가 이미 삽입되어 있다면 각 직무별 카테고리가 실제로 존재해야 함
+- V7 migration에서 각 직무의 질문 데이터 생성 시 카테고리를 제대로 지정했는지 확인 필요
+
+---
+
 ### **Step 11: Expand PromptBuilder for 17 Job Fields**
 **복잡도**: Complex | **예상 시간**: 6시간
 

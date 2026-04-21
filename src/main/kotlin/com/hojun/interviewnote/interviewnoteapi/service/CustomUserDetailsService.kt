@@ -1,9 +1,9 @@
 package com.hojun.interviewnote.interviewnoteapi.service
 
 import com.hojun.interviewnote.interviewnoteapi.repository.UserRepository
+import com.hojun.interviewnote.interviewnoteapi.security.CustomUserDetails
 import org.slf4j.LoggerFactory
 import org.springframework.security.core.authority.SimpleGrantedAuthority
-import org.springframework.security.core.userdetails.User as SpringUser
 import org.springframework.security.core.userdetails.UserDetails
 import org.springframework.security.core.userdetails.UserDetailsService
 import org.springframework.security.core.userdetails.UsernameNotFoundException
@@ -42,17 +42,18 @@ class CustomUserDetailsService(
                 throw UsernameNotFoundException("사용자를 찾을 수 없습니다: $username")
             }
 
-        logger.debug("사용자 조회 성공: userId={}, email={}, role={}", user.id, user.email, user.role)
+        logger.debug("사용자 조회 성공: userId={}, email={}, name={}, role={}", user.id, user.email, user.name, user.role)
 
-        // User 엔티티를 Spring Security UserDetails로 변환
-        return SpringUser.builder()
-            .username(user.email)
-            .password(user.passwordHash)
-            .authorities(listOf(SimpleGrantedAuthority("ROLE_${user.role.name}")))
-            .accountExpired(false)
-            .accountLocked(!user.isActive)
-            .credentialsExpired(false)
-            .disabled(!user.isActive)
-            .build()
+        // User 엔티티를 CustomUserDetails로 변환
+        return CustomUserDetails(
+            email = user.email,
+            password = user.passwordHash,
+            authorities = listOf(SimpleGrantedAuthority("ROLE_${user.role.name}")),
+            name = user.name,
+            isAccountNonExpired = true,
+            isAccountNonLocked = user.isActive,
+            isCredentialsNonExpired = true,
+            isEnabled = user.isActive
+        )
     }
 }

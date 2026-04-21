@@ -20,12 +20,17 @@ data class UserProfileDto(
 
 /**
  * 프로필 업데이트 요청 DTO
+ *
+ * Phase 5: 모든 필드 필수 입력
  */
 data class UpdateProfileRequest(
     @field:NotBlank(message = "이름을 입력해주세요")
     @field:Size(min = 2, max = 50, message = "이름은 2-50자 이내여야 합니다")
     val name: String,
 
+    @field:jakarta.validation.constraints.NotNull(message = "직무 분야를 선택해주세요")
     val jobField: JobField?,
+
+    @field:jakarta.validation.constraints.NotNull(message = "경력 수준을 선택해주세요")
     val careerLevel: CareerLevel?
 )

@@ -1,12 +1,15 @@
 package com.hojun.interviewnote.interviewnoteapi.service.ai
 
 import com.hojun.interviewnote.interviewnoteapi.config.OpenAiProperties
+import com.hojun.interviewnote.interviewnoteapi.domain.JobField
 import com.hojun.interviewnote.interviewnoteapi.domain.Question
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.EnumSource
 import java.time.LocalDateTime
 
 /**
@@ -71,14 +74,14 @@ class PromptBuilderTest {
     @Test
     fun `buildSystemPrompt - 지원하지 않는 직무 분야에 대해 예외를 발생시킨다`() {
         // Given
-        val unsupportedJobField = "영업"
+        val unsupportedJobField = "UNKNOWN"
 
         // When & Then
         val exception = assertThrows<IllegalArgumentException> {
-            promptBuilder.buildSystemPrompt(unsupportedJobField, "영업관리자")
+            promptBuilder.buildSystemPrompt(unsupportedJobField, "미지의 직무")
         }
         assertTrue(exception.message!!.contains("지원하지 않는 직무 분야"))
-        assertTrue(exception.message!!.contains("영업"))
+        assertTrue(exception.message!!.contains("UNKNOWN"))
     }
 
     @Test
@@ -115,7 +118,7 @@ class PromptBuilderTest {
         assertTrue(result.contains("기술적 사고"))
         assertTrue(result.contains("논리적 흐름"))
         assertTrue(result.contains("구체적 기술 스택"))
-        assertTrue(result.contains("개발 직무 연관성"))
+        assertTrue(result.contains("직무 연관성"))
         assertTrue(result.contains("명확하고 이해하기 쉽게"))
     }
 
@@ -301,9 +304,179 @@ class PromptBuilderTest {
         val result = promptBuilder.buildSystemPrompt(jobField, targetJob)
 
         // Then
-        // 너무 짧거나 너무 길지 않은지 확인 (200자 이상, 3500자 이하 - hallucination 방지 지침 추가로 증가)
-        assertTrue(result.length in 200..3500,
+        // 너무 짧거나 너무 길지 않은지 확인 (200자 이상, 2000자 이하)
+        assertTrue(result.length in 200..2000,
             "프롬프트 길이가 적절해야 함 (현재: ${result.length}자)")
+    }
+
+    // ===== Phase 5: 17개 직무 지원 테스트 =====
+
+    @ParameterizedTest
+    @EnumSource(JobField::class)
+    fun `모든 직무에 대해 시스템 프롬프트를 생성할 수 있다`(jobField: JobField) {
+        // When
+        val prompt = promptBuilder.buildSystemPrompt(jobField.name, "${jobField.displayName} 담당자")
+
+        // Then
+        assertTrue(prompt.isNotBlank())
+        assertTrue(prompt.contains("면접 코치"))
+        assertTrue(prompt.contains("논리성"))
+        assertTrue(prompt.contains("구체성"))
+        assertTrue(prompt.contains("직무 적합성"))
+        assertTrue(prompt.contains("전달력"))
+        assertTrue(prompt.contains("JSON 형식"))
+    }
+
+    @ParameterizedTest
+    @EnumSource(JobField::class)
+    fun `모든 직무의 프롬프트는 2000자 이하이다`(jobField: JobField) {
+        // When
+        val prompt = promptBuilder.buildSystemPrompt(jobField.name, "${jobField.displayName} 담당자")
+
+        // Then
+        assertTrue(prompt.length <= 2000,
+            "${jobField.displayName} 프롬프트 길이가 2000자를 초과함 (현재: ${prompt.length}자)")
+    }
+
+    @Test
+    fun `영업 직무 프롬프트는 영업 관련 키워드를 포함한다`() {
+        // When
+        val prompt = promptBuilder.buildSystemPrompt("SALES", "영업관리자")
+
+        // Then
+        assertTrue(prompt.contains("영업관리자"))
+        assertTrue(prompt.contains("실적"))
+    }
+
+    @Test
+    fun `회계 직무 프롬프트는 재무 관련 키워드를 포함한다`() {
+        // When
+        val prompt = promptBuilder.buildSystemPrompt("ACCOUNTING", "회계담당자")
+
+        // Then
+        assertTrue(prompt.contains("회계담당자"))
+        assertTrue(prompt.contains("재무"))
+    }
+
+    @Test
+    fun `마케팅 직무 프롬프트는 마케팅 관련 키워드를 포함한다`() {
+        // When
+        val prompt = promptBuilder.buildSystemPrompt("MARKETING", "마케팅매니저")
+
+        // Then
+        assertTrue(prompt.contains("마케팅매니저"))
+        assertTrue(prompt.contains("캠페인"))
+    }
+
+    @Test
+    fun `HR 직무 프롬프트는 인사 관련 키워드를 포함한다`() {
+        // When
+        val prompt = promptBuilder.buildSystemPrompt("HR", "인사담당자")
+
+        // Then
+        assertTrue(prompt.contains("인사담당자"))
+        assertTrue(prompt.contains("채용"))
+    }
+
+    @Test
+    fun `디자인 직무 프롬프트는 디자인 관련 키워드를 포함한다`() {
+        // When
+        val prompt = promptBuilder.buildSystemPrompt("DESIGN", "UI/UX 디자이너")
+
+        // Then
+        assertTrue(prompt.contains("UI/UX 디자이너"))
+        assertTrue(prompt.contains("디자인"))
+    }
+
+    @Test
+    fun `의료 직무 프롬프트는 의료 관련 키워드를 포함한다`() {
+        // When
+        val prompt = promptBuilder.buildSystemPrompt("MEDICAL", "간호사")
+
+        // Then
+        assertTrue(prompt.contains("간호사"))
+        assertTrue(prompt.contains("환자"))
+    }
+
+    @Test
+    fun `교육 직무 프롬프트는 교육 관련 키워드를 포함한다`() {
+        // When
+        val prompt = promptBuilder.buildSystemPrompt("EDUCATION", "교사")
+
+        // Then
+        assertTrue(prompt.contains("교사"))
+        assertTrue(prompt.contains("교육"))
+    }
+
+    @Test
+    fun `금융 직무 프롬프트는 금융 관련 키워드를 포함한다`() {
+        // When
+        val prompt = promptBuilder.buildSystemPrompt("FINANCE", "금융상담사")
+
+        // Then
+        assertTrue(prompt.contains("금융상담사"))
+        assertTrue(prompt.contains("상품"))
+    }
+
+    @Test
+    fun `기획 직무 프롬프트는 기획 관련 키워드를 포함한다`() {
+        // When
+        val prompt = promptBuilder.buildSystemPrompt("PLANNING", "경영기획자")
+
+        // Then
+        assertTrue(prompt.contains("경영기획자"))
+        assertTrue(prompt.contains("전략") || prompt.contains("기획"))
+    }
+
+    @Test
+    fun `각 직무별 프롬프트는 서로 다른 평가 기준을 가진다`() {
+        // When
+        val itPrompt = promptBuilder.buildSystemPrompt("IT", "개발자")
+        val salesPrompt = promptBuilder.buildSystemPrompt("SALES", "영업사원")
+        val accountingPrompt = promptBuilder.buildSystemPrompt("ACCOUNTING", "회계사")
+
+        // Then - IT는 기술 관련
+        assertTrue(itPrompt.contains("기술"))
+        assertTrue(!itPrompt.contains("실적"))
+        assertTrue(!itPrompt.contains("재무"))
+
+        // Then - 영업은 실적 관련
+        assertTrue(salesPrompt.contains("실적"))
+        assertTrue(!salesPrompt.contains("기술 스택"))
+        assertTrue(!salesPrompt.contains("재무 지표"))
+
+        // Then - 회계는 재무 관련
+        assertTrue(accountingPrompt.contains("재무"))
+        assertTrue(!accountingPrompt.contains("기술 스택"))
+        assertTrue(!accountingPrompt.contains("실적 수치"))
+    }
+
+    @Test
+    fun `모든 프롬프트는 공통 평가 지침을 포함한다`() {
+        // When
+        val itPrompt = promptBuilder.buildSystemPrompt("IT", "개발자")
+        val salesPrompt = promptBuilder.buildSystemPrompt("SALES", "영업사원")
+        val medicalPrompt = promptBuilder.buildSystemPrompt("MEDICAL", "간호사")
+
+        // Then - 공통 지침
+        val commonKeywords = listOf(
+            "정직한 평가",
+            "사실 기반",
+            "강점 검증",
+            "반복 표현",
+            "내용 부족",
+            "엄격한 기준",
+            "strengths",
+            "improvements",
+            "modelAnswer",
+            "overallComment"
+        )
+
+        commonKeywords.forEach { keyword ->
+            assertTrue(itPrompt.contains(keyword), "IT 프롬프트에 '$keyword'가 없음")
+            assertTrue(salesPrompt.contains(keyword), "영업 프롬프트에 '$keyword'가 없음")
+            assertTrue(medicalPrompt.contains(keyword), "의료 프롬프트에 '$keyword'가 없음")
+        }
     }
 
     @Test

@@ -1,10 +1,13 @@
 package com.hojun.interviewnote.interviewnoteapi.controller
 
+import com.hojun.interviewnote.interviewnoteapi.domain.JobField
 import com.hojun.interviewnote.interviewnoteapi.domain.User
 import com.hojun.interviewnote.interviewnoteapi.domain.UserRole
+import com.hojun.interviewnote.interviewnoteapi.dto.QuestionDto
 import com.hojun.interviewnote.interviewnoteapi.dto.ReviewSummaryDto
-import com.hojun.interviewnote.interviewnoteapi.repository.UserRepository
+import com.hojun.interviewnote.interviewnoteapi.service.QuestionService
 import com.hojun.interviewnote.interviewnoteapi.service.ReviewService
+import com.hojun.interviewnote.interviewnoteapi.service.UserService
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.whenever
@@ -29,7 +32,10 @@ class HomeControllerTest {
     private lateinit var reviewService: ReviewService
 
     @MockitoBean
-    private lateinit var userRepository: UserRepository
+    private lateinit var userService: UserService
+
+    @MockitoBean
+    private lateinit var questionService: QuestionService
 
     private val testUser = User(
         id = 1L,
@@ -68,8 +74,16 @@ class HomeControllerTest {
                 averageScore = 3.0
             )
         )
-        whenever(userRepository.findByEmail("user")).thenReturn(testUser)
+        val recommendedQuestions = listOf(
+            QuestionDto(1L, "IT", "백엔드 개발자", "기술역량", "질문1", "EASY"),
+            QuestionDto(2L, "IT", "백엔드 개발자", "문제해결", "질문2", "MEDIUM"),
+            QuestionDto(3L, "IT", "백엔드 개발자", "협업경험", "질문3", "HARD"),
+            QuestionDto(4L, "IT", "백엔드 개발자", "기술역량", "질문4", "MEDIUM"),
+            QuestionDto(5L, "IT", "백엔드 개발자", "문제해결", "질문5", "EASY")
+        )
+        whenever(userService.findByEmail("user")).thenReturn(testUser)
         whenever(reviewService.getUserReviews(1L)).thenReturn(recentReviews)
+        whenever(questionService.findAll("IT", null, null)).thenReturn(recommendedQuestions)
 
         // when & then
         mockMvc.perform(get("/"))
@@ -77,20 +91,25 @@ class HomeControllerTest {
             .andExpect(view().name("home"))
             .andExpect(model().attributeExists("recentReviews"))
             .andExpect(model().attribute("recentReviews", recentReviews.take(3)))
+            .andExpect(model().attributeExists("recommendedQuestions"))
+            .andExpect(model().attributeExists("hasJobFieldSet"))
+            .andExpect(model().attribute("hasJobFieldSet", false))
     }
 
     @Test
     @WithMockUser(username = "user")
     fun `home 경로로 홈 페이지를 렌더링한다`() {
         // given
-        whenever(userRepository.findByEmail("user")).thenReturn(testUser)
+        whenever(userService.findByEmail("user")).thenReturn(testUser)
         whenever(reviewService.getUserReviews(1L)).thenReturn(emptyList())
+        whenever(questionService.findAll("IT", null, null)).thenReturn(emptyList())
 
         // when & then
         mockMvc.perform(get("/home"))
             .andExpect(status().isOk)
             .andExpect(view().name("home"))
             .andExpect(model().attributeExists("recentReviews"))
+            .andExpect(model().attributeExists("recommendedQuestions"))
     }
 
     @Test
@@ -106,8 +125,9 @@ class HomeControllerTest {
                 averageScore = 3.5
             )
         }
-        whenever(userRepository.findByEmail("user")).thenReturn(testUser)
+        whenever(userService.findByEmail("user")).thenReturn(testUser)
         whenever(reviewService.getUserReviews(1L)).thenReturn(manyReviews)
+        whenever(questionService.findAll("IT", null, null)).thenReturn(emptyList())
 
         // when & then
         mockMvc.perform(get("/"))

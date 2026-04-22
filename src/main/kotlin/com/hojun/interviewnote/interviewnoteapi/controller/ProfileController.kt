@@ -6,6 +6,7 @@ import com.hojun.interviewnote.interviewnoteapi.dto.UpdateProfileRequest
 import com.hojun.interviewnote.interviewnoteapi.exception.UserNotFoundException
 import com.hojun.interviewnote.interviewnoteapi.service.UserService
 import jakarta.validation.Valid
+import org.slf4j.LoggerFactory
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.security.core.userdetails.UserDetails
 import org.springframework.stereotype.Controller
@@ -29,6 +30,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes
 class ProfileController(
     private val userService: UserService
 ) {
+    private val logger = LoggerFactory.getLogger(javaClass)
 
     /**
      * 프로필 설정 페이지
@@ -70,13 +72,27 @@ class ProfileController(
         bindingResult: BindingResult,
         redirectAttributes: RedirectAttributes
     ): String {
+        val user = userService.findByEmail(userDetails.username)
+            ?: throw UserNotFoundException("사용자를 찾을 수 없습니다")
+
         if (bindingResult.hasErrors()) {
+            logger.warn(
+                "프로필 업데이트 검증 실패: userId={}, errors={}",
+                user.id,
+                bindingResult.allErrors.map { it.defaultMessage }
+            )
             redirectAttributes.addFlashAttribute("error", "입력 값을 확인해주세요")
             return "redirect:/profile"
         }
 
-        val user = userService.findByEmail(userDetails.username)
-            ?: throw UserNotFoundException("사용자를 찾을 수 없습니다")
+        // Phase 5 Step 16: 프로필 업데이트 로깅
+        logger.info(
+            "프로필 업데이트: userId={}, name={}, jobField={}, careerLevel={}",
+            user.id,
+            request.name,
+            request.jobField,
+            request.careerLevel
+        )
 
         userService.updateProfile(user.id, request)
 

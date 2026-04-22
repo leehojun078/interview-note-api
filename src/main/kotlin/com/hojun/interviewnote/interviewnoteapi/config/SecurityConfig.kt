@@ -2,6 +2,7 @@ package com.hojun.interviewnote.interviewnoteapi.config
 
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
@@ -15,9 +16,13 @@ import org.springframework.security.web.SecurityFilterChain
  * - 로그인/회원가입 기능
  * - 세션 기반 인증
  * - BCrypt 비밀번호 암호화
+ *
+ * Phase 5 Step 16에서 추가됨
+ * - @PreAuthorize를 위한 메서드 레벨 보안 활성화
  */
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity(prePostEnabled = true)
 class SecurityConfig {
 
     /**

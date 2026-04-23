@@ -2,9 +2,11 @@
 
 취업 준비생을 위한 AI 기반 면접 답변 평가 및 리뷰 서비스
 
-[![Kotlin](https://img.shields.io/badge/Kotlin-1.9.25-blue.svg)](https://kotlinlang.org)
+[![Kotlin](https://img.shields.io/badge/Kotlin-2.2.21-blue.svg)](https://kotlinlang.org)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5.14-brightgreen.svg)](https://spring.io/projects/spring-boot)
 [![OpenAI](https://img.shields.io/badge/OpenAI-gpt--4o--mini-orange.svg)](https://openai.com)
+[![Job Fields](https://img.shields.io/badge/Job%20Fields-17-purple.svg)](#주요-기능)
+[![Tests](https://img.shields.io/badge/Tests-245%20Passing-success.svg)](#테스트)
 
 ## 📋 목차
 
@@ -24,12 +26,15 @@
 
 면접 질문에 텍스트로 답변하면, **AI가 평가와 개선 포인트, 모범답변을 제공**하는 웹 애플리케이션입니다.
 
+**✨ 17개 직무 분야 지원** - IT개발, 기획·전략, 마케팅, 회계, 인사, 영업, 디자인, 금융 등 다양한 직무별 맞춤 질문 및 AI 평가를 제공합니다.
+
 ### 핵심 가치
 
 - **실사용성**: 실제 면접 준비에 도움이 되는 서비스
 - **리뷰 중심**: 단순 질문 은행이 아닌, 답변 개선 과정을 기록
-- **AI 평가**: OpenAI GPT-4o-mini를 활용한 객관적 피드백
+- **AI 평가**: OpenAI GPT-4o-mini를 활용한 직무별 맞춤형 피드백
 - **비용 최적화**: 중복 방지 및 Rate Limiting으로 API 비용 절감
+- **개인화**: 사용자 직무/경력에 따른 맞춤형 질문 추천
 
 ---
 
@@ -54,16 +59,43 @@
 - 📊 **로깅 & 모니터링**: JSON 로그, Prometheus 메트릭, Health Check
 - 🐳 **Docker 컨테이너화**: Multi-stage 빌드, Docker Compose, 환경별 설정
 
+### ✅ Phase 4 (완료)
+- 🔐 **회원가입/로그인** (Phase 4A)
+  - Spring Security 기반 이메일 인증
+  - BCrypt 비밀번호 암호화
+  - 세션 기반 인증 (remember-me 지원)
+- 👤 **사용자별 데이터 분리** (Phase 4B)
+  - 답변-사용자 연결 (userId 외래키)
+  - 권한 기반 접근 제어 (타 사용자 답변 차단)
+  - 개인화된 홈페이지 및 리뷰 이력
+
+### ✅ Phase 5 (완료) ✨ NEW
+- 🎯 **17개 직무 분야 지원**
+  - IT개발, 기획·전략, 마케팅·홍보, 회계·세무·재무
+  - 인사·노무, 총무·법무, 디자인, 영업·판매·무역
+  - 상품기획·MD, 서비스, 생산, 건설·건축
+  - 의료, 교육, 미디어·문화·스포츠, 금융·보험, 공공·복지
+- 📝 **340개 면접 질문** (각 직무별 20개)
+- 🤖 **직무별 맞춤 AI 평가** (17개 직무 프롬프트)
+- 🎨 **사용자 프로필 관리**
+  - 직무 분야 선택 (JobField)
+  - 경력 수준 선택 (신입/주니어/시니어/시니어+)
+  - 프로필 기반 질문 추천
+- 🏠 **개인화된 홈페이지**
+  - 사용자 직무 기반 추천 질문
+  - 직무 미설정 시 안내 배너
+
 ---
 
 ## 기술 스택
 
 ### Backend
-- **Language**: Kotlin 1.9.25 (Java 21)
+- **Language**: Kotlin 2.2.21 (Java 21)
 - **Framework**: Spring Boot 3.5.14
+- **Security**: Spring Security (세션 기반 인증, BCrypt)
 - **ORM**: Spring Data JPA + Hibernate
-- **Database**: H2 (개발) / PostgreSQL (프로덕션)
-- **Migration**: Flyway
+- **Database**: H2 (개발) / PostgreSQL 15 (프로덕션)
+- **Migration**: Flyway (7개 마이그레이션)
 - **Build Tool**: Gradle (Kotlin DSL)
 
 ### AI Integration
@@ -334,48 +366,92 @@ src/
 │   ├── kotlin/.../interviewnoteapi/
 │   │   ├── config/
 │   │   │   ├── ObjectMapperConfig.kt
-│   │   │   └── OpenAiConfig.kt
+│   │   │   ├── OpenAiConfig.kt
+│   │   │   └── SecurityConfig.kt           # Phase 4A
 │   │   ├── controller/
 │   │   │   ├── AnswerController.kt
+│   │   │   ├── AuthController.kt          # Phase 4A - 회원가입/로그인
+│   │   │   ├── HomeController.kt
+│   │   │   ├── ProfileController.kt       # Phase 5 - 프로필 설정
 │   │   │   ├── QuestionController.kt
 │   │   │   └── ReviewController.kt
 │   │   ├── domain/
 │   │   │   ├── AiFeedback.kt
+│   │   │   ├── CareerLevel.kt            # Phase 5 - 경력 수준 Enum
 │   │   │   ├── InterviewAnswer.kt
-│   │   │   └── Question.kt
+│   │   │   ├── JobField.kt               # Phase 5 - 17개 직무 Enum
+│   │   │   ├── Question.kt
+│   │   │   ├── User.kt                   # Phase 4A
+│   │   │   └── UserRole.kt               # Phase 4A
 │   │   ├── dto/
+│   │   │   ├── UpdateProfileRequest.kt   # Phase 5
+│   │   │   └── UserProfileDto.kt         # Phase 5
 │   │   ├── exception/
 │   │   │   ├── AiExceptions.kt
 │   │   │   ├── GlobalExceptionHandler.kt
 │   │   │   └── RateLimitExceededException.kt
+│   │   ├── filter/
+│   │   │   └── RequestIdFilter.kt        # Phase 3B
+│   │   ├── health/
+│   │   │   └── OpenAiHealthIndicator.kt  # Phase 3B
 │   │   ├── repository/
+│   │   │   ├── AiFeedbackRepository.kt
+│   │   │   ├── InterviewAnswerRepository.kt
+│   │   │   ├── QuestionRepository.kt
+│   │   │   └── UserRepository.kt         # Phase 4A
+│   │   ├── security/
+│   │   │   └── CustomUserDetailsService.kt # Phase 4A
 │   │   ├── service/
 │   │   │   ├── ai/
 │   │   │   │   ├── AiClient.kt
 │   │   │   │   ├── OpenAiClientImpl.kt
-│   │   │   │   ├── PromptBuilder.kt
+│   │   │   │   ├── PromptBuilder.kt      # Phase 5: 17개 직무 프롬프트
 │   │   │   │   └── ResponseParser.kt
 │   │   │   ├── cache/
 │   │   │   │   └── DuplicateRequestCache.kt
 │   │   │   ├── ratelimit/
 │   │   │   │   └── RateLimitService.kt
+│   │   │   ├── validation/
+│   │   │   │   └── AnswerValidator.kt    # Phase 2B
 │   │   │   ├── AiFeedbackService.kt
 │   │   │   ├── InterviewService.kt
-│   │   │   └── QuestionService.kt
+│   │   │   ├── QuestionService.kt        # Phase 5: jobField 필터링
+│   │   │   ├── ReviewService.kt
+│   │   │   └── UserService.kt            # Phase 4A, 5
 │   │   └── InterviewNoteApiApplication.kt
 │   └── resources/
 │       ├── db/migration/
 │       │   ├── V1__Create_tables.sql
 │       │   ├── V2__Insert_initial_questions.sql
-│       │   └── V3__add_answer_text_hash.sql
+│       │   ├── V3__add_answer_text_hash.sql
+│       │   ├── V4__Create_users_table.sql       # Phase 4A
+│       │   ├── V5__add_user_id_to_interview_answers.sql # Phase 4B
+│       │   ├── V6__add_user_job_preferences.sql # Phase 5
+│       │   └── V7__insert_multi_job_field_questions.sql # Phase 5 (340개 질문)
 │       ├── templates/
-│       └── application.properties
+│       │   ├── answers/
+│       │   ├── auth/                     # Phase 4A - 로그인/회원가입
+│       │   ├── error/
+│       │   ├── fragments/
+│       │   ├── profile/                  # Phase 5 - 프로필 설정
+│       │   ├── questions/
+│       │   ├── reviews/
+│       │   └── home.html
+│       ├── application.properties
+│       ├── application-dev.properties
+│       ├── application-prod.properties
+│       └── logback-spring.xml
 └── test/
     └── kotlin/.../interviewnoteapi/
-        ├── controller/
-        ├── service/
-        └── integration/
-            └── Phase2EManualTest.kt
+        ├── controller/                   # 6개 컨트롤러 테스트
+        ├── repository/                   # 3개 저장소 테스트
+        ├── service/                      # 7개 서비스 테스트
+        │   ├── ai/                       # AI 관련 테스트 (3개)
+        │   ├── cache/
+        │   ├── ratelimit/
+        │   └── validation/
+        ├── Phase1IntegrationTest.kt
+        └── Phase5IntegrationTest.kt     # Phase 5: 23개 통합 테스트
 ```
 
 ---
@@ -384,10 +460,21 @@ src/
 
 프로젝트 세부 사항은 다음 문서를 참조하세요:
 
+### 핵심 가이드
 - **[CLAUDE.md](./CLAUDE.md)** - 프로젝트 전체 가이드 (아키텍처, 도메인 모델, 코딩 규칙)
 - **[SETUP_GUIDE.md](./SETUP_GUIDE.md)** - 환경 설정 가이드 (OpenAI API, IntelliJ 등)
-- **[phase2_implementation_plan.md](./phase2_implementation_plan.md)** - Phase 2 AI 연동 상세 설계
-- **[phase3_implementation_plan.md](./phase3_implementation_plan.md)** - Phase 3 완성도 향상 계획
+- **[CHANGELOG.md](./CHANGELOG.md)** - 버전별 변경 이력 (0.1.0 ~ 0.5.0)
+
+### Phase별 구현 계획
+- **[phase5_implementation_plan.md](./phase5_implementation_plan.md)** - Phase 5: 17개 직무 확장 상세 설계 ✨
+- **[phase4_implementation_plan.md](./phase4_implementation_plan.md)** - Phase 4: 사용자 관리 및 권한 제어
+- **[phase3_implementation_plan.md](./phase3_implementation_plan.md)** - Phase 3: UI/UX, 모니터링, Docker
+- **[phase2_implementation_plan.md](./phase2_implementation_plan.md)** - Phase 2: AI 연동 및 최적화
+
+### 테스트 및 마이그레이션
+- **[PHASE5_STEP17_TEST_REPORT.md](./PHASE5_STEP17_TEST_REPORT.md)** - Phase 5 통합 테스트 보고서 (245개 테스트)
+- **[PHASE5_MIGRATION_GUIDE.md](./PHASE5_MIGRATION_GUIDE.md)** - Phase 5 마이그레이션 가이드 (V6, V7)
+- **[UNIT_TEST_PLAN.md](./UNIT_TEST_PLAN.md)** - 단위 테스트 전략
 
 ---
 

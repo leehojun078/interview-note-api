@@ -6,6 +6,139 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-04-23
+
+### Added - Phase 5 (Multi-Job Field Support)
+
+#### 직무 확장 (IT → 17개 직무)
+- 🎯 **17개 직무 분야 지원**
+  - IT개발, 기획·전략, 마케팅·홍보·조사, 회계·세무·재무
+  - 인사·노무·HRD, 총무·법무·사무, 디자인, 영업·판매·무역
+  - 상품기획·MD, 서비스, 생산, 건설·건축
+  - 의료, 교육, 미디어·문화·스포츠, 금융·보험, 공공·복지
+- 📝 **340개 면접 질문 데이터**
+  - 각 직무별 20개 질문 (EASY 5개, MEDIUM 10개, HARD 5개)
+  - 직무별 맞춤 카테고리 (IT: 기술역량/문제해결/협업, 영업: 고객관리/실적달성/협상 등)
+- 🎨 **사용자 프로필 관리**
+  - 직무 분야 선택 (JobField enum)
+  - 경력 수준 선택 (신입, 주니어, 시니어, 시니어+)
+  - `/profile` 페이지에서 설정 가능
+
+#### AI 평가 개인화
+- 🤖 **17개 직무별 프롬프트**
+  - PromptBuilder에 각 직무별 평가 기준 구현
+  - 직무 특성에 맞는 논리성/구체성 평가
+  - buildBasePrompt로 중복 제거한 설계
+- 🔍 **동적 카테고리 필터링**
+  - 직무 선택 시 해당 직무의 카테고리만 표시
+  - JavaScript 기반 동적 UI (HTMX 대신)
+  - `getCategoriesByAllJobFields()` 메서드로 서버에서 전체 맵 전달
+
+#### 사용자 경험 개선
+- 🏠 **홈페이지 개인화**
+  - 사용자 직무 기반 추천 질문 (5개 랜덤)
+  - 직무 미설정 시 안내 배너 표시
+  - IT 기본값 자동 적용 (직무 미설정 사용자)
+- 📋 **질문 목록 필터링**
+  - 직무 선택 드롭다운 추가
+  - 로그인 사용자 기본 직무 자동 적용
+  - 카테고리/난이도 조합 필터링
+
+### Changed
+- Database: V6 migration (job_field, career_level 컬럼 추가)
+- Database: V7 migration (340개 질문 데이터 INSERT)
+- QuestionService: jobField 파라미터 추가, IT 기본값 처리
+- UserService: getProfile(), updateProfile() 메서드 추가
+- QuestionController: jobField 필터링 및 동적 카테고리 지원
+- HomeController: 개인화된 질문 추천 로직
+
+### Technical Details
+- **Domain 추가**: JobField enum (17개), CareerLevel enum (4개)
+- **Controller 추가**: ProfileController (프로필 조회/수정)
+- **DTO 추가**: UserProfileDto, UpdateProfileRequest
+- **템플릿 추가**: profile/settings.html
+- **테스트**: 245개 통과 (+23개 Phase 5 통합 테스트)
+- **성능**: jobField 인덱스로 필터링 < 200ms
+
+---
+
+## [0.4.1] - 2026-04-20
+
+### Added - Phase 4B (User-Specific Features)
+
+#### 사용자별 데이터 분리
+- 👤 **답변-사용자 연결**
+  - InterviewAnswer에 userId 외래키 추가
+  - 로그인한 사용자만 자신의 답변 조회/생성
+  - V5 migration으로 스키마 업데이트
+- 🔒 **권한 기반 접근 제어**
+  - 타 사용자 답변 조회 차단 (403 Forbidden)
+  - HomeController, ReviewController에 사용자 필터링 적용
+  - AnswerController에 userId 자동 주입
+
+#### UI/UX 개선
+- 🏠 **개인화된 홈페이지**
+  - "최근 리뷰 3개" 섹션 (사용자별)
+  - 로그인/미로그인 상태별 다른 화면
+  - Tailwind CSS 적용 완료
+- 📊 **리뷰 이력 필터링**
+  - 사용자별 리뷰만 표시
+  - 빈 상태 안내 메시지
+
+### Changed
+- InterviewAnswer: userId 컬럼 추가 (nullable → not null)
+- ReviewService: getUserReviews(userId) 메서드로 전환
+- 기존 getReviewList() deprecated 처리
+
+### Fixed
+- 타 사용자 답변 조회 보안 이슈 해결
+- 로그인 없이 답변 작성 방지
+
+---
+
+## [0.4.0] - 2026-04-18
+
+### Added - Phase 4A (User Management)
+
+#### 회원가입 및 인증
+- 🔐 **Spring Security 통합**
+  - 이메일 기반 회원가입/로그인
+  - BCrypt 비밀번호 암호화
+  - 세션 기반 인증 (remember-me 지원)
+- 👤 **User 엔티티**
+  - 이메일 (unique), 비밀번호 해시, 이름
+  - 역할 기반 접근 제어 (USER, ADMIN)
+  - 계정 활성화 상태 (isActive)
+  - 마지막 로그인 일시 추적
+- 🎨 **인증 UI**
+  - 회원가입 페이지 (/auth/register)
+  - 로그인 페이지 (/auth/login)
+  - Tailwind CSS 스타일링
+
+#### 보안 강화
+- 🛡️ **비밀번호 검증**
+  - 최소 8자, 최대 100자
+  - Spring Validation 적용
+- 🔒 **CSRF 보호**
+  - Spring Security CSRF 토큰
+  - 모든 POST 요청 보호
+- 🚪 **접근 제어**
+  - 인증 필요 경로: /questions, /answers, /reviews
+  - 공개 경로: /, /auth/**, /h2-console (dev)
+
+### Changed
+- Database: V4 migration (users 테이블 생성)
+- SecurityConfig: formLogin, logout, remember-me 설정
+- 모든 Controller에 @AuthenticationPrincipal 적용
+- 네비게이션 바에 로그인/로그아웃 버튼 추가
+
+### Technical Details
+- **비밀번호 암호화**: BCryptPasswordEncoder (strength 12)
+- **세션 관리**: 서버 사이드 세션 (remember-me: 14일)
+- **역할**: USER (기본), ADMIN (확장용)
+
+---
+
 ## [0.3.0] - 2026-04-14
 
 ### Added - Phase 3 (Production Ready)
@@ -136,6 +269,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## Version History
 
+- **0.5.0** (2026-04-23): Phase 5 - 17개 직무 확장, 사용자 프로필, AI 개인화 ✨
+- **0.4.1** (2026-04-20): Phase 4B - 사용자별 데이터 분리, 권한 기반 접근 제어
+- **0.4.0** (2026-04-18): Phase 4A - 회원가입/로그인, Spring Security 통합
 - **0.3.0** (2026-04-14): Phase 3 - 프로덕션 준비 완료 (UI/UX, 모니터링, Docker)
 - **0.2.0** (2026-04-13): Phase 2 - AI 연동 완료
 - **0.1.0** (2026-04-11): Phase 1 - MVP 기반 완료

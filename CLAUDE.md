@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code when working with the Interview Note API project.
 
-**최종 업데이트**: 2026-04-19 (Phase 1-3 완료 상태 반영)
+**최종 업데이트**: 2026-04-23 (Phase 1-5 완료 상태 반영)
 
 ## Project Overview
 
@@ -373,7 +373,7 @@ Controller → Service → Repository
 
 ## Implementation Status
 
-**프로젝트 현재 상태** (2026-04-19 기준): Phase 1-3 모두 완료, 프로덕션 배포 준비 완료
+**프로젝트 현재 상태** (2026-04-23 기준): **Phase 1-5 모두 완료**, 17개 직무 지원, 프로덕션 배포 준비 완료
 
 ### ✅ Phase 1: 기반 구축 (완료)
 AI 없이 전체 플로우 완성
@@ -412,21 +412,74 @@ AI 없이 전체 플로우 완성
 27. ✅ RequestIdFilter (요청 추적, MDC)
 28. ✅ OpenAiHealthIndicator (AI 연결 상태 체크)
 
-### 📝 향후 작업 제안 (Phase 4+)
-1. **Phase 4: 사용자 관리**
-   - Spring Security 기반 로그인/회원가입
-   - JWT 토큰 인증
-   - 사용자별 답변 이력 분리
+### ✅ Phase 4: 사용자 관리 (완료)
+회원가입/로그인 및 사용자별 데이터 분리
 
-2. **Phase 5: 성능 최적화**
-   - Redis 캐싱 도입
+#### Phase 4A: 인증 및 권한 (완료)
+29. ✅ Spring Security 통합 (세션 기반 인증)
+30. ✅ 회원가입/로그인 UI (Thymeleaf + Tailwind)
+31. ✅ User 엔티티 및 Repository
+32. ✅ BCrypt 비밀번호 암호화
+33. ✅ 역할 기반 접근 제어 (USER, ADMIN)
+34. ✅ V4 migration (users 테이블 생성)
+
+#### Phase 4B: 사용자별 데이터 분리 (완료)
+35. ✅ InterviewAnswer에 userId 외래키 추가
+36. ✅ V5 migration (user_id 컬럼 추가)
+37. ✅ 사용자별 답변 조회/생성 제한
+38. ✅ 홈페이지 개인화 (최근 리뷰 3개)
+39. ✅ 타 사용자 답변 접근 차단 (403 Forbidden)
+
+### ✅ Phase 5: 다중 직무 지원 (완료) ✨
+IT 단일 직무에서 17개 직무로 확장 + 사용자 프로필
+
+#### Phase 5A: 직무 확장 기반 (완료)
+40. ✅ JobField enum (17개 직무) 정의
+41. ✅ CareerLevel enum (4개 경력 수준) 정의
+42. ✅ User 엔티티에 jobField, careerLevel 필드 추가
+43. ✅ V6 migration (job_field, career_level 컬럼 추가)
+44. ✅ V7 migration (340개 질문 데이터 INSERT)
+
+#### Phase 5B: 프로필 및 필터링 (완료)
+45. ✅ QuestionRepository jobField 필터링 메서드 추가
+46. ✅ QuestionService jobField 파라미터 추가 (IT 기본값)
+47. ✅ getCategoriesByAllJobFields() 메서드 (동적 카테고리)
+48. ✅ UserProfileDto, UpdateProfileRequest DTO
+49. ✅ ProfileController (GET /profile, POST /profile/update)
+50. ✅ profile/settings.html 템플릿
+
+#### Phase 5C: AI 개인화 (완료)
+51. ✅ PromptBuilder 17개 직무 프롬프트 구현
+52. ✅ buildBasePrompt() 공통 구조 (중복 제거)
+53. ✅ 직무별 평가 기준 맞춤화 (논리성, 구체성)
+54. ✅ QuestionController jobField 필터 + 동적 카테고리
+55. ✅ HomeController 개인화 (직무 기반 추천 질문)
+56. ✅ questions/list.html 직무 필터 UI + JavaScript 동적 카테고리
+
+#### Phase 5D: 테스트 및 문서화 (완료)
+57. ✅ Phase5IntegrationTest (23개 통합 테스트)
+58. ✅ 전체 테스트 통과 (245개)
+59. ✅ PHASE5_STEP17_TEST_REPORT.md 작성
+60. ✅ CHANGELOG.md 업데이트 (0.4.0, 0.4.1, 0.5.0)
+61. ✅ README.md 업데이트 (17개 직무 반영)
+62. ✅ CLAUDE.md 업데이트 (Phase 5 완료 상태)
+63. ✅ PHASE5_MIGRATION_GUIDE.md 작성
+
+### 📝 향후 작업 제안 (Phase 6+)
+1. **Phase 6: 성능 최적화**
+   - Redis 캐싱으로 질문 목록 성능 향상
    - DB 쿼리 최적화 (N+1 해결)
    - CDN 정적 리소스 제공
 
-3. **Phase 6: 기능 확장**
-   - 다른 직무 질문 추가 (영업, 경영, 회계)
-   - 벡터DB + RAG 도입
+2. **Phase 7: 고급 기능**
+   - 다중 직무 선택 (User가 여러 직무 관심 가능)
+   - 직무별 통계 대시보드 (답변 개수, 평균 점수)
+   - AI 프롬프트 A/B 테스트
+
+3. **Phase 8: AI 고도화**
+   - 벡터DB + RAG 도입 (질문 유사도 검색)
    - 실시간 채팅 기반 모의 면접
+   - 음성 녹음 및 STT 연동
 
 ## Coding Guidelines
 

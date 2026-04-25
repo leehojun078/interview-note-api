@@ -1,14 +1,14 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{fragments/layout :: head}"></head>
-<body class="bg-gray-50 text-gray-900 min-h-screen flex flex-col">
+<body class="bg-gray-50 dark:bg-dark-bg text-gray-900 dark:text-dark-text min-h-screen flex flex-col">
 <nav th:replace="~{fragments/layout :: navbar}"></nav>
 <div th:replace="~{fragments/layout :: toast}"></div>
 
-<main class="flex-1 py-8">
+<main class="flex-1 py-12 md:py-16">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
-            <h1 class="text-3xl font-bold text-gray-900">리뷰 이력</h1>
+            <h1 class="text-4xl md:text-5xl font-bold text-gray-900 dark:text-dark-text">📊 리뷰 이력</h1>
             <a th:href="@{/questions}"
                class="inline-block bg-primary hover:bg-primary-dark text-white font-semibold px-6 py-3 rounded-lg transition shadow-md hover:shadow-lg text-center">
                 새 질문 연습하기 →
@@ -16,22 +16,22 @@
         </div>
 
         <!-- 이력 카드 목록 -->
-        <div class="space-y-4">
+        <div class="space-y-4" th:if="${not #lists.isEmpty(reviews)}">
             <div th:each="review : ${reviews}"
-                 class="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition cursor-pointer"
+                 class="card card-interactive"
                  th:onclick="|location.href='@{/reviews/{id}(id=${review.answerId})}'|">
                 <div class="flex flex-col md:flex-row md:justify-between md:items-start gap-4">
                     <div class="flex-1">
-                        <h3 class="text-xl font-semibold text-gray-800 mb-3"
+                        <h3 class="text-xl font-semibold text-gray-800 dark:text-dark-text mb-3"
                             th:text="${review.questionContent}">
                             질문 내용
                         </h3>
                         <div class="flex flex-wrap gap-2 items-center">
-                            <span class="inline-block px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium"
+                            <span class="badge badge-blue"
                                   th:text="${review.category}">
                                 카테고리
                             </span>
-                            <span class="text-sm text-gray-500"
+                            <span class="text-sm text-gray-500 dark:text-dark-muted"
                                   th:text="${#temporals.format(review.answeredAt, 'yyyy-MM-dd HH:mm')}">
                                 작성일
                             </span>
@@ -43,22 +43,65 @@
                              th:text="${#numbers.formatDecimal(review.averageScore, 1, 1)}">
                             3.5
                         </div>
-                        <div class="text-sm text-gray-500">/ 5.0</div>
+                        <div class="text-sm text-gray-500 dark:text-dark-muted">/ 5.0</div>
                     </div>
                 </div>
             </div>
         </div>
 
+        <!-- 페이지네이션 -->
+        <div th:if="${not #lists.isEmpty(reviews) and page.totalPages > 1}" class="flex justify-center mt-8">
+            <nav class="flex items-center gap-2">
+                <!-- 이전 버튼 -->
+                <a th:if="${page.number > 0}"
+                   th:href="@{/reviews(page=${page.number - 1}, size=${page.size})}"
+                   class="px-4 py-2 bg-white dark:bg-dark-card border border-gray-300 dark:border-dark-lighter rounded-lg hover:bg-gray-50 dark:hover:bg-dark-lighter transition font-medium text-gray-700 dark:text-dark-text">
+                    이전
+                </a>
+                <span th:if="${page.number == 0}"
+                      class="px-4 py-2 bg-gray-100 dark:bg-dark-lighter border border-gray-300 dark:border-dark-lighter rounded-lg text-gray-400 dark:text-dark-muted font-medium cursor-not-allowed">
+                    이전
+                </span>
+
+                <!-- 페이지 번호 -->
+                <span th:each="i : ${#numbers.sequence(0, page.totalPages - 1)}"
+                      th:if="${i >= page.number - 2 and i <= page.number + 2}">
+                    <a th:if="${i != page.number}"
+                       th:href="@{/reviews(page=${i}, size=${page.size})}"
+                       th:text="${i + 1}"
+                       class="px-4 py-2 bg-white dark:bg-dark-card border border-gray-300 dark:border-dark-lighter rounded-lg hover:bg-gray-50 dark:hover:bg-dark-lighter transition font-medium text-gray-700 dark:text-dark-text">
+                        1
+                    </a>
+                    <span th:if="${i == page.number}"
+                          th:text="${i + 1}"
+                          class="px-4 py-2 bg-primary dark:bg-primary-light text-white rounded-lg font-bold">
+                        1
+                    </span>
+                </span>
+
+                <!-- 다음 버튼 -->
+                <a th:if="${page.number < page.totalPages - 1}"
+                   th:href="@{/reviews(page=${page.number + 1}, size=${page.size})}"
+                   class="px-4 py-2 bg-white dark:bg-dark-card border border-gray-300 dark:border-dark-lighter rounded-lg hover:bg-gray-50 dark:hover:bg-dark-lighter transition font-medium text-gray-700 dark:text-dark-text">
+                    다음
+                </a>
+                <span th:if="${page.number == page.totalPages - 1}"
+                      class="px-4 py-2 bg-gray-100 dark:bg-dark-lighter border border-gray-300 dark:border-dark-lighter rounded-lg text-gray-400 dark:text-dark-muted font-medium cursor-not-allowed">
+                    다음
+                </span>
+            </nav>
+        </div>
+
         <!-- 빈 상태 -->
         <div th:if="${#lists.isEmpty(reviews)}" class="text-center py-16">
-            <div class="text-gray-300 mb-6">
+            <div class="text-gray-300 dark:text-dark-muted mb-6">
                 <svg class="mx-auto h-32 w-32" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                           d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                 </svg>
             </div>
-            <h2 class="text-2xl font-semibold text-gray-600 mb-3">아직 답변한 질문이 없습니다</h2>
-            <p class="text-gray-500 mb-8">
+            <h2 class="text-2xl font-semibold text-gray-600 dark:text-dark-muted mb-3">아직 답변한 질문이 없습니다</h2>
+            <p class="text-gray-500 dark:text-dark-muted mb-8">
                 첫 번째 질문에 답변하고 AI 피드백을 받아보세요!
             </p>
             <a th:href="@{/questions}"
@@ -71,5 +114,6 @@
 
 <footer th:replace="~{fragments/layout :: footer}"></footer>
 <script th:replace="~{fragments/layout :: toast-script}"></script>
+<script th:replace="~{fragments/layout :: dark-mode-script}"></script>
 </body>
 </html>

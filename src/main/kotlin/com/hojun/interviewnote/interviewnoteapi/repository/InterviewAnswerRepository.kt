@@ -1,6 +1,8 @@
 package com.hojun.interviewnote.interviewnoteapi.repository
 
 import com.hojun.interviewnote.interviewnoteapi.domain.InterviewAnswer
+import org.springframework.data.domain.Page
+import org.springframework.data.domain.Pageable
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.stereotype.Repository
 
@@ -14,4 +16,10 @@ interface InterviewAnswerRepository : JpaRepository<InterviewAnswer, Long> {
      * Phase 4A-2에서 추가: 사용자별 답변 이력 분리
      */
     fun findByUserIdOrderByCreatedAtDesc(userId: Long): List<InterviewAnswer>
+
+    /**
+     * 특정 사용자의 답변을 페이지네이션하여 조회
+     * Phase 2 (UI/UX): 리뷰 페이지네이션
+     */
+    fun findByUserIdOrderByCreatedAtDesc(userId: Long, pageable: Pageable): Page<InterviewAnswer>
 }

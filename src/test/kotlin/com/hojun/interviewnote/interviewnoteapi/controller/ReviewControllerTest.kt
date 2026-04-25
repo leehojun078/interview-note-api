@@ -9,10 +9,14 @@ import com.hojun.interviewnote.interviewnoteapi.repository.UserRepository
 import com.hojun.interviewnote.interviewnoteapi.service.InterviewService
 import com.hojun.interviewnote.interviewnoteapi.service.ReviewService
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.any
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
 import org.springframework.context.annotation.Import
+import org.springframework.data.domain.PageImpl
+import org.springframework.data.domain.PageRequest
 import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.test.context.bean.override.mockito.MockitoBean
 import org.springframework.test.web.servlet.MockMvc
@@ -66,14 +70,18 @@ class ReviewControllerTest {
                 averageScore = 3.5
             )
         )
+        val pageable = PageRequest.of(0, 10)
+        val reviewsPage = PageImpl(reviews, pageable, reviews.size.toLong())
+
         whenever(userRepository.findByEmail("user")).thenReturn(testUser)
-        whenever(reviewService.getUserReviews(1L)).thenReturn(reviews)
+        whenever(reviewService.getUserReviewsPage(eq(1L), any())).thenReturn(reviewsPage)
 
         // when & then
         mockMvc.perform(get("/reviews"))
             .andExpect(status().isOk)
             .andExpect(view().name("reviews/list"))
             .andExpect(model().attributeExists("reviews"))
+            .andExpect(model().attributeExists("page"))
             .andExpect(model().attribute("reviews", reviews))
     }
 
@@ -81,8 +89,11 @@ class ReviewControllerTest {
     @WithMockUser(username = "user")
     fun`리뷰 이력이 없으면 빈 목록을 렌더링한다`() {
         // given
+        val pageable = PageRequest.of(0, 10)
+        val emptyPage = PageImpl(emptyList<ReviewSummaryDto>(), pageable, 0L)
+
         whenever(userRepository.findByEmail("user")).thenReturn(testUser)
-        whenever(reviewService.getUserReviews(1L)).thenReturn(emptyList())
+        whenever(reviewService.getUserReviewsPage(eq(1L), any())).thenReturn(emptyPage)
 
         // when & then
         mockMvc.perform(get("/reviews"))

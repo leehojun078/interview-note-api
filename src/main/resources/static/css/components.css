@@ -1,0 +1,600 @@
+/**
+ * UI/UX Modernization - Component Library
+ * LimitZero 스타일 적용
+ * Version: 1.1 - CDN Tailwind 호환
+ */
+
+/* ============================================
+   Button Styles
+   ============================================ */
+
+.btn-primary {
+    background-color: #2563EB;
+    color: white;
+    font-weight: 600;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.5rem;
+    transition: all 0.2s;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    display: inline-block;
+    text-align: center;
+}
+
+.btn-primary:hover {
+    background-color: #1D4ED8;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    transform: translateY(-0.125rem);
+}
+
+.btn-neon {
+    background-color: #00E5A0;
+    color: #111827;
+    font-weight: 700;
+    padding: 0.75rem 2rem;
+    border-radius: 0.5rem;
+    transition: all 0.2s;
+    box-shadow: 0 0 20px rgba(0, 229, 160, 0.4);
+    display: inline-block;
+    text-align: center;
+}
+
+.btn-neon:hover {
+    background-color: #34D399;
+    box-shadow: 0 0 30px rgba(0, 229, 160, 0.5);
+    transform: translateY(-0.25rem);
+}
+
+.btn-secondary {
+    background-color: white;
+    color: #374151;
+    font-weight: 600;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.5rem;
+    border: 2px solid #D1D5DB;
+    transition: all 0.2s;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    display: inline-block;
+    text-align: center;
+}
+
+.btn-secondary:hover {
+    background-color: #F9FAFB;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+.btn-ghost {
+    background-color: transparent;
+    color: white;
+    font-weight: 500;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    transition: all 0.2s;
+}
+
+.btn-ghost:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* ============================================
+   Card Styles
+   ============================================ */
+
+.card {
+    background-color: white;
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    padding: 1.5rem;
+    transition: all 0.3s;
+}
+
+.dark .card {
+    background-color: #1a1b1f;
+    border: 1px solid #2a2b2f;
+}
+
+.card:hover {
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    transform: translateY(-0.25rem);
+}
+
+.card-featured {
+    background: linear-gradient(135deg, #2563EB 0%, #4F6EF7 100%);
+    color: white;
+    border-radius: 0.5rem;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    padding: 2rem;
+}
+
+.card-interactive {
+    cursor: pointer;
+}
+
+.card-bordered {
+    border: 2px solid #E5E7EB;
+}
+
+.dark .card-bordered {
+    border-color: #2a2b2f;
+}
+
+.card-bordered:hover {
+    border-color: #2563EB;
+}
+
+.dark .card-bordered:hover {
+    border-color: #3B82F6;
+}
+
+/* ============================================
+   Badge Styles
+   ============================================ */
+
+.badge {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+.badge-blue {
+    background-color: #DBEAFE;
+    color: #1E40AF;
+}
+
+.dark .badge-blue {
+    background-color: rgba(30, 58, 138, 0.3);
+    color: #93C5FD;
+}
+
+.badge-green {
+    background-color: #D1FAE5;
+    color: #065F46;
+}
+
+.dark .badge-green {
+    background-color: rgba(6, 95, 70, 0.3);
+    color: #6EE7B7;
+}
+
+.badge-yellow {
+    background-color: #FEF3C7;
+    color: #92400E;
+}
+
+.dark .badge-yellow {
+    background-color: rgba(146, 64, 14, 0.3);
+    color: #FCD34D;
+}
+
+.badge-red {
+    background-color: #FEE2E2;
+    color: #991B1B;
+}
+
+.dark .badge-red {
+    background-color: rgba(153, 27, 27, 0.3);
+    color: #FCA5A5;
+}
+
+.badge-purple {
+    background-color: #EDE9FE;
+    color: #5B21B6;
+}
+
+.dark .badge-purple {
+    background-color: rgba(91, 33, 182, 0.3);
+    color: #C4B5FD;
+}
+
+.badge-neon {
+    background-color: rgba(0, 229, 160, 0.1);
+    color: #00E5A0;
+    border: 1px solid #00E5A0;
+}
+
+.dark .badge-neon {
+    background-color: rgba(0, 229, 160, 0.2);
+}
+
+.badge-primary {
+    background-color: rgba(37, 99, 235, 0.1);
+    color: #2563EB;
+    border: 1px solid #2563EB;
+}
+
+.dark .badge-primary {
+    background-color: rgba(37, 99, 235, 0.2);
+    color: #3B82F6;
+}
+
+/* ============================================
+   Loading Spinner
+   ============================================ */
+
+.spinner {
+    display: inline-block;
+    width: 1.5rem;
+    height: 1.5rem;
+    border: 4px solid #E5E7EB;
+    border-top-color: #2563EB;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+.spinner-sm {
+    width: 1rem;
+    height: 1rem;
+    border-width: 2px;
+}
+
+.spinner-lg {
+    width: 2rem;
+    height: 2rem;
+    border-width: 4px;
+}
+
+.spinner-white {
+    border-color: rgba(255, 255, 255, 0.3);
+    border-top-color: white;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* ============================================
+   Progress Bar
+   ============================================ */
+
+.progress-bar {
+    width: 100%;
+    background-color: #E5E7EB;
+    border-radius: 9999px;
+    overflow: hidden;
+}
+
+.progress-bar-fill {
+    height: 100%;
+    background-color: #2563EB;
+    border-radius: 9999px;
+    transition: all 0.5s;
+}
+
+.progress-bar-sm {
+    height: 0.5rem;
+}
+
+.progress-bar-md {
+    height: 1rem;
+}
+
+.progress-bar-lg {
+    height: 1.5rem;
+}
+
+/* ============================================
+   Input & Form Styles
+   ============================================ */
+
+.input-field {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1px solid #D1D5DB;
+    border-radius: 0.5rem;
+    transition: all 0.2s;
+}
+
+.input-field:focus {
+    outline: none;
+    border-color: #2563EB;
+    ring: 2px;
+    ring-color: #2563EB;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.textarea-field {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1px solid #D1D5DB;
+    border-radius: 0.5rem;
+    resize: vertical;
+    transition: all 0.2s;
+}
+
+.textarea-field:focus {
+    outline: none;
+    border-color: #2563EB;
+    ring: 2px;
+    ring-color: #2563EB;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.select-field {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1px solid #D1D5DB;
+    border-radius: 0.5rem;
+    transition: all 0.2s;
+}
+
+/* ============================================
+   Alert & Banner Styles
+   ============================================ */
+
+.alert {
+    padding: 1rem 1.5rem;
+    border-radius: 0.5rem;
+    border-left-width: 4px;
+}
+
+.alert-success {
+    background-color: #ECFDF5;
+    border-color: #10B981;
+    color: #064E3B;
+}
+
+.alert-warning {
+    background-color: #FFFBEB;
+    border-color: #F59E0B;
+    color: #78350F;
+}
+
+.alert-error {
+    background-color: #FEF2F2;
+    border-color: #EF4444;
+    color: #7F1D1D;
+}
+
+.alert-info {
+    background-color: #EFF6FF;
+    border-color: #3B82F6;
+    color: #1E3A8A;
+}
+
+/* ============================================
+   Tab Styles
+   ============================================ */
+
+.tab {
+    padding: 0.75rem 1rem;
+    font-weight: 500;
+    color: #6B7280;
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.tab:hover {
+    color: #2563EB;
+    border-bottom-color: #D1D5DB;
+}
+
+.tab.active {
+    color: #2563EB;
+    border-bottom-color: #2563EB;
+}
+
+.tab-content {
+    padding: 1.5rem 0;
+}
+
+/* ============================================
+   Animation Utilities
+   ============================================ */
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeInFast {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeInSlow {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateX(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes slideInFromLeft {
+    from {
+        opacity: 0;
+        transform: translateX(-30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes slideInFromRight {
+    from {
+        opacity: 0;
+        transform: translateX(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes slideInFromBottom {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes scaleIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+@keyframes fadeOut {
+    from {
+        opacity: 1;
+    }
+    to {
+        opacity: 0;
+    }
+}
+
+.animate-fade-in {
+    animation: fadeIn 0.6s ease-out;
+}
+
+.animate-fade-in-fast {
+    animation: fadeInFast 0.3s ease-out;
+}
+
+.animate-fade-in-slow {
+    animation: fadeInSlow 0.9s ease-out;
+}
+
+.animate-slide-in {
+    animation: slideIn 0.4s ease-out;
+}
+
+.animate-slide-in-left {
+    animation: slideInFromLeft 0.6s ease-out;
+}
+
+.animate-slide-in-right {
+    animation: slideInFromRight 0.6s ease-out;
+}
+
+.animate-slide-in-bottom {
+    animation: slideInFromBottom 0.6s ease-out;
+}
+
+.animate-scale-in {
+    animation: scaleIn 0.4s ease-out;
+}
+
+.animate-fade-out {
+    animation: fadeOut 0.3s ease-out;
+}
+
+/* ============================================
+   Utility Classes
+   ============================================ */
+
+.text-gradient-primary {
+    background: linear-gradient(90deg, #2563EB 0%, #4F6EF7 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.bg-gradient-hero {
+    background: linear-gradient(135deg, #2563EB 0%, #4F6EF7 50%, #2563EB 100%);
+}
+
+.shadow-neon {
+    box-shadow: 0 0 20px rgba(0, 229, 160, 0.4);
+}
+
+.shadow-neon-lg {
+    box-shadow: 0 0 30px rgba(0, 229, 160, 0.5);
+}
+
+/* ============================================
+   HTMX Utilities
+   ============================================ */
+
+.htmx-indicator {
+    display: none;
+}
+
+.htmx-request .htmx-indicator,
+.htmx-request.htmx-indicator {
+    display: block;
+}
+
+.htmx-request form {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.htmx-swapping {
+    opacity: 0;
+    transition: opacity 200ms ease-out;
+}
+
+.htmx-settling {
+    opacity: 1;
+    transition: opacity 200ms ease-in;
+}
+
+/* ============================================
+   Responsive Utilities
+   ============================================ */
+
+@media (max-width: 768px) {
+    .card {
+        padding: 1rem;
+    }
+
+    .btn-primary,
+    .btn-secondary,
+    .btn-neon {
+        padding: 0.5rem 1rem;
+        font-size: 0.875rem;
+    }
+}
+
+/* ============================================
+   Print Styles
+   ============================================ */
+
+@media print {
+    .no-print {
+        display: none !important;
+    }
+
+    .card {
+        box-shadow: none;
+        border: 1px solid #D1D5DB;
+    }
+}

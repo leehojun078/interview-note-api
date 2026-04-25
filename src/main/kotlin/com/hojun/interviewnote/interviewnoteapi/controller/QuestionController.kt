@@ -58,6 +58,35 @@ class QuestionController(
     }
 
     /**
+     * Phase 3: HTMX - 질문 목록 Fragment만 반환
+     *
+     * HTMX 요청 시 전체 페이지가 아닌 질문 목록 Fragment만 반환
+     */
+    @GetMapping("/fragment")
+    fun listFragment(
+        @AuthenticationPrincipal userDetails: UserDetails?,
+        @RequestParam(required = false) jobField: String?,
+        @RequestParam(required = false) category: String?,
+        @RequestParam(required = false) difficulty: String?,
+        model: Model
+    ): String {
+        // 로그인한 사용자의 기본 직무 가져오기
+        val defaultJobField = userDetails?.let { details ->
+            userService.findByEmail(details.username)?.jobField?.name
+        }
+
+        // jobField 파라미터가 없으면 사용자 기본 직무 사용
+        val effectiveJobField = jobField ?: defaultJobField
+
+        val questions = questionService.findAll(effectiveJobField, category, difficulty)
+
+        model.addAttribute("questions", questions)
+
+        // Fragment만 반환
+        return "questions/list :: question-list-fragment"
+    }
+
+    /**
      * 질문 상세 + 답변 작성 페이지
      */
     @GetMapping("/{id}/answer")

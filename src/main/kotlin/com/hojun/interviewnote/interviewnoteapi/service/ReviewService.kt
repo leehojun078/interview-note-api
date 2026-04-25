@@ -4,6 +4,9 @@ import com.hojun.interviewnote.interviewnoteapi.dto.ReviewSummaryDto
 import com.hojun.interviewnote.interviewnoteapi.repository.AiFeedbackRepository
 import com.hojun.interviewnote.interviewnoteapi.repository.InterviewAnswerRepository
 import com.hojun.interviewnote.interviewnoteapi.repository.QuestionRepository
+import org.springframework.data.domain.Page
+import org.springframework.data.domain.PageImpl
+import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -63,5 +66,32 @@ class ReviewService(
                 null
             }
         }
+    }
+
+    /**
+     * 특정 사용자의 리뷰 이력을 페이지네이션하여 조회
+     * Phase 2 (UI/UX): 리뷰 페이지네이션
+     */
+    fun getUserReviewsPage(userId: Long, pageable: Pageable): Page<ReviewSummaryDto> {
+        val answersPage = interviewAnswerRepository.findByUserIdOrderByCreatedAtDesc(userId, pageable)
+
+        val reviewDtos = answersPage.content.mapNotNull { answer ->
+            val question = questionRepository.findById(answer.questionId).orElse(null)
+            val feedback = aiFeedbackRepository.findByInterviewAnswerId(answer.id)
+
+            if (question != null && feedback != null) {
+                ReviewSummaryDto(
+                    answerId = answer.id,
+                    questionContent = question.content,
+                    category = question.category,
+                    answeredAt = answer.createdAt,
+                    averageScore = feedback.averageScore
+                )
+            } else {
+                null
+            }
+        }
+
+        return PageImpl(reviewDtos, pageable, answersPage.totalElements)
     }
 }

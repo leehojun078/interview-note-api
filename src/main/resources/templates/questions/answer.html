@@ -54,7 +54,8 @@
 
         <!-- 답변 작성 폼 -->
         <form th:action="@{/questions/{id}/answer(id=${question.id})}"
-              method="post">
+              method="post"
+              onsubmit="return handleSubmit(event)">
             <input type="hidden" name="questionId" th:value="${question.id}" />
 
             <div class="bg-white dark:bg-dark-card rounded-lg shadow-md p-6 mb-6 dark:border dark:border-dark-lighter">
@@ -98,8 +99,7 @@
             <div class="flex flex-col sm:flex-row gap-4 justify-center">
                 <button type="submit"
                         class="btn-primary text-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                        id="submitBtn"
-                        onclick="showLoading(event)">
+                        id="submitBtn">
                     <span id="submitText">제출하고 평가 받기 →</span>
                     <span id="loadingText" class="hidden flex items-center justify-center gap-2">
                         <span class="spinner spinner-white"></span>
@@ -143,23 +143,30 @@
         }
     }
 
-    function showLoading(event) {
-        // 폼 검증 통과 시에만 로딩 표시
+    function handleSubmit(event) {
         const textarea = document.getElementById('answerText');
-        if (textarea.value.length < 50) {
-            return; // 검증 실패 시 로딩 표시 안 함
-        }
-
         const submitBtn = document.getElementById('submitBtn');
         const submitText = document.getElementById('submitText');
         const loadingText = document.getElementById('loadingText');
 
-        // 텍스트 전환
+        // 답변 길이 검증
+        if (textarea.value.length < 50) {
+            event.preventDefault();
+            return false;
+        }
+
+        // 로딩 UI 표시
         submitText.classList.add('hidden');
         loadingText.classList.remove('hidden');
 
-        // 버튼 비활성화
-        submitBtn.disabled = true;
+        // 폼 제출이 시작된 후에 버튼 비활성화 (setTimeout 사용)
+        // 이렇게 하면 폼 제출이 먼저 시작되고, 그 다음에 버튼이 비활성화됨
+        setTimeout(() => {
+            submitBtn.disabled = true;
+        }, 0);
+
+        // 폼 제출 허용
+        return true;
     }
 
     // 초기 상태 설정

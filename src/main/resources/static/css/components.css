@@ -283,6 +283,14 @@
     border: 1px solid #D1D5DB;
     border-radius: 0.5rem;
     transition: all 0.2s;
+    background-color: white;
+    color: #111827;
+}
+
+.dark .input-field {
+    background-color: #1a1b1f;
+    border-color: #2a2b2f;
+    color: #e5e7eb;
 }
 
 .input-field:focus {
@@ -300,6 +308,14 @@
     border-radius: 0.5rem;
     resize: vertical;
     transition: all 0.2s;
+    background-color: white;
+    color: #111827;
+}
+
+.dark .textarea-field {
+    background-color: #1a1b1f;
+    border-color: #2a2b2f;
+    color: #e5e7eb;
 }
 
 .textarea-field:focus {
@@ -310,12 +326,24 @@
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
 
+.dark .textarea-field:focus {
+    border-color: #3B82F6;
+}
+
 .select-field {
     width: 100%;
     padding: 0.75rem 1rem;
     border: 1px solid #D1D5DB;
     border-radius: 0.5rem;
     transition: all 0.2s;
+    background-color: white;
+    color: #111827;
+}
+
+.dark .select-field {
+    background-color: #1a1b1f;
+    border-color: #2a2b2f;
+    color: #e5e7eb;
 }
 
 /* ============================================

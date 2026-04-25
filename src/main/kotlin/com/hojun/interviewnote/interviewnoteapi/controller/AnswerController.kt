@@ -11,6 +11,7 @@ import com.hojun.interviewnote.interviewnoteapi.service.validation.AnswerValidat
 import com.hojun.interviewnote.interviewnoteapi.service.validation.ValidationResult
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.validation.Valid
+import org.slf4j.LoggerFactory
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.security.core.userdetails.UserDetails
@@ -29,11 +30,13 @@ class AnswerController(
     private val userRepository: UserRepository,
     private val draftRepository: InterviewDraftRepository
 ) {
+    private val logger = LoggerFactory.getLogger(AnswerController::class.java)
     /**
      * 답변 제출 처리
      * Phase 4A-2에서 수정: @AuthenticationPrincipal 추가, userId 기반 Rate Limit
      */
     @PostMapping("/questions/{questionId}/answer")
+    @Transactional
     fun submitAnswer(
         @PathVariable questionId: Long,
         @Valid @ModelAttribute dto: AnswerSubmitDto,
@@ -68,17 +71,27 @@ class AnswerController(
         }
 
         // 답변 제출 및 AI 평가 (userId 전달)
-        val result = interviewService.submitAnswer(dto, user.id)
+        return try {
+            logger.info("답변 제출 시작 - questionId: $questionId, userId: ${user.id}")
 
-        // Phase 3: 답변 제출 시 Draft 삭제
-        draftRepository.deleteByUserIdAndQuestionId(user.id, questionId)
+            val result = interviewService.submitAnswer(dto, user.id)
 
-        // Phase 3A: 저품질 경고 체크
-        if (result.feedback.averageScore < 1.5) {
-            return "redirect:/answers/${result.answerId}/feedback?warning=low_quality"
+            logger.info("답변 제출 완료 - answerId: ${result.answerId}, 평균점수: ${result.feedback.averageScore}")
+
+            // Phase 3: 답변 제출 시 Draft 삭제
+            draftRepository.deleteByUserIdAndQuestionId(user.id, questionId)
+
+            // Phase 3A: 저품질 경고 체크
+            if (result.feedback.averageScore < 1.5) {
+                return "redirect:/answers/${result.answerId}/feedback?warning=low_quality"
+            }
+
+            "redirect:/answers/${result.answerId}/feedback"
+        } catch (e: Exception) {
+            logger.error("답변 제출 중 오류 발생 - questionId: $questionId, userId: ${user.id}", e)
+            redirectAttributes.addFlashAttribute("error", "답변 처리 중 오류가 발생했습니다: ${e.message}")
+            "redirect:/questions/$questionId/answer?error=submit_failed"
         }
-
-        return "redirect:/answers/${result.answerId}/feedback"
     }
 
     /**
@@ -128,9 +141,10 @@ class AnswerController(
     @ResponseBody
     fun saveDraft(
         @PathVariable questionId: Long,
-        @RequestParam draftText: String,
+        @RequestParam answerText: String,
         @AuthenticationPrincipal userDetails: UserDetails
     ): ResponseEntity<Map<String, Any>> {
+        val draftText = answerText
         // 현재 로그인한 사용자 조회
         val user = userRepository.findByEmail(userDetails.username)
             ?: return ResponseEntity.badRequest().body(mapOf("success" to false, "message" to "사용자를 찾을 수 없습니다"))

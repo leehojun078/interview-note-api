@@ -2,7 +2,7 @@
 -- 사용자가 답변 작성 중 임시 저장한 내용을 보관
 
 CREATE TABLE interview_drafts (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    id BIGSERIAL PRIMARY KEY,
     user_id BIGINT NOT NULL,
     question_id BIGINT NOT NULL,
     draft_text TEXT NOT NULL,

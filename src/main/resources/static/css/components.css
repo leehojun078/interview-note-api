@@ -393,9 +393,18 @@
     transition: all 0.2s;
 }
 
+.dark .tab {
+    color: #9ca3af;
+}
+
 .tab:hover {
     color: #2563EB;
     border-bottom-color: #D1D5DB;
+}
+
+.dark .tab:hover {
+    color: #3B82F6;
+    border-bottom-color: #2a2b2f;
 }
 
 .tab.active {
@@ -403,8 +412,18 @@
     border-bottom-color: #2563EB;
 }
 
+.dark .tab.active {
+    color: #3B82F6;
+    border-bottom-color: #3B82F6;
+}
+
 .tab-content {
     padding: 1.5rem 0;
+}
+
+/* Scroll margin for smooth scroll to section */
+.scroll-mt-24 {
+    scroll-margin-top: 6rem;
 }
 
 /* ============================================

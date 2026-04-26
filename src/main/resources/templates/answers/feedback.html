@@ -35,29 +35,29 @@
             </div>
         </div>
 
-        <!-- 탭 네비게이션 (Sticky) -->
+        <!-- 탭 네비게이션 (Sticky) - 스크롤 네비게이션으로 변경 -->
         <div class="sticky top-16 z-40 bg-white dark:bg-dark-card border-b border-gray-200 dark:border-dark-lighter mb-6 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8">
             <nav class="flex space-x-8 overflow-x-auto" role="tablist">
-                <button class="tab active" data-tab="overview" onclick="switchTab('overview')">
+                <button class="tab active" data-tab="overview" onclick="scrollToSection('overview')">
                     개요
                 </button>
-                <button class="tab" data-tab="scores" onclick="switchTab('scores')">
+                <button class="tab" data-tab="scores" onclick="scrollToSection('scores')">
                     세부 점수
                 </button>
-                <button class="tab" data-tab="strengths" onclick="switchTab('strengths')">
+                <button class="tab" data-tab="strengths" onclick="scrollToSection('strengths')">
                     강점
                 </button>
-                <button class="tab" data-tab="improvements" onclick="switchTab('improvements')">
+                <button class="tab" data-tab="improvements" onclick="scrollToSection('improvements')">
                     개선점
                 </button>
-                <button class="tab" data-tab="model" onclick="switchTab('model')">
+                <button class="tab" data-tab="model" onclick="scrollToSection('model')">
                     모범답변
                 </button>
             </nav>
         </div>
 
-        <!-- 탭 컨텐츠: 개요 -->
-        <div id="tab-overview" class="tab-content">
+        <!-- 섹션: 개요 -->
+        <div id="section-overview" class="scroll-mt-24">
             <!-- 평균 점수 -->
             <div class="bg-gradient-to-br from-primary to-primary-dark text-white rounded-lg shadow-lg p-8 text-center mb-6">
                 <h2 class="text-xl font-semibold mb-2">평균 점수</h2>
@@ -89,30 +89,30 @@
             </div>
 
             <!-- 종합 코멘트 -->
-            <div class="bg-gray-50 rounded-lg shadow-md p-6 mb-6">
-                <h3 class="text-lg font-semibold text-gray-900 mb-3">종합 코멘트</h3>
-                <p class="text-base leading-relaxed text-gray-700"
+            <div class="bg-gray-50 dark:bg-dark-card rounded-lg shadow-md p-6 mb-6 dark:border dark:border-dark-lighter">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-dark-text mb-3">종합 코멘트</h3>
+                <p class="text-base leading-relaxed text-gray-700 dark:text-dark-muted"
                    th:text="${answer.feedback.overallComment}">
                     종합 코멘트 내용
                 </p>
             </div>
         </div>
 
-        <!-- 탭 컨텐츠: 세부 점수 -->
-        <div id="tab-scores" class="tab-content hidden">
-            <div class="bg-white rounded-lg shadow-md p-6 mb-6">
-                <h3 class="text-lg font-semibold text-gray-900 mb-6">세부 점수</h3>
+        <!-- 섹션: 세부 점수 -->
+        <div id="section-scores" class="scroll-mt-24">
+            <div class="bg-white dark:bg-dark-card rounded-lg shadow-md p-6 mb-6 dark:border dark:border-dark-lighter">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-dark-text mb-6">세부 점수</h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <!-- 논리성 -->
                     <div>
                         <div class="flex justify-between items-center mb-2">
-                            <span class="font-medium text-gray-700">논리성</span>
+                            <span class="font-medium text-gray-700 dark:text-dark-text">논리성</span>
                             <span class="text-lg font-bold text-primary"
                                   th:text="${answer.feedback.logicScore} + ' / 5'">
                                 4 / 5
                             </span>
                         </div>
-                        <div class="bg-gray-200 h-4 rounded-full overflow-hidden">
+                        <div class="bg-gray-200 dark:bg-dark-lighter h-4 rounded-full overflow-hidden">
                             <div class="bg-primary h-full rounded-full transition-all duration-500"
                                  th:style="'width: ' + ${answer.feedback.logicScore * 20} + '%'">
                             </div>
@@ -122,13 +122,13 @@
                     <!-- 구체성 -->
                     <div>
                         <div class="flex justify-between items-center mb-2">
-                            <span class="font-medium text-gray-700">구체성</span>
+                            <span class="font-medium text-gray-700 dark:text-dark-text">구체성</span>
                             <span class="text-lg font-bold text-primary"
                                   th:text="${answer.feedback.specificityScore} + ' / 5'">
                                 3 / 5
                             </span>
                         </div>
-                        <div class="bg-gray-200 h-4 rounded-full overflow-hidden">
+                        <div class="bg-gray-200 dark:bg-dark-lighter h-4 rounded-full overflow-hidden">
                             <div class="bg-primary h-full rounded-full transition-all duration-500"
                                  th:style="'width: ' + ${answer.feedback.specificityScore * 20} + '%'">
                             </div>
@@ -138,13 +138,13 @@
                     <!-- 직무 적합성 -->
                     <div>
                         <div class="flex justify-between items-center mb-2">
-                            <span class="font-medium text-gray-700">직무 적합성</span>
+                            <span class="font-medium text-gray-700 dark:text-dark-text">직무 적합성</span>
                             <span class="text-lg font-bold text-primary"
                                   th:text="${answer.feedback.jobFitScore} + ' / 5'">
                                 4 / 5
                             </span>
                         </div>
-                        <div class="bg-gray-200 h-4 rounded-full overflow-hidden">
+                        <div class="bg-gray-200 dark:bg-dark-lighter h-4 rounded-full overflow-hidden">
                             <div class="bg-primary h-full rounded-full transition-all duration-500"
                                  th:style="'width: ' + ${answer.feedback.jobFitScore * 20} + '%'">
                             </div>
@@ -154,13 +154,13 @@
                     <!-- 전달력 -->
                     <div>
                         <div class="flex justify-between items-center mb-2">
-                            <span class="font-medium text-gray-700">전달력</span>
+                            <span class="font-medium text-gray-700 dark:text-dark-text">전달력</span>
                             <span class="text-lg font-bold text-primary"
                                   th:text="${answer.feedback.deliveryScore} + ' / 5'">
                                 3 / 5
                             </span>
                         </div>
-                        <div class="bg-gray-200 h-4 rounded-full overflow-hidden">
+                        <div class="bg-gray-200 dark:bg-dark-lighter h-4 rounded-full overflow-hidden">
                             <div class="bg-primary h-full rounded-full transition-all duration-500"
                                  th:style="'width: ' + ${answer.feedback.deliveryScore * 20} + '%'">
                             </div>
@@ -170,10 +170,10 @@
             </div>
         </div>
 
-        <!-- 탭 컨텐츠: 강점 -->
-        <div id="tab-strengths" class="tab-content hidden">
-            <div class="bg-white rounded-lg shadow-md p-6 mb-6 border-l-4 border-green-500">
-                <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+        <!-- 섹션: 강점 -->
+        <div id="section-strengths" class="scroll-mt-24">
+            <div class="bg-white dark:bg-dark-card rounded-lg shadow-md p-6 mb-6 border-l-4 border-green-500 dark:border dark:border-dark-lighter">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-dark-text mb-4 flex items-center">
                     <span class="text-2xl mr-2">✅</span>
                     강점
                 </h3>
@@ -181,16 +181,16 @@
                     <li th:each="strength : ${answer.feedback.strengths}"
                         class="flex items-start">
                         <span class="text-green-500 text-xl mr-3 flex-shrink-0">✓</span>
-                        <span class="text-gray-700" th:text="${strength}">강점 항목</span>
+                        <span class="text-gray-700 dark:text-dark-muted" th:text="${strength}">강점 항목</span>
                     </li>
                 </ul>
             </div>
         </div>
 
-        <!-- 탭 컨텐츠: 개선점 -->
-        <div id="tab-improvements" class="tab-content hidden">
-            <div class="bg-white rounded-lg shadow-md p-6 mb-6 border-l-4 border-yellow-500">
-                <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+        <!-- 섹션: 개선점 -->
+        <div id="section-improvements" class="scroll-mt-24">
+            <div class="bg-white dark:bg-dark-card rounded-lg shadow-md p-6 mb-6 border-l-4 border-yellow-500 dark:border dark:border-dark-lighter">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-dark-text mb-4 flex items-center">
                     <span class="text-2xl mr-2">⚠️</span>
                     개선점
                 </h3>
@@ -198,20 +198,20 @@
                     <li th:each="improvement : ${answer.feedback.improvements}"
                         class="flex items-start">
                         <span class="text-yellow-500 text-xl mr-3 flex-shrink-0">→</span>
-                        <span class="text-gray-700" th:text="${improvement}">개선점 항목</span>
+                        <span class="text-gray-700 dark:text-dark-muted" th:text="${improvement}">개선점 항목</span>
                     </li>
                 </ul>
             </div>
         </div>
 
-        <!-- 탭 컨텐츠: 모범답변 -->
-        <div id="tab-model" class="tab-content hidden">
-            <div class="bg-white rounded-lg shadow-md p-6 mb-6">
-                <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+        <!-- 섹션: 모범답변 -->
+        <div id="section-model" class="scroll-mt-24">
+            <div class="bg-white dark:bg-dark-card rounded-lg shadow-md p-6 mb-6 dark:border dark:border-dark-lighter">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-dark-text mb-4 flex items-center">
                     <span class="text-2xl mr-2">💡</span>
                     모범답변
                 </h3>
-                <p class="whitespace-pre-wrap leading-relaxed text-gray-700"
+                <p class="whitespace-pre-wrap leading-relaxed text-gray-700 dark:text-dark-muted"
                    th:text="${answer.feedback.modelAnswer}">
                     모범답변 내용
                 </p>
@@ -237,33 +237,61 @@
 <script th:replace="~{fragments/layout :: dark-mode-script}"></script>
 
 <script>
-    function switchTab(tabName) {
+    // 탭 클릭 시 해당 섹션으로 스크롤
+    function scrollToSection(sectionName) {
         // 모든 탭 버튼 비활성화
         document.querySelectorAll('.tab').forEach(tab => {
             tab.classList.remove('active');
         });
 
-        // 모든 탭 컨텐츠 숨기기
-        document.querySelectorAll('.tab-content').forEach(content => {
-            content.classList.add('hidden');
-        });
-
         // 선택된 탭 활성화
-        const selectedTabButton = document.querySelector(`.tab[data-tab="${tabName}"]`);
+        const selectedTabButton = document.querySelector(`.tab[data-tab="${sectionName}"]`);
         if (selectedTabButton) {
             selectedTabButton.classList.add('active');
         }
 
-        // 선택된 탭 컨텐츠 표시
-        const selectedTabContent = document.getElementById(`tab-${tabName}`);
-        if (selectedTabContent) {
-            selectedTabContent.classList.remove('hidden');
+        // 해당 섹션으로 스크롤 (sticky 헤더 고려)
+        const section = document.getElementById(`section-${sectionName}`);
+        if (section) {
+            section.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
     }
 
-    // 페이지 로드 시 개요 탭 활성화 (기본값)
+    // 스크롤 시 현재 보이는 섹션의 탭 활성화
+    function updateActiveTab() {
+        const sections = ['overview', 'scores', 'strengths', 'improvements', 'model'];
+        const scrollPosition = window.scrollY + 200; // sticky 헤더 높이 고려
+
+        for (const sectionName of sections) {
+            const section = document.getElementById(`section-${sectionName}`);
+            if (section) {
+                const sectionTop = section.offsetTop;
+                const sectionBottom = sectionTop + section.offsetHeight;
+
+                if (scrollPosition >= sectionTop && scrollPosition < sectionBottom) {
+                    // 모든 탭 버튼 비활성화
+                    document.querySelectorAll('.tab').forEach(tab => {
+                        tab.classList.remove('active');
+                    });
+
+                    // 현재 섹션 탭 활성화
+                    const tabButton = document.querySelector(`.tab[data-tab="${sectionName}"]`);
+                    if (tabButton) {
+                        tabButton.classList.add('active');
+                    }
+                    break;
+                }
+            }
+        }
+    }
+
+    // 페이지 로드 및 스크롤 시 활성 탭 업데이트
     document.addEventListener('DOMContentLoaded', () => {
-        switchTab('overview');
+        updateActiveTab();
+    });
+
+    window.addEventListener('scroll', () => {
+        updateActiveTab();
     });
 </script>
 </body>

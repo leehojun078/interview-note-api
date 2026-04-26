@@ -426,6 +426,16 @@
     scroll-margin-top: 6rem;
 }
 
+/* Hide scrollbar for tab navigation (모바일 탭 스크롤) */
+.scrollbar-hide {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+    display: none;  /* Chrome, Safari, Opera */
+}
+
 /* ============================================
    Animation Utilities
    ============================================ */

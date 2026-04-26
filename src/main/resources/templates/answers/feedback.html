@@ -37,20 +37,20 @@
 
         <!-- 탭 네비게이션 (Sticky) - 스크롤 네비게이션으로 변경 -->
         <div class="sticky top-16 z-40 bg-white dark:bg-dark-card border-b border-gray-200 dark:border-dark-lighter mb-6 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8">
-            <nav class="flex space-x-8 overflow-x-auto" role="tablist">
-                <button class="tab active" data-tab="overview" onclick="scrollToSection('overview')">
+            <nav class="flex gap-2 sm:gap-4 overflow-x-auto scrollbar-hide" role="tablist">
+                <button class="tab active whitespace-nowrap text-sm sm:text-base px-3 py-2" data-tab="overview" onclick="scrollToSection('overview')">
                     개요
                 </button>
-                <button class="tab" data-tab="scores" onclick="scrollToSection('scores')">
-                    세부 점수
+                <button class="tab whitespace-nowrap text-sm sm:text-base px-3 py-2" data-tab="scores" onclick="scrollToSection('scores')">
+                    세부점수
                 </button>
-                <button class="tab" data-tab="strengths" onclick="scrollToSection('strengths')">
+                <button class="tab whitespace-nowrap text-sm sm:text-base px-3 py-2" data-tab="strengths" onclick="scrollToSection('strengths')">
                     강점
                 </button>
-                <button class="tab" data-tab="improvements" onclick="scrollToSection('improvements')">
+                <button class="tab whitespace-nowrap text-sm sm:text-base px-3 py-2" data-tab="improvements" onclick="scrollToSection('improvements')">
                     개선점
                 </button>
-                <button class="tab" data-tab="model" onclick="scrollToSection('model')">
+                <button class="tab whitespace-nowrap text-sm sm:text-base px-3 py-2" data-tab="model" onclick="scrollToSection('model')">
                     모범답변
                 </button>
             </nav>

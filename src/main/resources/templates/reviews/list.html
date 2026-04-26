@@ -8,9 +8,9 @@
 <main class="flex-1 py-12 md:py-16">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
-            <h1 class="text-4xl md:text-5xl font-bold text-gray-900 dark:text-dark-text">📊 리뷰 이력</h1>
+            <h1 class="hero-title text-4xl md:text-5xl font-bold text-gray-900 dark:text-dark-text">📊 리뷰 이력</h1>
             <a th:href="@{/questions}"
-               class="inline-block bg-primary hover:bg-primary-dark text-white font-semibold px-6 py-3 rounded-lg transition shadow-md hover:shadow-lg text-center">
+               class="fade-in-section delay-200 inline-block bg-primary hover:bg-primary-dark text-white font-semibold px-6 py-3 rounded-lg transition shadow-md hover:shadow-lg text-center">
                 새 질문 연습하기 →
             </a>
         </div>
@@ -18,7 +18,7 @@
         <!-- 이력 카드 목록 -->
         <div class="space-y-4" th:if="${not #lists.isEmpty(reviews)}">
             <div th:each="review : ${reviews}"
-                 class="card card-interactive"
+                 class="card card-interactive card-stagger"
                  th:onclick="|location.href='@{/reviews/{id}(id=${review.answerId})}'|">
                 <div class="flex flex-col md:flex-row md:justify-between md:items-start gap-4">
                     <div class="flex-1">
@@ -93,7 +93,7 @@
         </div>
 
         <!-- 빈 상태 -->
-        <div th:if="${#lists.isEmpty(reviews)}" class="text-center py-16">
+        <div th:if="${#lists.isEmpty(reviews)}" class="fade-in-section delay-300 text-center py-16">
             <div class="text-gray-300 dark:text-dark-muted mb-6">
                 <svg class="mx-auto h-32 w-32" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -115,5 +115,42 @@
 <footer th:replace="~{fragments/layout :: footer}"></footer>
 <script th:replace="~{fragments/layout :: toast-script}"></script>
 <script th:replace="~{fragments/layout :: dark-mode-script}"></script>
+
+<!-- Fade-in Animation Script -->
+<script>
+    const observerOptions = {
+        root: null,
+        rootMargin: '0px',
+        threshold: 0.1
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('is-visible');
+                observer.unobserve(entry.target);
+            }
+        });
+    }, observerOptions);
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const heroTitle = document.querySelector('.hero-title');
+        if (heroTitle) {
+            setTimeout(() => {
+                heroTitle.classList.add('is-visible');
+            }, 100);
+        }
+
+        const fadeInElements = document.querySelectorAll('.fade-in-section');
+        fadeInElements.forEach(el => {
+            observer.observe(el);
+        });
+
+        const cardElements = document.querySelectorAll('.card-stagger');
+        cardElements.forEach(el => {
+            observer.observe(el);
+        });
+    });
+</script>
 </body>
 </html>

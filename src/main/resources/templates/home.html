@@ -13,21 +13,21 @@
             <div class="absolute inset-0 bg-gradient-to-br from-primary via-accent-purple to-primary opacity-10"></div>
 
             <div class="relative max-w-4xl mx-auto text-center px-4">
-                <h1 class="text-6xl md:text-7xl xl:text-8xl font-extrabold text-gray-900 dark:text-dark-text mb-8 leading-tight">
+                <h1 class="hero-title text-6xl md:text-7xl xl:text-8xl font-extrabold text-gray-900 dark:text-dark-text mb-8 leading-tight">
                     면접에서 살아남는<br>
                     <span class="text-gradient-primary">
                         답변력을 증명하세요
                     </span>
                 </h1>
 
-                <p class="text-xl md:text-2xl text-gray-600 dark:text-dark-muted mb-12 leading-relaxed font-medium">
+                <p class="fade-in-section delay-200 text-xl md:text-2xl text-gray-600 dark:text-dark-muted mb-12 leading-relaxed font-medium">
                     🎯 실전 면접 질문 340개<br>
                     🤖 AI 실시간 평가 & 피드백<br>
                     📈 답변 품질 개선 트래킹
                 </p>
 
                 <!-- CTA 버튼 -->
-                <div class="flex flex-col sm:flex-row gap-4 justify-center items-center">
+                <div class="fade-in-section delay-300 flex flex-col sm:flex-row gap-4 justify-center items-center">
                     <a th:href="@{/questions}" class="btn-neon">
                         무료로 시작하기 →
                     </a>
@@ -37,7 +37,7 @@
                 </div>
 
                 <!-- 소셜 프루프 -->
-                <div class="mt-16 flex flex-wrap justify-center gap-12 text-base text-gray-600 dark:text-dark-muted">
+                <div class="fade-in-section delay-500 mt-16 flex flex-wrap justify-center gap-12 text-base text-gray-600 dark:text-dark-muted">
                     <div class="flex flex-col items-center gap-1">
                         <span class="text-5xl font-bold text-primary dark:text-primary-light">340+</span>
                         <span class="font-medium">면접 질문</span>
@@ -56,7 +56,7 @@
 
         <!-- 직무 미설정 배너 (로그인 사용자만, 직무 없을 때) -->
         <div th:if="${isLoggedIn and !hasJobFieldSet}"
-             class="bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-20 border-l-4 border-yellow-400 dark:border-yellow-600 p-6 mb-8 rounded-r-lg">
+             class="fade-in-section bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-20 border-l-4 border-yellow-400 dark:border-yellow-600 p-6 mb-8 rounded-r-lg">
             <div class="flex items-start">
                 <div class="flex-shrink-0">
                     <svg class="h-6 w-6 text-yellow-400 dark:text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
@@ -78,13 +78,13 @@
 
         <!-- 추천 질문 섹션 (로그인 사용자만) -->
         <div th:if="${isLoggedIn and not #lists.isEmpty(recommendedQuestions)}" class="mb-20">
-            <h2 class="text-3xl md:text-4xl font-bold text-gray-800 dark:text-dark-text mb-8">
+            <h2 class="fade-in-section text-3xl md:text-4xl font-bold text-gray-800 dark:text-dark-text mb-8">
                 💼 <span th:text="${userJobField}"></span> 추천 질문
             </h2>
 
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div th:each="question : ${recommendedQuestions}"
-                     class="card card-interactive">
+                     class="card card-interactive card-stagger">
                     <!-- 카테고리 배지 -->
                     <div class="flex flex-wrap gap-2 mb-3">
                         <span class="badge badge-blue"
@@ -116,10 +116,10 @@
 
         <!-- 최근 답변 -->
         <div th:if="${not #lists.isEmpty(recentReviews)}" class="mt-20">
-            <h2 class="text-3xl md:text-4xl font-bold text-gray-800 dark:text-dark-text mb-8">📝 최근 답변</h2>
+            <h2 class="fade-in-section text-3xl md:text-4xl font-bold text-gray-800 dark:text-dark-text mb-8">📝 최근 답변</h2>
             <div class="space-y-4">
                 <div th:each="review : ${recentReviews}"
-                     class="card card-interactive">
+                     class="card card-interactive card-stagger">
                     <div class="flex flex-col md:flex-row md:justify-between md:items-start gap-4">
                         <div class="flex-1">
                             <h3 class="text-xl font-semibold text-gray-800 dark:text-dark-text mb-2"
@@ -153,7 +153,7 @@
         </div>
 
         <!-- 빈 상태 -->
-        <div th:if="${#lists.isEmpty(recentReviews)}" class="text-center py-20">
+        <div th:if="${#lists.isEmpty(recentReviews)}" class="fade-in-section text-center py-20">
             <div class="text-gray-400 dark:text-dark-muted mb-6">
                 <svg class="mx-auto h-24 w-24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -174,5 +174,48 @@
 <footer th:replace="~{fragments/layout :: footer}"></footer>
 <script th:replace="~{fragments/layout :: toast-script}"></script>
 <script th:replace="~{fragments/layout :: dark-mode-script}"></script>
+
+<!-- Fade-in Animation Script -->
+<script>
+    // Intersection Observer로 스크롤 애니메이션 트리거
+    const observerOptions = {
+        root: null,
+        rootMargin: '0px',
+        threshold: 0.1 // 요소의 10%가 보이면 트리거
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('is-visible');
+                // 한번 애니메이션된 요소는 다시 관찰하지 않음
+                observer.unobserve(entry.target);
+            }
+        });
+    }, observerOptions);
+
+    // 페이지 로드 후 애니메이션 적용
+    document.addEventListener('DOMContentLoaded', () => {
+        // Hero 타이틀은 즉시 표시
+        const heroTitle = document.querySelector('.hero-title');
+        if (heroTitle) {
+            setTimeout(() => {
+                heroTitle.classList.add('is-visible');
+            }, 100);
+        }
+
+        // 나머지 섹션들은 Intersection Observer로 관찰
+        const fadeInElements = document.querySelectorAll('.fade-in-section');
+        fadeInElements.forEach(el => {
+            observer.observe(el);
+        });
+
+        // 카드 stagger 애니메이션
+        const cardElements = document.querySelectorAll('.card-stagger');
+        cardElements.forEach(el => {
+            observer.observe(el);
+        });
+    });
+</script>
 </body>
 </html>

@@ -437,6 +437,97 @@
 }
 
 /* ============================================
+   Animation on Scroll (Home Page)
+   ============================================ */
+
+/* 초기 상태: 투명하고 아래에 위치 */
+.fade-in-section {
+    opacity: 0;
+    transform: translateY(30px);
+    transition: opacity 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+                transform 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+/* 애니메이션 실행 상태 */
+.fade-in-section.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Stagger 효과를 위한 딜레이 클래스 */
+.delay-100 {
+    transition-delay: 0.1s;
+}
+
+.delay-200 {
+    transition-delay: 0.2s;
+}
+
+.delay-300 {
+    transition-delay: 0.3s;
+}
+
+.delay-400 {
+    transition-delay: 0.4s;
+}
+
+.delay-500 {
+    transition-delay: 0.5s;
+}
+
+.delay-600 {
+    transition-delay: 0.6s;
+}
+
+/* Hero 섹션 특별 애니메이션 */
+.hero-title {
+    opacity: 0;
+    transform: translateY(50px) scale(0.95);
+    transition: opacity 1s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+                transform 1s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.hero-title.is-visible {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+}
+
+/* 카드 stagger 애니메이션 */
+.card-stagger {
+    opacity: 0;
+    transform: translateY(30px);
+}
+
+.card-stagger.is-visible {
+    animation: fadeInUp 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+}
+
+/* 각 카드에 순차적 딜레이 */
+.card-stagger:nth-child(1).is-visible {
+    animation-delay: 0s;
+}
+
+.card-stagger:nth-child(2).is-visible {
+    animation-delay: 0.1s;
+}
+
+.card-stagger:nth-child(3).is-visible {
+    animation-delay: 0.2s;
+}
+
+.card-stagger:nth-child(4).is-visible {
+    animation-delay: 0.3s;
+}
+
+.card-stagger:nth-child(5).is-visible {
+    animation-delay: 0.4s;
+}
+
+.card-stagger:nth-child(6).is-visible {
+    animation-delay: 0.5s;
+}
+
+/* ============================================
    Animation Utilities
    ============================================ */
 
@@ -444,6 +535,17 @@
     from {
         opacity: 0;
         transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(40px);
     }
     to {
         opacity: 1;
@@ -539,6 +641,10 @@
 
 .animate-fade-in {
     animation: fadeIn 0.6s ease-out;
+}
+
+.animate-fade-in-up {
+    animation: fadeInUp 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
 }
 
 .animate-fade-in-fast {

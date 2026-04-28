@@ -22,11 +22,20 @@ class RateLimitService {
     companion object {
         private const val MAX_REQUESTS_PER_HOUR = 33
         private const val WINDOW_DURATION_MINUTES = 60L
+
+        // Phase 6B: 질문 생성 Rate Limiting
+        private const val MAX_QUESTION_GENERATIONS_PER_DAY = 10
+        private const val QUESTION_GENERATION_WINDOW_HOURS = 24L
     }
 
     // IP별 요청 기록 (1시간 자동 만료)
     private val requestCache: Cache<String, MutableList<LocalDateTime>> = Caffeine.newBuilder()
         .expireAfterWrite(WINDOW_DURATION_MINUTES, TimeUnit.MINUTES)
+        .build()
+
+    // Phase 6B: 사용자별 질문 생성 기록 (24시간 자동 만료)
+    private val questionGenerationCache: Cache<Long, MutableList<LocalDateTime>> = Caffeine.newBuilder()
+        .expireAfterWrite(QUESTION_GENERATION_WINDOW_HOURS, TimeUnit.HOURS)
         .build()
 
     /**
@@ -67,5 +76,66 @@ class RateLimitService {
 
         requests.removeIf { it.isBefore(cutoffTime) }
         return requests.size
+    }
+
+    // ========================================
+    // Phase 6B: 질문 생성 Rate Limiting
+    // ========================================
+
+    /**
+     * 질문 생성 허용 여부 확인 및 기록
+     *
+     * Phase 6B: 사용자당 10회/24시간 제한
+     *
+     * @param userId 사용자 ID
+     * @throws RateLimitExceededException 한도 초과 시
+     */
+    fun checkAndRecordQuestionGeneration(userId: Long) {
+        val now = LocalDateTime.now()
+        val cutoffTime = now.minusHours(QUESTION_GENERATION_WINDOW_HOURS)
+
+        // 현재 사용자의 질문 생성 기록 가져오기
+        val generations = questionGenerationCache.get(userId) { mutableListOf() }!!
+
+        // 24시간 이내 생성 기록만 필터링
+        generations.removeIf { it.isBefore(cutoffTime) }
+
+        // 한도 확인
+        if (generations.size >= MAX_QUESTION_GENERATIONS_PER_DAY) {
+            val resetTime = generations.first().plusHours(QUESTION_GENERATION_WINDOW_HOURS)
+            logger.warn(
+                "질문 생성 한도 초과 - 사용자 ID: $userId, " +
+                        "현재 생성 수: ${generations.size}/$MAX_QUESTION_GENERATIONS_PER_DAY"
+            )
+            throw RateLimitExceededException(
+                ip = "User#$userId",
+                limit = MAX_QUESTION_GENERATIONS_PER_DAY,
+                resetTime = resetTime
+            )
+        }
+
+        // 생성 기록
+        generations.add(now)
+        logger.debug(
+            "질문 생성 기록 - 사용자 ID: $userId, " +
+                    "현재 생성 수: ${generations.size}/$MAX_QUESTION_GENERATIONS_PER_DAY"
+        )
+    }
+
+    /**
+     * 특정 사용자의 현재 질문 생성 수 조회 (테스트용)
+     *
+     * Phase 6B
+     *
+     * @param userId 사용자 ID
+     * @return 24시간 내 질문 생성 횟수
+     */
+    fun getCurrentQuestionGenerationCount(userId: Long): Int {
+        val now = LocalDateTime.now()
+        val cutoffTime = now.minusHours(QUESTION_GENERATION_WINDOW_HOURS)
+        val generations = questionGenerationCache.getIfPresent(userId) ?: return 0
+
+        generations.removeIf { it.isBefore(cutoffTime) }
+        return generations.size
     }
 }

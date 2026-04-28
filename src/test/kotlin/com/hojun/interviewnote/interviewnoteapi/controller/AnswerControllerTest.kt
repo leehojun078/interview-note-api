@@ -5,6 +5,7 @@ import com.hojun.interviewnote.interviewnoteapi.domain.UserRole
 import com.hojun.interviewnote.interviewnoteapi.dto.AnswerWithFeedbackDto
 import com.hojun.interviewnote.interviewnoteapi.dto.FeedbackDto
 import com.hojun.interviewnote.interviewnoteapi.exception.RateLimitExceededException
+import com.hojun.interviewnote.interviewnoteapi.repository.InterviewDraftRepository
 import com.hojun.interviewnote.interviewnoteapi.repository.UserRepository
 import com.hojun.interviewnote.interviewnoteapi.service.InterviewService
 import com.hojun.interviewnote.interviewnoteapi.service.ratelimit.RateLimitService
@@ -45,6 +46,9 @@ class AnswerControllerTest {
 
     @MockitoBean
     private lateinit var userRepository: UserRepository
+
+    @MockitoBean
+    private lateinit var draftRepository: InterviewDraftRepository
 
     private val testUser = User(
         id = 1L,

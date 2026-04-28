@@ -44,6 +44,9 @@ dependencies {
     implementation("org.thymeleaf.extras:thymeleaf-extras-springsecurity6")
     testImplementation("org.springframework.security:spring-security-test")
 
+    // Phase 6: Jsoup (Web Scraping for Job Posting Parsing)
+    implementation("org.jsoup:jsoup:1.17.2")
+
     runtimeOnly("com.h2database:h2")
     runtimeOnly("org.postgresql:postgresql")
     testImplementation("org.springframework.boot:spring-boot-starter-test")

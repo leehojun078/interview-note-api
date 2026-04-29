@@ -6,6 +6,7 @@ import com.hojun.interviewnote.interviewnoteapi.dto.AnswerWithFeedbackDto
 import com.hojun.interviewnote.interviewnoteapi.dto.FeedbackDto
 import com.hojun.interviewnote.interviewnoteapi.exception.AnswerNotFoundException
 import com.hojun.interviewnote.interviewnoteapi.exception.FeedbackNotFoundException
+import com.hojun.interviewnote.interviewnoteapi.repository.GeneratedQuestionRepository
 import com.hojun.interviewnote.interviewnoteapi.repository.InterviewAnswerRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -16,7 +17,8 @@ import java.time.LocalDateTime
 class InterviewService(
     private val interviewAnswerRepository: InterviewAnswerRepository,
     private val questionService: QuestionService,
-    private val aiFeedbackService: AiFeedbackService
+    private val aiFeedbackService: AiFeedbackService,
+    private val generatedQuestionRepository: GeneratedQuestionRepository
 ) {
     /**
      * 답변 제출 및 AI 평가
@@ -56,21 +58,83 @@ class InterviewService(
     }
 
     /**
+     * 생성된 질문에 대한 답변 제출 및 AI 평가
+     * Phase 6D에서 추가됨: GeneratedQuestion 지원
+     */
+    fun submitAnswerForGeneratedQuestion(
+        generatedQuestionId: Long,
+        dto: AnswerSubmitDto,
+        userId: Long
+    ): AnswerWithFeedbackDto {
+        val answerText = dto.answerText
+            ?: throw IllegalArgumentException("답변은 필수입니다")
+
+        // 1. 생성된 질문 존재 여부 확인
+        val generatedQuestion = generatedQuestionRepository.findById(generatedQuestionId)
+            .orElseThrow { IllegalArgumentException("생성된 질문을 찾을 수 없습니다: ID=$generatedQuestionId") }
+
+        // 2. 답변 저장 (generatedQuestionId 포함, questionId는 0으로 설정)
+        val answer = InterviewAnswer(
+            questionId = 0,  // 생성된 질문의 경우 questionId는 의미 없음
+            userId = userId,
+            answerText = answerText,
+            generatedQuestionId = generatedQuestionId,  // 핵심: 생성된 질문 ID 저장
+            createdAt = LocalDateTime.now(),
+            updatedAt = LocalDateTime.now()
+        )
+        val savedAnswer = interviewAnswerRepository.save(answer)
+
+        // 3. AI 피드백 생성 (GeneratedQuestion을 Question처럼 변환)
+        val questionForFeedback = com.hojun.interviewnote.interviewnoteapi.domain.Question(
+            id = generatedQuestion.id,
+            jobField = "IT",  // 임시값, AI 피드백에서 실제로는 사용 안 함
+            targetJob = "개발자",
+            category = generatedQuestion.category,
+            content = generatedQuestion.content,
+            difficulty = generatedQuestion.difficulty,
+            isActive = true
+        )
+        val aiFeedback = aiFeedbackService.generateFeedback(savedAnswer, questionForFeedback)
+
+        // 4. 결합된 DTO 반환
+        return AnswerWithFeedbackDto(
+            answerId = savedAnswer.id,
+            questionId = 0,  // 생성된 질문의 경우 0
+            questionContent = generatedQuestion.content,
+            answerText = savedAnswer.answerText,
+            answeredAt = savedAnswer.createdAt,
+            feedback = FeedbackDto.from(aiFeedback)
+        )
+    }
+
+    /**
      * 답변 상세 조회 (평가 포함)
+     * Phase 6D에서 수정: GeneratedQuestion 지원
      */
     fun getAnswerWithFeedback(answerId: Long): AnswerWithFeedbackDto {
         val answer = interviewAnswerRepository.findById(answerId)
             .orElseThrow { AnswerNotFoundException(answerId) }
 
-        val question = questionService.findById(answer.questionId)
-
         val aiFeedback = aiFeedbackService.findByInterviewAnswerId(answerId)
             ?: throw FeedbackNotFoundException(answerId)
 
+        // GeneratedQuestion인지 일반 Question인지 확인
+        val (questionId, questionContent) = if (answer.generatedQuestionId != null) {
+            // 생성된 질문
+            val genQuestionId = answer.generatedQuestionId  // Smart cast
+            val generatedQuestion = generatedQuestionRepository.findById(genQuestionId)
+                .orElseThrow { IllegalStateException("생성된 질문을 찾을 수 없습니다: ID=$genQuestionId") }
+            0L to generatedQuestion.content
+        } else {
+            // 일반 질문
+            val question = questionService.findById(answer.questionId)
+            question.id to question.content
+        }
+
         return AnswerWithFeedbackDto(
             answerId = answer.id,
-            questionId = question.id,
-            questionContent = question.content,
+            questionId = questionId,
+            questionContent = questionContent,
             answerText = answer.answerText,
             answeredAt = answer.createdAt,
             feedback = FeedbackDto.from(aiFeedback)

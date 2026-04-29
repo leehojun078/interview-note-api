@@ -23,6 +23,14 @@ class InterviewAnswer(
     @Column(nullable = false, columnDefinition = "TEXT")
     val answerText: String,
 
+    /**
+     * AI 생성 질문 ID (Phase 6C에서 추가)
+     * - nullable: 정적 질문 답변 시 null
+     * - questionId와 generatedQuestionId 중 하나만 사용
+     */
+    @Column(name = "generated_question_id")
+    val generatedQuestionId: Long? = null,
+
     @Column(nullable = false)
     val createdAt: LocalDateTime = LocalDateTime.now(),
 

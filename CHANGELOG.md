@@ -6,6 +6,77 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-04-30
+
+### Added - Phase 6 (Job Posting Based Questions)
+
+#### 채용 공고 기반 질문 생성
+- 🎯 **AI 맞춤형 질문 10개 자동 생성**
+  - 원티드, 사람인, 잡코리아 등 채용 공고 URL 입력
+  - 공고 내용 파싱 (회사명, 포지션, 직무 설명, 기술 스택)
+  - OpenAI gpt-4o-mini로 맞춤형 질문 생성
+  - 난이도 분포: EASY 3개, MEDIUM 4개, HARD 3개
+- 📋 **JobPosting 도메인**
+  - 채용 공고 저장 (URL, 회사명, 포지션, 직무 설명)
+  - selectedJobField (사용자 선택) / inferredJobField (AI 추론)
+  - 필수/우대 기술 스택 JSON 저장
+- 💬 **GeneratedQuestion 엔티티**
+  - AI 생성 질문 10개 저장
+  - orderIndex (1-10) 순서 보장
+  - aiReasoning (생성 근거) 저장
+
+#### HTML 파싱 및 최적화
+- 🔧 **Jsoup 기반 파싱**
+  - 원티드 URL → AI Fallback 전략
+  - cleanHtml() Jsoup text() 방식 (HTML 태그 완전 제거)
+  - 크기 감소: 143,933자 → 3,181자 (97.8% 감소)
+- ⚡ **토큰 효율성**
+  - 8000자 제한 충족 (60% 여유)
+  - AI 입력 토큰 대폭 감소 (~2,000 → ~800)
+  - 비용 절감 및 응답 속도 향상
+
+#### UI/UX
+- 📝 **공고 등록 화면** (`/job-postings/create`)
+  - URL 입력, 직무 선택 (선택 사항)
+  - 질문 생성하기 버튼
+- 📋 **질문 목록 화면** (`/job-postings/{id}/questions`)
+  - 공고 정보 카드 (회사명, 포지션, 원본 링크)
+  - 질문 카드 10개 (번호, 카테고리, 난이도, AI 근거)
+  - 답변하기 버튼 → 기존 답변 플로우 연결
+
+### Changed
+- Database: V9 migration (job_postings, generated_questions 테이블)
+- Database: V10 migration (interview_answers.generated_question_id 추가)
+- OpenAI maxTokens: 800 → 3000 (질문 생성용)
+- PromptBuilder: 질문 생성 프롬프트 추가 (난이도 분포 필수화)
+- InterviewAnswer: generatedQuestionId 필드 추가 (nullable)
+
+### Fixed
+- **JSON 잘림 문제** (Phase 6D)
+  - maxTokens 설정 불일치 수정 (application.properties vs 코드)
+  - 800 → 3000으로 일치시켜 질문 10개 안정적 생성
+- **난이도 분포 문제** (Phase 6E)
+  - EASY 난이도 질문 생성 안 되는 문제 수정
+  - 프롬프트 "권장" → "필수 - 정확히 지켜야 함"으로 강화
+  - Phase6CParsingTest에 엄격한 검증 추가 (3-4-3 분포)
+- **GeneratedQuestion 답변 제출 버그** (Phase 6E)
+  - 질문 ID 매칭 오류 수정
+  - Form action 동적 처리 (isGenerated 플래그 활용)
+  - GeneratedQuestionController POST 엔드포인트 추가
+  - InterviewService.submitAnswerForGeneratedQuestion() 추가
+  - 피드백에 올바른 질문 내용 표시
+
+### Technical Details
+- **Domain 추가**: JobPosting, GeneratedQuestion
+- **Repository 추가**: JobPostingRepository, GeneratedQuestionRepository
+- **Service 추가**: JobPostingParserService, QuestionGeneratorService, JobPostingService
+- **Controller 추가**: JobPostingController, GeneratedQuestionController
+- **DTO 추가**: ParsedJobPosting, GeneratedQuestionDto, JobPostingViewModel
+- **테스트**: Phase6AIntegrationTest, Phase6BIntegrationTest, Phase6CIntegrationTest, Phase6CParsingTest, Phase6DHtmlAnalysisTest
+- **의존성**: Jsoup 1.17.2 추가
+
+---
+
 ## [0.5.0] - 2026-04-23
 
 ### Added - Phase 5 (Multi-Job Field Support)

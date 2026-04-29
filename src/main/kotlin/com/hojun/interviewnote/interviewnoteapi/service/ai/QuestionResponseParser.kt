@@ -70,14 +70,11 @@ class QuestionResponseParser(
      * OpenAI JSON 응답을 ParsedQuestions로 파싱
      *
      * @param jsonString AI 응답 JSON
-     * @param rawResponse 원본 응답 (디버깅용)
      * @return 파싱된 질문 데이터
      * @throws AiResponseParseException 파싱 실패 또는 검증 실패 시
      */
-    fun parseQuestionResponse(
-        jsonString: String,
-        rawResponse: String = jsonString
-    ): ParsedQuestions {
+    fun parseQuestionResponse(jsonString: String): ParsedQuestions {
+        val rawResponse = jsonString  // 디버깅용
         try {
             val response = objectMapper.readValue(jsonString, OpenAiQuestionResponse::class.java)
 

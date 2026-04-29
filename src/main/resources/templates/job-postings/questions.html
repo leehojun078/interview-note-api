@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head}"></head>
+<body class="bg-gray-50 dark:bg-dark-bg text-gray-900 dark:text-dark-text min-h-screen flex flex-col">
+<nav th:replace="~{fragments/layout :: navbar}"></nav>
+<div th:replace="~{fragments/layout :: toast}"></div>
+
+<main class="flex-1 py-12 md:py-16">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+        <!-- 공고 정보 카드 -->
+        <div class="bg-white dark:bg-dark-card rounded-lg shadow-md p-6 mb-8 dark:border dark:border-dark-lighter">
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-dark-text mb-4">
+                <span th:text="${jobPosting.companyName}">회사명</span> -
+                <span th:text="${jobPosting.jobTitle}">포지션명</span>
+            </h1>
+            <div class="flex items-center gap-4 text-sm text-gray-600 dark:text-dark-muted">
+                <span class="inline-flex items-center px-3 py-1 rounded-full bg-primary/10 text-primary font-medium"
+                      th:text="${jobPosting.effectiveJobField?.displayName}">직무</span>
+                <a th:href="${jobPosting.originalUrl}" target="_blank"
+                   class="text-primary hover:underline">
+                    원본 공고 보기 →
+                </a>
+            </div>
+        </div>
+
+        <h2 class="text-2xl font-bold text-gray-900 dark:text-dark-text mb-6">
+            📋 생성된 질문 (<span th:text="${jobPosting.questions.size()}">10</span>개)
+        </h2>
+
+        <!-- 질문 카드 목록 -->
+        <div class="space-y-6">
+            <div th:each="question, iterStat : ${jobPosting.questions}"
+                 class="bg-white dark:bg-dark-card rounded-lg shadow-md p-6 dark:border dark:border-dark-lighter">
+                <!-- 질문 헤더 -->
+                <div class="flex items-start justify-between mb-4">
+                    <div class="flex items-center gap-3">
+                        <span class="text-2xl font-bold text-gray-400 dark:text-dark-muted"
+                              th:text="'#' + ${question.orderIndex}">1</span>
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 dark:bg-dark-lighter text-gray-700 dark:text-dark-muted"
+                              th:text="${question.category}">카테고리</span>
+                    </div>
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+                          th:classappend="${question.difficulty == 'EASY'} ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' :
+                                        (${question.difficulty == 'MEDIUM'} ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300' :
+                                        'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300')"
+                          th:text="${question.difficulty == 'EASY'} ? '쉬움' : (${question.difficulty == 'MEDIUM'} ? '보통' : '어려움')">난이도</span>
+                </div>
+
+                <!-- 질문 내용 -->
+                <p class="text-lg font-medium text-gray-900 dark:text-dark-text mb-4"
+                   th:text="${question.content}">질문 내용</p>
+
+                <!-- AI 생성 근거 (접기 가능) -->
+                <details class="mb-4">
+                    <summary class="cursor-pointer text-sm text-gray-600 dark:text-dark-muted hover:text-gray-900 dark:hover:text-dark-text">
+                        AI 생성 근거 보기
+                    </summary>
+                    <p class="mt-2 text-sm text-gray-600 dark:text-dark-muted pl-4 border-l-2 border-gray-300 dark:border-dark-lighter"
+                       th:text="${question.aiReasoning}">생성 근거</p>
+                </details>
+
+                <!-- 답변하기 버튼 -->
+                <a th:href="@{/generated-questions/{id}/answer(id=${question.id})}"
+                   class="inline-block bg-primary hover:bg-primary-hover text-white font-medium py-2 px-6 rounded-lg transition duration-200">
+                    답변하기
+                </a>
+            </div>
+        </div>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+<script th:replace="~{fragments/layout :: toast-script}"></script>
+<script th:replace="~{fragments/layout :: dark-mode-script}"></script>
+</body>
+</html>

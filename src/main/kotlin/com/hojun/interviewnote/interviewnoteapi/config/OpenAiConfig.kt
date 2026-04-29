@@ -15,7 +15,7 @@ class OpenAiProperties {
     lateinit var apiKey: String
     var model: String = "gpt-4o-mini"
     var promptVersion: String = "v1.0"
-    var maxTokens: Int = 800
+    var maxTokens: Int = 3000  // 800 → 3000 (질문 생성 시 JSON 잘림 방지)
     var temperature: Double = 0.7
     var timeout: Long = 30000  // 30초
 }

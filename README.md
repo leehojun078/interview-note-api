@@ -85,6 +85,24 @@
   - 사용자 직무 기반 추천 질문
   - 직무 미설정 시 안내 배너
 
+### ✅ Phase 6 (완료) 🚀 NEW
+- 🎯 **채용 공고 기반 맞춤형 질문 생성**
+  - 원티드, 사람인, 잡코리아 URL 입력
+  - AI가 공고 분석하여 **10개 맞춤 질문** 자동 생성
+  - 난이도 분포: EASY 3개, MEDIUM 4개, HARD 3개
+- 📋 **AI 질문 생성 시스템**
+  - 공고 파싱: 회사명, 포지션, 직무 설명, 기술 스택
+  - OpenAI 기반 질문 생성 (실무 중심, STAR 기법 유도)
+  - 생성 근거(reasoning) 함께 저장
+- 🔧 **HTML 파싱 최적화**
+  - Jsoup 기반 순수 텍스트 추출
+  - 크기 97.8% 감소 (143KB → 3KB)
+  - 8000자 제한 충족, 토큰 효율 60% 향상
+- ✍️ **생성된 질문 답변 연동**
+  - 기존 답변 작성 플로우 재사용
+  - GeneratedQuestion ↔ InterviewAnswer 연결
+  - 올바른 질문 매칭 (질문 ID 분리)
+
 ---
 
 ## 기술 스택
@@ -95,7 +113,7 @@
 - **Security**: Spring Security (세션 기반 인증, BCrypt)
 - **ORM**: Spring Data JPA + Hibernate
 - **Database**: H2 (개발) / PostgreSQL 15 (프로덕션)
-- **Migration**: Flyway (7개 마이그레이션)
+- **Migration**: Flyway (10개 마이그레이션)
 - **Build Tool**: Gradle (Kotlin DSL)
 
 ### AI Integration
@@ -104,6 +122,7 @@
 - **Response Format**: JSON Mode (구조화된 응답)
 - **Cache**: SHA-256 해시 기반 중복 방지
 - **Rate Limiting**: Caffeine Cache
+- **HTML Parsing**: Jsoup 1.17.2 (채용 공고 파싱)
 
 ### Frontend
 - **Template Engine**: Thymeleaf

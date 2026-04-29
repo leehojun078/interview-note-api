@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code when working with the Interview Note API project.
 
-**최종 업데이트**: 2026-04-23 (Phase 1-5 완료 상태 반영)
+**최종 업데이트**: 2026-04-30 (Phase 1-6 완료 상태 반영)
 
 ## Project Overview
 
@@ -373,7 +373,7 @@ Controller → Service → Repository
 
 ## Implementation Status
 
-**프로젝트 현재 상태** (2026-04-23 기준): **Phase 1-5 모두 완료**, 17개 직무 지원, 프로덕션 배포 준비 완료
+**프로젝트 현재 상태** (2026-04-30 기준): **Phase 1-6 모두 완료**, 17개 직무 지원, 채용 공고 기반 질문 생성, 프로덕션 배포 준비 완료
 
 ### ✅ Phase 1: 기반 구축 (완료)
 AI 없이 전체 플로우 완성
@@ -465,21 +465,55 @@ IT 단일 직무에서 17개 직무로 확장 + 사용자 프로필
 62. ✅ CLAUDE.md 업데이트 (Phase 5 완료 상태)
 63. ✅ PHASE5_MIGRATION_GUIDE.md 작성
 
-### 📝 향후 작업 제안 (Phase 6+)
-1. **Phase 6: 성능 최적화**
+### ✅ Phase 6: 채용 공고 기반 질문 생성 (완료) 🚀
+
+#### Phase 6A: 채용 공고 파싱 (완료)
+64. ✅ JobPosting 엔티티 생성 (originalUrl, companyName, jobTitle, selectedJobField, inferredJobField)
+65. ✅ GeneratedQuestion 엔티티 생성 (content, category, difficulty, aiReasoning, orderIndex)
+66. ✅ V9 migration (job_postings, generated_questions 테이블)
+67. ✅ JobPostingParserService 구현 (Jsoup + AI Fallback)
+68. ✅ Jsoup 1.17.2 의존성 추가
+
+#### Phase 6B: AI 질문 생성 (완료)
+69. ✅ QuestionGeneratorService 구현 (AI 통합)
+70. ✅ PromptBuilder 확장 (질문 생성 프롬프트)
+71. ✅ QuestionResponseParser 구현 (JSON 검증)
+72. ✅ Fallback 질문 10개 정의
+
+#### Phase 6C: UI 및 통합 (완료)
+73. ✅ JobPostingController 구현 (CRUD)
+74. ✅ JobPostingService 구현 (orchestration)
+75. ✅ UI 템플릿: create.html, questions.html
+76. ✅ V10 migration (interview_answers.generated_question_id)
+
+#### Phase 6D: 버그 수정 - HTML 파싱 개선 (완료)
+77. ✅ cleanHtml() Regex → Jsoup text() (97.8% 크기 감소)
+78. ✅ maxTokens 설정 불일치 수정 (800 → 3000)
+79. ✅ Phase6DHtmlAnalysisTest 작성 및 검증
+
+#### Phase 6E: 추가 버그 수정 (완료)
+80. ✅ 난이도 분포 강제 (EASY 3, MEDIUM 4, HARD 3)
+81. ✅ GeneratedQuestion 답변 제출 버그 수정 (질문 ID 매칭 오류)
+82. ✅ InterviewService.submitAnswerForGeneratedQuestion() 추가
+83. ✅ GeneratedQuestionController POST 엔드포인트 추가
+84. ✅ questions/answer.html Form action 동적 처리
+
+### 📝 향후 작업 제안 (Phase 7+)
+1. **Phase 7: AI 채팅 면접** (PRD 작성 완료 - PHASE7_AI_CHAT_INTERVIEW.md)
+   - 채용 공고 기반 실시간 모의 면접
+   - SSE 실시간 통신
+   - 꼬리 질문 생성
+   - 종합 평가 제공
+
+2. **Phase 8: 성능 최적화**
    - Redis 캐싱으로 질문 목록 성능 향상
    - DB 쿼리 최적화 (N+1 해결)
    - CDN 정적 리소스 제공
 
-2. **Phase 7: 고급 기능**
+3. **Phase 9: AI 고도화**
+   - 벡터DB + RAG 도입 (질문 유사도 검색)
    - 다중 직무 선택 (User가 여러 직무 관심 가능)
    - 직무별 통계 대시보드 (답변 개수, 평균 점수)
-   - AI 프롬프트 A/B 테스트
-
-3. **Phase 8: AI 고도화**
-   - 벡터DB + RAG 도입 (질문 유사도 검색)
-   - 실시간 채팅 기반 모의 면접
-   - 음성 녹음 및 STT 연동
 
 ## Coding Guidelines
 

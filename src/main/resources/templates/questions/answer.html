@@ -53,10 +53,11 @@
         </div>
 
         <!-- 답변 작성 폼 -->
-        <form th:action="@{/questions/{id}/answer(id=${question.id})}"
+        <form th:action="${question.isGenerated} ? @{/generated-questions/{id}/answer(id=${question.id})} : @{/questions/{id}/answer(id=${question.id})}"
               method="post"
               onsubmit="return handleSubmit(event)">
             <input type="hidden" name="questionId" th:value="${question.id}" />
+            <input type="hidden" th:if="${question.isGenerated}" name="isGenerated" value="true" />
 
             <div class="bg-white dark:bg-dark-card rounded-lg shadow-md p-6 mb-6 dark:border dark:border-dark-lighter">
                 <label class="block text-lg font-semibold text-gray-900 dark:text-dark-text mb-2">

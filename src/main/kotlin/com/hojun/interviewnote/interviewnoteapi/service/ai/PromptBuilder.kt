@@ -433,37 +433,87 @@ class PromptBuilder(
             카테고리 (반드시 다음 중 선택):
             - $categoriesText
 
-            난이도 분포 (권장):
-            - EASY: 3문항 (기본 개념, 경험 유무)
-            - MEDIUM: 4문항 (심화 기술, 프로젝트 경험)
-            - HARD: 3문항 (트레이드오프, 설계 결정, 복잡한 문제 해결)
+            난이도 분포 (필수 - 정확히 지켜야 함):
+            - EASY: 정확히 3문항 (기본 개념, 경험 유무, 간단한 기술 설명)
+            - MEDIUM: 정확히 4문항 (심화 기술, 프로젝트 경험, 구체적 활용 사례)
+            - HARD: 정확히 3문항 (트레이드오프, 설계 결정, 복잡한 문제 해결, 기술 선택 근거)
+
+            중요: 반드시 EASY 3개 + MEDIUM 4개 + HARD 3개 = 총 10개를 생성하세요.
 
             출력 형식 (JSON):
             {
               "inferredJobField": "${jobField}",
               "questions": [
                 {
+                  "content": "Git을 사용한 경험이 있나요? 어떤 브랜치 전략을 사용했나요?",
+                  "category": "기술역량",
+                  "difficulty": "EASY",
+                  "reasoning": "기본적인 협업 도구 사용 경험 확인"
+                },
+                {
+                  "content": "RESTful API 설계 원칙을 설명해주세요.",
+                  "category": "기술역량",
+                  "difficulty": "EASY",
+                  "reasoning": "기본 개념 이해도 확인"
+                },
+                {
+                  "content": "팀 프로젝트에서 코드 리뷰를 진행한 경험이 있나요?",
+                  "category": "협업경험",
+                  "difficulty": "EASY",
+                  "reasoning": "협업 프로세스 경험 유무 확인"
+                },
+                {
                   "content": "Kotlin의 코루틴을 실무에서 어떻게 활용했나요? 동기 방식 대비 어떤 이점이 있었나요?",
                   "category": "기술역량",
                   "difficulty": "MEDIUM",
-                  "reasoning": "필수 기술인 Kotlin의 핵심 기능 이해도와 실무 활용 경험을 확인하기 위한 질문"
+                  "reasoning": "필수 기술의 실무 활용 경험과 이해도 확인"
                 },
                 {
-                  "content": "프로젝트에서 가장 큰 기술적 도전은 무엇이었고, 어떻게 해결했나요?",
+                  "content": "데이터베이스 성능 최적화를 위해 어떤 방법들을 사용했나요?",
+                  "category": "문제해결",
+                  "difficulty": "MEDIUM",
+                  "reasoning": "실무 문제 해결 경험 검증"
+                },
+                {
+                  "content": "프로젝트에서 발생한 기술 부채를 어떻게 관리했나요?",
+                  "category": "문제해결",
+                  "difficulty": "MEDIUM",
+                  "reasoning": "장기적 관점의 코드 품질 관리 능력 확인"
+                },
+                {
+                  "content": "마이크로서비스 간 통신 방식을 어떻게 설계했나요?",
+                  "category": "기술역량",
+                  "difficulty": "MEDIUM",
+                  "reasoning": "아키텍처 설계 경험 검증"
+                },
+                {
+                  "content": "Spring Boot와 다른 프레임워크를 비교했을 때, 왜 Spring Boot를 선택했나요?",
+                  "category": "기술역량",
+                  "difficulty": "HARD",
+                  "reasoning": "기술 선택의 근거와 트레이드오프 이해도 확인"
+                },
+                {
+                  "content": "대용량 트래픽 상황에서 발생한 문제와 해결 과정을 설명해주세요.",
                   "category": "문제해결",
                   "difficulty": "HARD",
-                  "reasoning": "복잡한 문제 상황에서의 문제 분석 능력과 해결 과정을 검증"
+                  "reasoning": "복잡한 실전 문제 해결 능력 검증"
+                },
+                {
+                  "content": "분산 시스템 환경에서 데이터 일관성을 어떻게 보장했나요?",
+                  "category": "기술역량",
+                  "difficulty": "HARD",
+                  "reasoning": "고급 기술 개념과 설계 능력 검증"
                 }
-                // ... 8개 더 (총 10개)
               ]
             }
 
             중요:
             - 반드시 10개 질문 생성
+            - **난이도 분포 필수 준수**: EASY 3개, MEDIUM 4개, HARD 3개 (정확히 이 개수대로)
             - 각 질문은 100-200자 내외
             - reasoning은 50-200자 내외로 명확하게
             - category는 위 목록에서만 선택
-            - difficulty는 EASY, MEDIUM, HARD만 사용
+            - difficulty는 EASY, MEDIUM, HARD만 사용 (대소문자 정확히)
         """.trimIndent()
     }
 

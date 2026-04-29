@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head}"></head>
+<body class="bg-gray-50 dark:bg-dark-bg text-gray-900 dark:text-dark-text min-h-screen flex flex-col">
+<nav th:replace="~{fragments/layout :: navbar}"></nav>
+<div th:replace="~{fragments/layout :: toast}"></div>
+
+<main class="flex-1 py-12 md:py-16">
+    <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+        <h1 class="hero-title text-4xl md:text-5xl font-bold text-gray-900 dark:text-dark-text mb-8">
+            📝 채용 공고 등록
+        </h1>
+
+        <!-- 안내 메시지 -->
+        <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6 mb-8">
+            <h3 class="text-lg font-semibold text-blue-900 dark:text-blue-100 mb-2">💡 사용 방법</h3>
+            <ul class="list-disc list-inside text-blue-800 dark:text-blue-200 space-y-1">
+                <li>관심 있는 채용 공고 URL을 입력하세요</li>
+                <li>AI가 공고를 분석하여 10개의 맞춤형 면접 질문을 생성합니다</li>
+                <li>하루 최대 10회까지 생성 가능합니다</li>
+            </ul>
+        </div>
+
+        <!-- 공고 등록 폼 -->
+        <div class="bg-white dark:bg-dark-card rounded-lg shadow-md p-8 dark:border dark:border-dark-lighter">
+            <form th:action="@{/job-postings}" method="post">
+                <!-- URL 입력 -->
+                <div class="mb-6">
+                    <label for="originalUrl" class="block text-sm font-medium text-gray-700 dark:text-dark-muted mb-2">
+                        채용 공고 URL *
+                    </label>
+                    <input type="url" id="originalUrl" name="originalUrl" required
+                           placeholder="https://www.wanted.co.kr/wd/123456"
+                           class="w-full px-4 py-3 border border-gray-300 dark:border-dark-lighter dark:bg-dark-bg dark:text-dark-text rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+                    <p class="mt-2 text-sm text-gray-500 dark:text-dark-muted">
+                        원티드, 사람인, 잡코리아 등 채용 사이트 URL을 입력하세요
+                    </p>
+                </div>
+
+                <!-- 직무 선택 (선택 사항) -->
+                <div class="mb-6">
+                    <label for="selectedJobField" class="block text-sm font-medium text-gray-700 dark:text-dark-muted mb-2">
+                        직무 선택 (선택 사항)
+                    </label>
+                    <select id="selectedJobField" name="selectedJobField"
+                            class="w-full px-4 py-3 border border-gray-300 dark:border-dark-lighter dark:bg-dark-bg dark:text-dark-text rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+                        <option value="">AI가 자동으로 분석</option>
+                        <option th:each="job : ${jobFields}"
+                                th:value="${job.name()}"
+                                th:text="${job.displayName}"></option>
+                    </select>
+                    <p class="mt-2 text-sm text-gray-500 dark:text-dark-muted">
+                        미선택 시 AI가 공고 내용을 분석하여 직무를 추론합니다
+                    </p>
+                </div>
+
+                <!-- 제출 버튼 -->
+                <button type="submit"
+                        class="w-full bg-primary hover:bg-primary-hover text-white font-medium py-3 px-6 rounded-lg transition duration-200">
+                    질문 생성하기
+                </button>
+            </form>
+        </div>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+<script th:replace="~{fragments/layout :: toast-script}"></script>
+<script th:replace="~{fragments/layout :: dark-mode-script}"></script>
+</body>
+</html>

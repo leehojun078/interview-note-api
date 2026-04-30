@@ -73,9 +73,9 @@ class InterviewService(
         val generatedQuestion = generatedQuestionRepository.findById(generatedQuestionId)
             .orElseThrow { IllegalArgumentException("생성된 질문을 찾을 수 없습니다: ID=$generatedQuestionId") }
 
-        // 2. 답변 저장 (generatedQuestionId 포함, questionId는 0으로 설정)
+        // 2. 답변 저장 (generatedQuestionId 포함, questionId는 null)
         val answer = InterviewAnswer(
-            questionId = 0,  // 생성된 질문의 경우 questionId는 의미 없음
+            questionId = null,  // 생성된 질문의 경우 questionId는 null
             userId = userId,
             answerText = answerText,
             generatedQuestionId = generatedQuestionId,  // 핵심: 생성된 질문 ID 저장
@@ -118,17 +118,23 @@ class InterviewService(
         val aiFeedback = aiFeedbackService.findByInterviewAnswerId(answerId)
             ?: throw FeedbackNotFoundException(answerId)
 
-        // GeneratedQuestion인지 일반 Question인지 확인
-        val (questionId, questionContent) = if (answer.generatedQuestionId != null) {
-            // 생성된 질문
-            val genQuestionId = answer.generatedQuestionId  // Smart cast
-            val generatedQuestion = generatedQuestionRepository.findById(genQuestionId)
-                .orElseThrow { IllegalStateException("생성된 질문을 찾을 수 없습니다: ID=$genQuestionId") }
-            0L to generatedQuestion.content
-        } else {
-            // 일반 질문
-            val question = questionService.findById(answer.questionId)
-            question.id to question.content
+        // GeneratedQuestion인지 일반 Question인지 확인 (Phase 6E: questionId nullable 대응)
+        val (questionId, questionContent) = when {
+            answer.generatedQuestionId != null -> {
+                // 생성된 질문
+                val genQuestionId = answer.generatedQuestionId  // Smart cast
+                val generatedQuestion = generatedQuestionRepository.findById(genQuestionId)
+                    .orElseThrow { IllegalStateException("생성된 질문을 찾을 수 없습니다: ID=$genQuestionId") }
+                0L to generatedQuestion.content
+            }
+            answer.questionId != null -> {
+                // 일반 질문
+                val question = questionService.findById(answer.questionId)
+                question.id to question.content
+            }
+            else -> {
+                throw IllegalStateException("답변에 questionId와 generatedQuestionId가 모두 null입니다: answerId=${answer.id}")
+            }
         }
 
         return AnswerWithFeedbackDto(

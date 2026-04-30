@@ -10,8 +10,13 @@ class InterviewAnswer(
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long = 0,
 
-    @Column(nullable = false)
-    val questionId: Long,
+    /**
+     * 정적 질문 ID (Phase 6E에서 nullable로 변경)
+     * - null: AI 생성 질문에 대한 답변 (generatedQuestionId 사용)
+     * - not null: 정적 질문에 대한 답변
+     */
+    @Column(name = "question_id", nullable = true)
+    val questionId: Long? = null,
 
     /**
      * 답변 작성자 ID

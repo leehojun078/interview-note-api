@@ -59,7 +59,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   - EASY 난이도 질문 생성 안 되는 문제 수정
   - 프롬프트 "권장" → "필수 - 정확히 지켜야 함"으로 강화
   - Phase6CParsingTest에 엄격한 검증 추가 (3-4-3 분포)
-- **GeneratedQuestion 답변 제출 버그** (Phase 6E)
+- **GeneratedQuestion 답변 제출 버그** (Phase 6E - Critical)
+  - ✅ **외래키 제약 조건 위반 수정**
+    - 문제: `interview_answers.question_id` NOT NULL + FK 제약, GeneratedQuestion 답변 시 `questionId=0`으로 설정 → 500 Error
+    - 해결: V11 migration으로 `question_id` nullable 변경, `questionId=null` 설정
+    - InterviewAnswer 엔티티 수정: `questionId: Long?`
+    - ReviewService 수정: GeneratedQuestion 지원 추가 (when 표현식)
+    - Phase6EGeneratedQuestionAnswerBugTest 추가 (3개 테스트)
   - 질문 ID 매칭 오류 수정
   - Form action 동적 처리 (isGenerated 플래그 활용)
   - GeneratedQuestionController POST 엔드포인트 추가

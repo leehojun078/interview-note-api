@@ -10,9 +10,11 @@ import com.hojun.interviewnote.interviewnoteapi.service.ai.AiInterviewResponse
 import com.hojun.interviewnote.interviewnoteapi.service.ratelimit.RateLimitService
 import io.micrometer.core.instrument.MeterRegistry
 import org.slf4j.LoggerFactory
+import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter
+import java.io.IOException
 import java.util.concurrent.ConcurrentHashMap
 
 /**
@@ -133,10 +135,10 @@ class MockInterviewService(
         )
 
         // Phase 7C: SSE 브로드캐스트 (사용자 메시지)
-        // broadcastMessage(interviewId, savedUserMessage)
+        broadcastMessage(interviewId, savedUserMessage)
 
         // Phase 7C: AI 응답 비동기 생성
-        // generateAndBroadcastAiResponseAsync(interview, messages + savedUserMessage)
+        generateAndBroadcastAiResponseAsync(interview, messages + savedUserMessage)
 
         return savedUserMessage
     }
@@ -240,22 +242,158 @@ class MockInterviewService(
         return interviewMessageRepository.save(message)
     }
 
-    // ===== Phase 7C: SSE 관리 (stub) =====
+    // ===== Phase 7C: SSE 관리 =====
 
+    /**
+     * SSE Emitter 등록
+     *
+     * 클라이언트가 /stream 엔드포인트에 연결하면 호출됨
+     */
     fun registerEmitter(interviewId: Long, emitter: SseEmitter) {
-        // TODO: Phase 7C에서 구현
         emitters[interviewId] = emitter
-        logger.debug("SSE emitter 등록 - interviewId: $interviewId")
+        logger.info("SSE emitter 등록 - interviewId: $interviewId")
+        meterRegistry.gauge("mock_interview.active_connections", emitters.size)
     }
 
+    /**
+     * SSE Emitter 제거
+     *
+     * 연결 종료, 타임아웃, 에러 발생 시 호출됨
+     */
     fun removeEmitter(interviewId: Long) {
-        // TODO: Phase 7C에서 구현
         emitters.remove(interviewId)
-        logger.debug("SSE emitter 제거 - interviewId: $interviewId")
+        logger.info("SSE emitter 제거 - interviewId: $interviewId")
+        meterRegistry.gauge("mock_interview.active_connections", emitters.size)
     }
 
-    fun broadcastMessage(interviewId: Long, message: InterviewMessage) {
-        // TODO: Phase 7C에서 구현
-        logger.debug("SSE 브로드캐스트 (stub) - interviewId: $interviewId")
+    /**
+     * SSE 메시지 브로드캐스트
+     *
+     * 메시지를 JSON으로 변환하여 SSE를 통해 클라이언트에 전송
+     *
+     * @return 전송 성공 여부
+     */
+    fun broadcastMessage(interviewId: Long, message: InterviewMessage): Boolean {
+        val emitter = emitters[interviewId]
+        if (emitter == null) {
+            logger.warn("SSE emitter가 없음 - interviewId: $interviewId")
+            return false
+        }
+
+        return try {
+            val messageDto = mapToMessageDto(message)
+            emitter.send(
+                SseEmitter.event()
+                    .name("message")
+                    .data(messageDto)
+            )
+            logger.debug("SSE 메시지 전송 성공 - interviewId: $interviewId, sender: ${message.sender}")
+            meterRegistry.counter("mock_interview.sse.messages_sent").increment()
+            true
+        } catch (e: IOException) {
+            logger.error("SSE 전송 실패 - interviewId: $interviewId", e)
+            removeEmitter(interviewId)
+            meterRegistry.counter("mock_interview.sse.errors").increment()
+            false
+        } catch (e: Exception) {
+            logger.error("SSE 전송 중 예외 발생 - interviewId: $interviewId", e)
+            meterRegistry.counter("mock_interview.sse.errors").increment()
+            false
+        }
+    }
+
+    /**
+     * AI 응답 비동기 생성 및 브로드캐스트
+     *
+     * @Async를 사용하여 AI 응답 생성을 백그라운드에서 수행
+     * 사용자 메시지 저장 후 즉시 반환하여 응답 속도 향상
+     */
+    @Async("taskExecutor")
+    fun generateAndBroadcastAiResponseAsync(
+        interview: MockInterview,
+        conversation: List<InterviewMessage>
+    ) {
+        try {
+            logger.info("AI 응답 비동기 생성 시작 - interviewId: ${interview.id}")
+
+            // 공고 조회 (있는 경우)
+            val jobPosting = interview.jobPostingId?.let {
+                jobPostingRepository.findById(it).orElse(null)
+            }
+
+            // AI 응답 생성 (InterviewAiService 호출)
+            // Pair<InterviewEvaluation, AiInterviewResponse> 반환
+            val (evaluation, aiResponse) = interviewAiService.generateFollowUpQuestion(
+                interview,
+                conversation,
+                jobPosting
+            )
+
+            // AI 메시지 저장
+            val aiMessage = InterviewMessage(
+                mockInterviewId = interview.id,
+                sender = MessageSender.AI,
+                content = aiResponse.question,
+                messageIndex = conversation.size,
+                aiReasoning = aiResponse.reasoning,
+                // 이전 사용자 메시지에 대한 평가 점수 저장
+                logicScore = null,
+                specificityScore = null,
+                deliveryScore = null,
+                feedbackComment = null
+            )
+            val savedAiMessage = interviewMessageRepository.save(aiMessage)
+
+            // 이전 사용자 메시지에 평가 점수 업데이트
+            val lastUserMessage = conversation.lastOrNull { it.sender == MessageSender.USER }
+            lastUserMessage?.let { userMsg ->
+                userMsg.logicScore = evaluation.logicScore
+                userMsg.specificityScore = evaluation.specificityScore
+                userMsg.deliveryScore = evaluation.deliveryScore
+                userMsg.feedbackComment = evaluation.comment
+                interviewMessageRepository.save(userMsg)
+            }
+
+            // SSE 브로드캐스트
+            broadcastMessage(interview.id, savedAiMessage)
+
+            logger.info("AI 응답 비동기 생성 완료 - interviewId: ${interview.id}")
+        } catch (e: Exception) {
+            logger.error("AI 응답 생성 실패 - interviewId: ${interview.id}", e)
+            meterRegistry.counter("mock_interview.ai_response_generation.errors").increment()
+
+            // 에러 발생 시 fallback 메시지 전송
+            try {
+                val fallbackMessage = InterviewMessage(
+                    mockInterviewId = interview.id,
+                    sender = MessageSender.AI,
+                    content = "죄송합니다. 일시적인 오류로 질문을 생성하지 못했습니다. 잠시 후 다시 시도해 주세요.",
+                    messageIndex = conversation.size,
+                    aiReasoning = "fallback_error"
+                )
+                val saved = interviewMessageRepository.save(fallbackMessage)
+                broadcastMessage(interview.id, saved)
+            } catch (fallbackError: Exception) {
+                logger.error("Fallback 메시지 전송 실패 - interviewId: ${interview.id}", fallbackError)
+            }
+        }
+    }
+
+    /**
+     * InterviewMessage를 SSE 전송용 DTO로 변환
+     */
+    private fun mapToMessageDto(message: InterviewMessage): Map<String, Any?> {
+        return mapOf(
+            "id" to message.id,
+            "sender" to message.sender.name,
+            "content" to message.content,
+            "messageIndex" to message.messageIndex,
+            "timestamp" to message.createdAt.toString(),
+            "aiReasoning" to message.aiReasoning,
+            "logicScore" to message.logicScore,
+            "specificityScore" to message.specificityScore,
+            "deliveryScore" to message.deliveryScore,
+            "feedbackComment" to message.feedbackComment
+        )
     }
 }

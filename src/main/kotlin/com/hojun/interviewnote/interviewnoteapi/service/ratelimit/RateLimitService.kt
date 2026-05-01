@@ -26,6 +26,10 @@ class RateLimitService {
         // Phase 6B: 질문 생성 Rate Limiting
         private const val MAX_QUESTION_GENERATIONS_PER_DAY = 10
         private const val QUESTION_GENERATION_WINDOW_HOURS = 24L
+
+        // Phase 7B: 모의 면접 Rate Limiting
+        private const val MAX_MOCK_INTERVIEWS_PER_DAY = 5
+        private const val MOCK_INTERVIEW_WINDOW_HOURS = 24L
     }
 
     // IP별 요청 기록 (1시간 자동 만료)
@@ -36,6 +40,11 @@ class RateLimitService {
     // Phase 6B: 사용자별 질문 생성 기록 (24시간 자동 만료)
     private val questionGenerationCache: Cache<Long, MutableList<LocalDateTime>> = Caffeine.newBuilder()
         .expireAfterWrite(QUESTION_GENERATION_WINDOW_HOURS, TimeUnit.HOURS)
+        .build()
+
+    // Phase 7B: 사용자별 모의 면접 기록 (24시간 자동 만료)
+    private val mockInterviewCache: Cache<Long, MutableList<LocalDateTime>> = Caffeine.newBuilder()
+        .expireAfterWrite(MOCK_INTERVIEW_WINDOW_HOURS, TimeUnit.HOURS)
         .build()
 
     /**
@@ -137,5 +146,61 @@ class RateLimitService {
 
         generations.removeIf { it.isBefore(cutoffTime) }
         return generations.size
+    }
+
+    // ========================================
+    // Phase 7B: 모의 면접 Rate Limiting
+    // ========================================
+
+    /**
+     * 모의 면접 시작 허용 여부 확인 및 기록
+     *
+     * Phase 7B: 사용자당 5회/24시간 제한
+     *
+     * @param userId 사용자 ID
+     * @throws RateLimitExceededException 한도 초과 시
+     */
+    fun checkMockInterviewLimit(userId: Long) {
+        val now = LocalDateTime.now()
+        val cutoffTime = now.minusHours(MOCK_INTERVIEW_WINDOW_HOURS)
+
+        val interviews = mockInterviewCache.get(userId) { mutableListOf() }!!
+        interviews.removeIf { it.isBefore(cutoffTime) }
+
+        if (interviews.size >= MAX_MOCK_INTERVIEWS_PER_DAY) {
+            val resetTime = interviews.first().plusHours(MOCK_INTERVIEW_WINDOW_HOURS)
+            logger.warn(
+                "모의 면접 한도 초과 - 사용자 ID: $userId, " +
+                        "현재: ${interviews.size}/$MAX_MOCK_INTERVIEWS_PER_DAY"
+            )
+            throw RateLimitExceededException(
+                ip = "User#$userId",
+                limit = MAX_MOCK_INTERVIEWS_PER_DAY,
+                resetTime = resetTime
+            )
+        }
+
+        interviews.add(now)
+        logger.debug(
+            "모의 면접 기록 - 사용자 ID: $userId, " +
+                    "현재: ${interviews.size}/$MAX_MOCK_INTERVIEWS_PER_DAY"
+        )
+    }
+
+    /**
+     * 특정 사용자의 현재 모의 면접 횟수 조회 (테스트용)
+     *
+     * Phase 7B
+     *
+     * @param userId 사용자 ID
+     * @return 24시간 내 모의 면접 횟수
+     */
+    fun getCurrentMockInterviewCount(userId: Long): Int {
+        val now = LocalDateTime.now()
+        val cutoffTime = now.minusHours(MOCK_INTERVIEW_WINDOW_HOURS)
+        val interviews = mockInterviewCache.getIfPresent(userId) ?: return 0
+
+        interviews.removeIf { it.isBefore(cutoffTime) }
+        return interviews.size
     }
 }

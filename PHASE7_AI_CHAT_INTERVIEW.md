@@ -2,8 +2,9 @@
 
 **프로젝트**: Interview Note API - Phase 7
 **작성일**: 2026-04-27
-**버전**: 1.0
-**현재 상태**: Phase 1-5 완료 (17개 직무, 340개 정적 질문 지원)
+**최종 검토일**: 2026-04-30
+**버전**: 1.1
+**현재 상태**: Phase 1-6 완료 (17개 직무, 340개 정적 질문, 채용 공고 기반 질문 생성 지원)
 **핵심 기능**: 🎯 **실시간 AI 채팅 면접** (직무 기반 또는 채용 공고 기반)
 
 ---
@@ -321,7 +322,7 @@ enum class MessageSender {
 
 ## 💾 데이터베이스 스키마
 
-### V11__create_mock_interview_tables.sql
+### V12__create_mock_interview_tables.sql
 ```sql
 CREATE TABLE mock_interviews (
     id BIGSERIAL PRIMARY KEY,
@@ -375,12 +376,14 @@ CREATE INDEX idx_interview_messages_order ON interview_messages(mock_interview_i
     ↓
 [Service Layer]
     ├─ MockInterviewService (대화 관리, SSE 브로드캐스트) ⭐ 핵심
+    ├─ InterviewAiService (AI 로직 조율)
     └─ ...
     ↓
 [Support Services]
-    ├─ OpenAiClientImpl (AI API 호출)
-    ├─ PromptBuilder (직무 기반 / 공고 기반 프롬프트 분기)
-    ├─ RateLimitService (IP/User ID 기반)
+    ├─ OpenAiClientImpl (AI API 호출) - 기존 재사용
+    ├─ PromptBuilder (직무 기반 / 공고 기반 프롬프트 분기) - 확장
+    ├─ InterviewResponseParser (면접 응답 파싱) - 신규
+    ├─ RateLimitService (IP/User ID 기반) - 확장
     └─ DuplicateRequestCache
     ↓
 [Database (PostgreSQL)]
@@ -389,6 +392,25 @@ CREATE INDEX idx_interview_messages_order ON interview_messages(mock_interview_i
     ↓
 [External API]
     └─ OpenAI gpt-4o-mini
+```
+
+### 의존성 다이어그램
+
+```
+MockInterviewController
+    │
+    ├── MockInterviewService
+    │       ├── MockInterviewRepository
+    │       ├── InterviewMessageRepository
+    │       ├── InterviewAiService
+    │       │       ├── AiClient (기존 인터페이스)
+    │       │       ├── PromptBuilder (확장)
+    │       │       └── InterviewResponseParser (신규)
+    │       ├── RateLimitService (확장)
+    │       └── SseEmitter 관리 (내부 ConcurrentHashMap)
+    │
+    ├── UserRepository (기존)
+    └── JobPostingRepository (기존)
 ```
 
 ---
@@ -603,6 +625,42 @@ function appendMessage(msg) {
 
 ---
 
+## 🔧 기술적 결정 사항 (2026-04-30 검토 결과)
+
+### 1. 마이그레이션 버전 수정
+- **문제**: PRD 초안에서 V11 명시, 하지만 현재 V11까지 이미 사용됨 (Phase 6E)
+- **수정**: `V12__create_mock_interview_tables.sql`로 변경
+
+### 2. 기존 코드 재사용 결정
+
+| 항목 | 결정 | 이유 |
+|------|------|------|
+| PromptBuilder | **기존 확장** | 17개 직무별 프롬프트 이미 구현됨, 메서드 추가로 대응 |
+| ResponseParser | **별도 생성** | 응답 구조가 다름 (evaluation + nextAction) |
+| ConversationManager | **서비스 내부** | 복잡도 낮음, 별도 클래스 불필요 |
+| AiClient | **그대로 사용** | 인터페이스 기반 설계로 교체 가능 |
+| RateLimitService | **확장** | 기존 IP 기반 + User ID 기반 추가 |
+
+### 3. 기술적 결정
+
+| 항목 | 결정 | 이유 |
+|------|------|------|
+| 첫 질문 생성 | **동기** | 채팅 화면 진입 전 완료 필요, UX 명확성 |
+| AI 응답 생성 | **비동기 (@Async)** | 사용자 대기 시간 단축 |
+| SSE 타임아웃 | **30분** | 일반적인 면접 시간 고려 |
+| 에러 복구 | **DB 기반** | 메시지 모두 DB 저장, 재연결 시 복구 |
+| SSE 테스트 | **WebTestClient** | MockMvc는 SSE 지원 제한적 |
+
+### 4. 수정할 기존 파일 목록
+
+1. `service/ai/PromptBuilder.kt` - 면접용 메서드 5개 추가
+2. `service/ratelimit/RateLimitService.kt` - 모의 면접 Rate Limit 추가
+3. `exception/GlobalExceptionHandler.kt` - MockInterviewException 처리
+4. `config/SecurityConfig.kt` - SSE 엔드포인트 설정
+5. `templates/home.html` - AI 면접 연습 버튼
+
+---
+
 ## 📅 구현 일정 (상세 계획)
 
 ### Phase 7A: 모의 면접 세션 (Week 1 - 5-7일)
@@ -628,8 +686,8 @@ function appendMessage(msg) {
   - createdAt
 - **제약**: messageIndex 순서 보장, sender enum (AI, USER)
 
-#### 3. V11 마이그레이션
-- **파일**: `src/main/resources/db/migration/V11__create_mock_interview_tables.sql`
+#### 3. V12 마이그레이션
+- **파일**: `src/main/resources/db/migration/V12__create_mock_interview_tables.sql`
 - **내용**:
   - CREATE TABLE mock_interviews (jobPostingId nullable, selectedJobField NOT NULL)
   - CREATE TABLE interview_messages (FK to mock_interviews ON DELETE CASCADE)
@@ -667,7 +725,7 @@ function appendMessage(msg) {
 **완료 기준**:
 - [ ] MockInterview 엔티티 생성 (모든 필드 + equals/hashCode)
 - [ ] InterviewMessage 엔티티 생성
-- [ ] V10 마이그레이션 실행 성공
+- [ ] V12 마이그레이션 실행 성공
 - [ ] Repositories (custom queries)
 - [ ] MockInterviewService 기본 CRUD 동작
 - [ ] DTOs 검증
@@ -680,13 +738,15 @@ function appendMessage(msg) {
 
 **목표**: 직무/공고 기반 AI 프롬프트, 꼬리 질문 생성, 종합 평가 로직 구현
 
-#### 1. MockInterviewPromptBuilder
-- **파일**: `src/main/kotlin/com/hojun/interviewnote/interviewnoteapi/service/ai/MockInterviewPromptBuilder.kt`
-- **핵심 메서드**:
-  - buildInterviewSystemPrompt(jobField, jobPosting?): String - 직무/공고 분기
-  - buildFirstQuestionPrompt(jobField, jobPosting?): String - 첫 질문 생성
-  - buildFollowUpPrompt(conversation, lastAnswer): String - 꼬리 질문
-  - buildFinalEvaluationPrompt(conversation): String - 종합 평가
+#### 1. PromptBuilder 확장 (기존 파일 수정)
+- **파일**: `src/main/kotlin/com/hojun/interviewnote/interviewnoteapi/service/ai/PromptBuilder.kt`
+- **추가 메서드** (기존 17개 직무 프롬프트 재활용):
+  - `buildInterviewSystemPrompt(jobField: JobField): String` - 직무 기반 면접 프롬프트
+  - `buildInterviewSystemPromptWithJobPosting(jobField, jobPosting): String` - 공고 기반 면접 프롬프트
+  - `buildFirstQuestionPrompt(jobField, jobPosting?): String` - 첫 질문 생성
+  - `buildFollowUpPrompt(conversation: List<InterviewMessage>): String` - 꼬리 질문
+  - `buildFinalEvaluationPrompt(interview, conversation, jobPosting?): String` - 종합 평가
+- **장점**: 기존 `getLogicDescription()`, `getSpecificityDescription()` 등 17개 직무별 헬퍼 메서드 재활용
 
 **시스템 프롬프트 분기**:
 ```kotlin
@@ -750,13 +810,12 @@ if (jobPosting != null) {
   - RateLimitExceededException 발생
 
 **완료 기준**:
-- [ ] MockInterviewPromptBuilder (직무/공고 분기)
+- [ ] PromptBuilder에 면접용 메서드 5개 추가 (기존 파일 확장)
 - [ ] InterviewAiService (AI 통합)
-- [ ] InterviewResponseParser (JSON 검증)
-- [ ] 대화 흐름 관리 (ConversationManager)
-- [ ] Rate Limiting (5회/일)
-- [ ] 질문 길이 검증 (200자 제한)
-- [ ] Micrometer 메트릭
+- [ ] InterviewResponseParser (JSON 검증, 200자 제한)
+- [ ] 대화 흐름 관리 (MockInterviewService 내부)
+- [ ] RateLimitService에 모의 면접 제한 추가 (5회/일)
+- [ ] Micrometer 메트릭 (interview.ai.calls, interview.ai.duration)
 - [ ] 단위 테스트: 프롬프트 생성, AI 응답 파싱, 꼬리 질문 로직
 - [ ] 통합 테스트: 첫 질문 → 답변 → 꼬리 질문 → 종합 평가
 

@@ -47,4 +47,47 @@ class GlobalExceptionHandler {
         )
         return "error/rate-limit"
     }
+
+    /**
+     * Phase 7: 모의 면접 예외 처리
+     */
+    @ExceptionHandler(MockInterviewNotFoundException::class)
+    fun handleMockInterviewNotFound(e: MockInterviewNotFoundException, model: Model): String {
+        logger.warn("면접 세션 없음: ${e.message}")
+        model.addAttribute("errorMessage", "면접 세션을 찾을 수 없습니다")
+        model.addAttribute("errorDetail", "요청하신 면접 세션(ID: ${e.interviewId})이 존재하지 않습니다.")
+        return "error/404"
+    }
+
+    @ExceptionHandler(MockInterviewAccessDeniedException::class)
+    fun handleMockInterviewAccessDenied(e: MockInterviewAccessDeniedException, model: Model): String {
+        logger.warn("면접 세션 접근 거부: ${e.message}")
+        model.addAttribute("errorMessage", "접근 권한이 없습니다")
+        model.addAttribute("errorDetail", "해당 면접 세션에 접근할 수 없습니다.")
+        return "error/403"
+    }
+
+    @ExceptionHandler(MaxTurnExceededException::class)
+    fun handleMaxTurnExceeded(e: MaxTurnExceededException, model: Model): String {
+        logger.warn("최대 턴 수 초과: ${e.message}")
+        model.addAttribute("errorMessage", "최대 대화 횟수를 초과했습니다")
+        model.addAttribute("errorDetail", "면접은 최대 ${e.maxTurns}턴까지 진행할 수 있습니다. 면접을 종료해주세요.")
+        return "error/limit-exceeded"
+    }
+
+    @ExceptionHandler(InterviewAlreadyEndedException::class)
+    fun handleInterviewAlreadyEnded(e: InterviewAlreadyEndedException, model: Model): String {
+        logger.warn("이미 종료된 면접: ${e.message}")
+        model.addAttribute("errorMessage", "이미 종료된 면접입니다")
+        model.addAttribute("errorDetail", "종료된 면접에는 메시지를 보낼 수 없습니다.")
+        return "error/interview-ended"
+    }
+
+    @ExceptionHandler(MockInterviewCreationException::class)
+    fun handleMockInterviewCreation(e: MockInterviewCreationException, model: Model): String {
+        logger.error("면접 생성 실패: ${e.message}", e)
+        model.addAttribute("errorMessage", "면접을 시작할 수 없습니다")
+        model.addAttribute("errorDetail", "면접 시작 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.")
+        return "error/500"
+    }
 }

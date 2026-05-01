@@ -53,7 +53,9 @@ class InterviewService(
             questionContent = question.content,
             answerText = savedAnswer.answerText,
             answeredAt = savedAnswer.createdAt,
-            feedback = FeedbackDto.from(aiFeedback)
+            feedback = FeedbackDto.from(aiFeedback),
+            generatedQuestionId = null,  // 일반 질문이므로 null
+            isGenerated = false  // 일반 질문
         )
     }
 
@@ -103,7 +105,9 @@ class InterviewService(
             questionContent = generatedQuestion.content,
             answerText = savedAnswer.answerText,
             answeredAt = savedAnswer.createdAt,
-            feedback = FeedbackDto.from(aiFeedback)
+            feedback = FeedbackDto.from(aiFeedback),
+            generatedQuestionId = generatedQuestionId,  // 생성된 질문 ID
+            isGenerated = true  // 생성된 질문
         )
     }
 
@@ -119,18 +123,18 @@ class InterviewService(
             ?: throw FeedbackNotFoundException(answerId)
 
         // GeneratedQuestion인지 일반 Question인지 확인 (Phase 6E: questionId nullable 대응)
-        val (questionId, questionContent) = when {
+        val (questionId, questionContent, generatedQuestionId, isGenerated) = when {
             answer.generatedQuestionId != null -> {
                 // 생성된 질문
                 val genQuestionId = answer.generatedQuestionId  // Smart cast
                 val generatedQuestion = generatedQuestionRepository.findById(genQuestionId)
                     .orElseThrow { IllegalStateException("생성된 질문을 찾을 수 없습니다: ID=$genQuestionId") }
-                0L to generatedQuestion.content
+                QuestionInfo(0L, generatedQuestion.content, genQuestionId, true)
             }
             answer.questionId != null -> {
                 // 일반 질문
                 val question = questionService.findById(answer.questionId)
-                question.id to question.content
+                QuestionInfo(question.id, question.content, null, false)
             }
             else -> {
                 throw IllegalStateException("답변에 questionId와 generatedQuestionId가 모두 null입니다: answerId=${answer.id}")
@@ -143,7 +147,17 @@ class InterviewService(
             questionContent = questionContent,
             answerText = answer.answerText,
             answeredAt = answer.createdAt,
-            feedback = FeedbackDto.from(aiFeedback)
+            feedback = FeedbackDto.from(aiFeedback),
+            generatedQuestionId = generatedQuestionId,
+            isGenerated = isGenerated
         )
     }
+
+    // Helper data class for destructuring
+    private data class QuestionInfo(
+        val questionId: Long,
+        val questionContent: String,
+        val generatedQuestionId: Long?,
+        val isGenerated: Boolean
+    )
 }

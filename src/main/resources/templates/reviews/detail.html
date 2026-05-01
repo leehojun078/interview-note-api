@@ -180,7 +180,8 @@
 
         <!-- 액션 버튼 -->
         <div class="flex flex-col sm:flex-row gap-4 justify-center">
-            <a th:href="@{/questions/{id}/answer(id=${answer.questionId})}"
+            <!-- Phase 6: GeneratedQuestion vs Question 조건부 링크 -->
+            <a th:href="${answer.isGenerated} ? @{/generated-questions/{id}/answer(id=${answer.generatedQuestionId})} : @{/questions/{id}/answer(id=${answer.questionId})}"
                class="inline-block bg-primary hover:bg-primary-dark text-white font-semibold px-6 py-3 rounded-lg text-center transition shadow-md hover:shadow-lg">
                 다시 답변하기
             </a>

@@ -6,6 +6,7 @@ import com.hojun.interviewnote.interviewnoteapi.domain.Question
 import com.hojun.interviewnote.interviewnoteapi.dto.AnswerSubmitDto
 import com.hojun.interviewnote.interviewnoteapi.exception.AnswerNotFoundException
 import com.hojun.interviewnote.interviewnoteapi.exception.FeedbackNotFoundException
+import com.hojun.interviewnote.interviewnoteapi.repository.GeneratedQuestionRepository
 import com.hojun.interviewnote.interviewnoteapi.repository.InterviewAnswerRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -30,6 +31,9 @@ class InterviewServiceTest {
 
     @Mock
     private lateinit var aiFeedbackService: AiFeedbackService
+
+    @Mock
+    private lateinit var generatedQuestionRepository: GeneratedQuestionRepository
 
     @InjectMocks
     private lateinit var interviewService: InterviewService
@@ -149,10 +153,8 @@ class InterviewServiceTest {
     fun `피드백이 없으면 FeedbackNotFoundException을 발생시킨다`() {
         // given
         val answer = createAnswer()
-        val question = createQuestion()
 
         whenever(interviewAnswerRepository.findById(1L)).thenReturn(Optional.of(answer))
-        whenever(questionService.findById(1L)).thenReturn(question)
         whenever(aiFeedbackService.findByInterviewAnswerId(1L)).thenReturn(null)
 
         // when & then

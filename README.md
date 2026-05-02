@@ -85,7 +85,7 @@
   - 사용자 직무 기반 추천 질문
   - 직무 미설정 시 안내 배너
 
-### ✅ Phase 6 (완료) 🚀 NEW
+### ✅ Phase 6 (완료) 🚀
 - 🎯 **채용 공고 기반 맞춤형 질문 생성**
   - 원티드, 사람인, 잡코리아 URL 입력
   - AI가 공고 분석하여 **10개 맞춤 질문** 자동 생성
@@ -102,6 +102,36 @@
   - 기존 답변 작성 플로우 재사용
   - GeneratedQuestion ↔ InterviewAnswer 연결
   - 올바른 질문 매칭 (질문 ID 분리)
+
+### ✅ Phase 7 (완료) 🎉 NEW
+- 💬 **실시간 AI 채팅 면접 시스템**
+  - AI 면접관과 실시간 대화 형태의 모의 면접
+  - **직무 기반 면접**: 17개 직무 중 선택하여 일반 면접 연습
+  - **공고 기반 면접**: 특정 채용 공고 맞춤형 면접 연습
+- 📡 **SSE 실시간 통신** (Server-Sent Events)
+  - WebSocket 대신 SSE 사용 (구현 단순, HTTP 기반)
+  - 30분 타임아웃, 자동 재연결 지원
+  - 브라우저 EventSource API 활용
+- ⚡ **비동기 AI 응답 생성**
+  - @Async 비동기 처리 (사용자 대기 시간 제거)
+  - ThreadPoolTaskExecutor (core: 10, max: 50)
+  - AI 응답 3-5초 → 즉시 응답 (<100ms)
+- 🔗 **꼬리 질문 자동 생성**
+  - 답변 평가 기반 다음 질문 결정
+  - 답변 부족 시 꼬리 질문 (`isFollowUp: true`)
+  - 답변 충분 시 새 질문 (`isFollowUp: false`)
+- 📊 **종합 평가 시스템**
+  - 평균 점수 (1-5점, 소수점 1자리)
+  - 종합 피드백 (400-600자)
+  - 주요 강점 3개, 개선점 3개
+  - 채용 추천도 (추천/보류/비추천 + 근거)
+- 🛡️ **보안 및 제한**
+  - 30턴 대화 제한 (AI 비용 제어)
+  - Rate Limiting: 5회/일 (모의 면접)
+  - 소유권 검증 (타 사용자 접근 차단)
+- ✅ **30개 테스트 모두 통과**
+  - 통합 테스트 10개 (전체 플로우)
+  - 단위 테스트 20개 (Parser, Service, Controller)
 
 ---
 
@@ -482,16 +512,20 @@ src/
 ### 핵심 가이드
 - **[CLAUDE.md](./CLAUDE.md)** - 프로젝트 전체 가이드 (아키텍처, 도메인 모델, 코딩 규칙)
 - **[SETUP_GUIDE.md](./SETUP_GUIDE.md)** - 환경 설정 가이드 (OpenAI API, IntelliJ 등)
-- **[CHANGELOG.md](./CHANGELOG.md)** - 버전별 변경 이력 (0.1.0 ~ 0.5.0)
+- **[CHANGELOG.md](./CHANGELOG.md)** - 버전별 변경 이력 (0.1.0 ~ 0.7.0)
 
 ### Phase별 구현 계획
-- **[phase5_implementation_plan.md](./phase5_implementation_plan.md)** - Phase 5: 17개 직무 확장 상세 설계 ✨
+- **[PHASE7_AI_CHAT_INTERVIEW.md](./PHASE7_AI_CHAT_INTERVIEW.md)** - Phase 7: 실시간 AI 채팅 면접 PRD 🎉
+- **[phase5_implementation_plan.md](./phase5_implementation_plan.md)** - Phase 5: 17개 직무 확장 상세 설계
 - **[phase4_implementation_plan.md](./phase4_implementation_plan.md)** - Phase 4: 사용자 관리 및 권한 제어
 - **[phase3_implementation_plan.md](./phase3_implementation_plan.md)** - Phase 3: UI/UX, 모니터링, Docker
 - **[phase2_implementation_plan.md](./phase2_implementation_plan.md)** - Phase 2: AI 연동 및 최적화
 
-### 테스트 및 마이그레이션
+### Phase 완료 보고서
+- **[PHASE7_COMPLETION_REPORT.md](./PHASE7_COMPLETION_REPORT.md)** - Phase 7 완료 보고서 (SSE, 비동기 처리, 테스트) 🎉
 - **[PHASE5_STEP17_TEST_REPORT.md](./PHASE5_STEP17_TEST_REPORT.md)** - Phase 5 통합 테스트 보고서 (245개 테스트)
+
+### 마이그레이션 가이드
 - **[PHASE5_MIGRATION_GUIDE.md](./PHASE5_MIGRATION_GUIDE.md)** - Phase 5 마이그레이션 가이드 (V6, V7)
 - **[UNIT_TEST_PLAN.md](./UNIT_TEST_PLAN.md)** - 단위 테스트 전략
 

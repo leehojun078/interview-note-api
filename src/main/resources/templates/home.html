@@ -28,7 +28,11 @@
 
                 <!-- CTA 버튼 -->
                 <div class="fade-in-section delay-300 flex flex-col sm:flex-row gap-4 justify-center items-center">
-                    <a th:href="@{/questions}" class="btn-neon">
+                    <button onclick="openJobFieldModal()"
+                            class="btn-neon">
+                        🤖 AI 면접 연습
+                    </button>
+                    <a th:href="@{/questions}" class="btn-secondary">
                         무료로 시작하기 →
                     </a>
                     <a th:href="@{/reviews}" class="btn-secondary">
@@ -206,11 +210,52 @@
 </main>
 
 <footer th:replace="~{fragments/layout :: footer}"></footer>
+
+<!-- 직무 선택 모달 -->
+<div th:replace="~{fragments/job-field-modal :: job-field-modal}"></div>
+
 <script th:replace="~{fragments/layout :: toast-script}"></script>
 <script th:replace="~{fragments/layout :: dark-mode-script}"></script>
 
 <!-- Fade-in Animation Script -->
 <script>
+    // 모달 열기/닫기 함수 (job-field-modal용)
+    function openJobFieldModal() {
+        const modal = document.getElementById('jobFieldModal');
+        if (modal) {
+            modal.classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+    }
+
+    function closeJobFieldModal() {
+        const modal = document.getElementById('jobFieldModal');
+        if (modal) {
+            modal.classList.add('hidden');
+            document.body.style.overflow = '';
+            const form = document.getElementById('jobFieldForm');
+            if (form) form.reset();
+        }
+    }
+
+    // ESC 키로 모달 닫기
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closeJobFieldModal();
+        }
+    });
+
+    // CSRF 토큰 설정
+    document.addEventListener('DOMContentLoaded', function() {
+        const csrfToken = document.querySelector('meta[name="_csrf"]');
+        if (csrfToken && csrfToken.content) {
+            const tokenInput = document.getElementById('csrfToken');
+            if (tokenInput) {
+                tokenInput.value = csrfToken.content;
+            }
+        }
+    });
+
     // Intersection Observer로 스크롤 애니메이션 트리거
     const observerOptions = {
         root: null,

@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<!-- 직무 선택 모달 -->
+<div th:fragment="job-field-modal" id="jobFieldModal" class="hidden fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <!-- 배경 오버레이 -->
+    <div class="fixed inset-0 bg-gray-900 dark:bg-black bg-opacity-75 dark:bg-opacity-80 transition-opacity" aria-hidden="true" onclick="closeJobFieldModal()"></div>
+
+    <!-- 모달 컨텐츠 -->
+    <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:p-0">
+        <div class="relative inline-block align-bottom bg-white dark:bg-dark-card rounded-2xl px-8 pt-8 pb-8 text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full border border-gray-200 dark:border-dark-border">
+
+            <!-- 헤더 -->
+            <div class="mb-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-2xl font-bold text-gray-900 dark:text-dark-text" id="modal-title">
+                        AI 면접 연습 시작
+                    </h3>
+                    <button type="button"
+                            onclick="closeJobFieldModal()"
+                            class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
+                        <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+                <p class="text-sm text-gray-600 dark:text-dark-muted">
+                    면접 직무를 선택해주세요
+                </p>
+            </div>
+
+            <!-- 폼 -->
+            <form id="jobFieldForm" action="/mock-interviews/start" method="post" class="space-y-6">
+                <!-- CSRF 토큰 (JavaScript로 설정) -->
+                <input type="hidden" name="_csrf" id="csrfToken" value="" />
+
+                <!-- 직무 선택 드롭다운 -->
+                <div>
+                    <label for="selectedJobField" class="block text-sm font-semibold text-gray-700 dark:text-dark-text mb-2">
+                        직무 분야
+                    </label>
+                    <select id="selectedJobField"
+                            name="selectedJobField"
+                            required
+                            class="block w-full px-4 py-3 border border-gray-300 dark:border-dark-border rounded-lg
+                                   bg-white dark:bg-dark-bg text-gray-900 dark:text-dark-text
+                                   focus:ring-2 focus:ring-primary focus:border-primary
+                                   transition-all duration-200 shadow-sm">
+                        <option value="">선택해주세요</option>
+                        <option value="IT">IT개발</option>
+                        <option value="PLANNING">기획·전략</option>
+                        <option value="MARKETING">마케팅·홍보·조사</option>
+                        <option value="ACCOUNTING">회계·세무·재무</option>
+                        <option value="HR">인사·노무·HRD</option>
+                        <option value="ADMIN">총무·법무·사무</option>
+                        <option value="DESIGN">디자인</option>
+                        <option value="SALES">영업·판매·무역</option>
+                        <option value="MD">상품기획·MD</option>
+                        <option value="SERVICE">서비스</option>
+                        <option value="PRODUCTION">생산</option>
+                        <option value="CONSTRUCTION">건설·건축</option>
+                        <option value="MEDICAL">의료</option>
+                        <option value="EDUCATION">교육</option>
+                        <option value="MEDIA">미디어·문화·스포츠</option>
+                        <option value="FINANCE">금융·보험</option>
+                        <option value="PUBLIC">공공·복지</option>
+                    </select>
+                </div>
+
+                <!-- 채용 공고 안내 -->
+                <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0">
+                            <svg class="h-5 w-5 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <h4 class="text-sm font-medium text-blue-800 dark:text-blue-300">
+                                채용 공고로 맞춤 면접 연습
+                            </h4>
+                            <p class="mt-1 text-sm text-blue-700 dark:text-blue-400">
+                                특정 회사 채용 공고에 맞춘 면접을 원하시면,
+                                <a th:href="@{/job-postings}" class="font-semibold underline hover:text-blue-900 dark:hover:text-blue-200">
+                                    공고 페이지
+                                </a>에서 "이 공고로 면접 연습" 버튼을 이용하세요.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 버튼 -->
+                <div class="flex gap-3 pt-2">
+                    <button type="button"
+                            onclick="closeJobFieldModal()"
+                            class="flex-1 px-6 py-3 border border-gray-300 dark:border-dark-border rounded-lg
+                                   text-gray-700 dark:text-dark-text font-medium
+                                   hover:bg-gray-50 dark:hover:bg-dark-bg transition-colors">
+                        취소
+                    </button>
+                    <button type="submit"
+                            class="flex-1 btn-neon">
+                        면접 시작
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

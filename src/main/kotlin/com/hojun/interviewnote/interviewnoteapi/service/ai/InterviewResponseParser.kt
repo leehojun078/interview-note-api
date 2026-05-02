@@ -20,7 +20,7 @@ class InterviewResponseParser(
 
     companion object {
         const val MAX_QUESTION_LENGTH = 200
-        const val MIN_SCORE = 1
+        const val MIN_SCORE = 0  // 0 = 평가 없음 (첫 질문 생성 시)
         const val MAX_SCORE = 5
     }
 

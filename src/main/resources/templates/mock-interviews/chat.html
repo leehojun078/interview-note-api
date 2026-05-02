@@ -27,12 +27,15 @@
                         시작: <span th:text="${#temporals.format(interview.startedAt, 'yyyy-MM-dd HH:mm')}">2026-05-01 10:25</span>
                     </p>
                 </div>
-                <form th:action="@{/mock-interviews/{id}/end(id=${interview.id})}" method="post">
+                <form th:action="@{/mock-interviews/{id}/end(id=${interview.id})}" method="post" onsubmit="return handleEndSubmit(event)">
                     <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
-                    <button type="submit"
-                            onclick="return confirm('면접을 종료하시겠습니까? 종합 평가가 생성됩니다.')"
-                            class="px-6 py-3 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg transition-colors shadow-md">
-                        면접 종료
+                    <button type="submit" id="endBtn"
+                            class="px-6 py-3 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg transition-colors shadow-md disabled:opacity-50 disabled:cursor-not-allowed">
+                        <span id="endText">면접 종료</span>
+                        <span id="endLoadingText" class="hidden flex items-center justify-center gap-2">
+                            <span class="spinner spinner-white spinner-sm"></span>
+                            종합 평가 생성 중... (8-10초 소요)
+                        </span>
                     </button>
                 </form>
             </div>
@@ -168,6 +171,30 @@
     const interviewId = /*[[${interview.id}]]*/ 0;
     const csrfToken = /*[[${_csrf.token}]]*/ '';
     const csrfHeader = /*[[${_csrf.headerName}]]*/ '';
+
+    // 면접 종료 핸들러
+    function handleEndSubmit(event) {
+        // 확인 다이얼로그
+        if (!confirm('면접을 종료하시겠습니까? 종합 평가가 생성됩니다.')) {
+            event.preventDefault();
+            return false;
+        }
+
+        const endBtn = document.getElementById('endBtn');
+        const endText = document.getElementById('endText');
+        const endLoadingText = document.getElementById('endLoadingText');
+
+        // 로딩 UI 표시
+        endText.classList.add('hidden');
+        endLoadingText.classList.remove('hidden');
+
+        // 버튼 비활성화
+        setTimeout(() => {
+            endBtn.disabled = true;
+        }, 0);
+
+        return true;
+    }
 
     // DOM 요소
     const messagesContainer = document.getElementById('messagesContainer');
@@ -363,8 +390,29 @@
 
     // 시간 포맷 (HH:mm:ss)
     function formatTime(timestamp) {
-        const date = new Date(timestamp);
-        return date.toLocaleTimeString('ko-KR', { hour12: false });
+        if (!timestamp) {
+            return '--:--:--';
+        }
+
+        try {
+            // timestamp가 문자열인 경우 (ISO 8601 형식)
+            const date = new Date(timestamp);
+
+            // Invalid Date 체크
+            if (isNaN(date.getTime())) {
+                console.error('Invalid timestamp:', timestamp);
+                return '--:--:--';
+            }
+
+            // HH:MM:SS 형식으로 수동 포맷팅
+            const hours = String(date.getHours()).padStart(2, '0');
+            const minutes = String(date.getMinutes()).padStart(2, '0');
+            const seconds = String(date.getSeconds()).padStart(2, '0');
+            return `${hours}:${minutes}:${seconds}`;
+        } catch (error) {
+            console.error('Error formatting time:', error, 'timestamp:', timestamp);
+            return '--:--:--';
+        }
     }
 
     // HTML 이스케이프
@@ -409,6 +457,9 @@
     });
     /*]]>*/
 </script>
+
+<!-- Dark mode script -->
+<script th:replace="~{fragments/layout :: dark-mode-script}"></script>
 
 </body>
 </html>

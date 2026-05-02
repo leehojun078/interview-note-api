@@ -72,7 +72,7 @@ class SecurityConfig {
                     .loginProcessingUrl("/auth/login-process")  // 로그인 처리 URL
                     .usernameParameter("email")  // username 대신 email 사용
                     .passwordParameter("password")
-                    .defaultSuccessUrl("/questions", true)  // 로그인 성공 시 질문 목록으로
+                    .defaultSuccessUrl("/", true)  // 로그인 성공 시 홈 화면으로
                     .failureUrl("/auth/login?error=true")  // 로그인 실패 시
                     .permitAll()
             }

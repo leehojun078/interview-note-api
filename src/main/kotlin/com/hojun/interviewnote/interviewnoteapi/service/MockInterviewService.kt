@@ -388,7 +388,7 @@ class MockInterviewService(
             "sender" to message.sender.name,
             "content" to message.content,
             "messageIndex" to message.messageIndex,
-            "timestamp" to message.createdAt.toString(),
+            "createdAt" to message.createdAt.toString(),
             "aiReasoning" to message.aiReasoning,
             "logicScore" to message.logicScore,
             "specificityScore" to message.specificityScore,

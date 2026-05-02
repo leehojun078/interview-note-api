@@ -104,6 +104,13 @@
                     </a>
                 </li>
                 <li sec:authorize="isAuthenticated()">
+                    <a href="javascript:void(0)"
+                       onclick="openJobFieldModal()"
+                       class="hover:opacity-80 transition font-medium">
+                        🤖 AI 면접 연습
+                    </a>
+                </li>
+                <li sec:authorize="isAuthenticated()">
                     <a th:href="@{/job-postings}"
                        class="hover:opacity-80 transition font-medium">
                         내 채용 공고
@@ -182,6 +189,9 @@
                     <a th:href="@{/questions}" class="block px-3 py-2 rounded-md text-base font-medium hover:bg-primary-dark transition">
                         질문 연습
                     </a>
+                    <a href="javascript:void(0)" onclick="openJobFieldModal()" class="block px-3 py-2 rounded-md text-base font-medium hover:bg-primary-dark transition">
+                        🤖 AI 면접 연습
+                    </a>
                     <a th:href="@{/job-postings}" class="block px-3 py-2 rounded-md text-base font-medium hover:bg-primary-dark transition">
                         내 채용 공고
                     </a>
@@ -235,6 +245,77 @@
                 mobileMenuBtn.addEventListener('click', function() {
                     mobileMenu.classList.toggle('hidden');
                 });
+            }
+        });
+
+        // 직무 선택 모달 함수 (전역)
+        function openJobFieldModal() {
+            const modal = document.getElementById('jobFieldModal');
+            if (modal) {
+                modal.classList.remove('hidden');
+                document.body.style.overflow = 'hidden';
+            }
+        }
+
+        function closeJobFieldModal() {
+            const modal = document.getElementById('jobFieldModal');
+            if (modal) {
+                modal.classList.add('hidden');
+                document.body.style.overflow = '';
+                const form = document.getElementById('jobFieldForm');
+                if (form) form.reset();
+
+                // 버튼 상태 초기화
+                const submitBtn = document.getElementById('modalSubmitBtn');
+                const submitText = document.getElementById('modalSubmitText');
+                const loadingText = document.getElementById('modalLoadingText');
+                if (submitBtn && submitText && loadingText) {
+                    submitBtn.disabled = false;
+                    submitText.classList.remove('hidden');
+                    loadingText.classList.add('hidden');
+                }
+            }
+        }
+
+        // 모달 제출 핸들러
+        function handleModalSubmit(event) {
+            const submitBtn = document.getElementById('modalSubmitBtn');
+            const submitText = document.getElementById('modalSubmitText');
+            const loadingText = document.getElementById('modalLoadingText');
+
+            // 직무 선택 확인
+            const selectedJobField = document.getElementById('selectedJobField');
+            if (!selectedJobField || !selectedJobField.value) {
+                return true; // 브라우저 기본 검증에 맡김
+            }
+
+            // 로딩 UI 표시
+            submitText.classList.add('hidden');
+            loadingText.classList.remove('hidden');
+
+            // 버튼 비활성화
+            setTimeout(() => {
+                submitBtn.disabled = true;
+            }, 0);
+
+            return true;
+        }
+
+        // ESC 키로 모달 닫기
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeJobFieldModal();
+            }
+        });
+
+        // CSRF 토큰 설정
+        document.addEventListener('DOMContentLoaded', function() {
+            const csrfToken = document.querySelector('meta[name="_csrf"]');
+            if (csrfToken && csrfToken.content) {
+                const tokenInput = document.getElementById('csrfToken');
+                if (tokenInput) {
+                    tokenInput.value = csrfToken.content;
+                }
             }
         });
     </script>
@@ -304,6 +385,12 @@
         }
     });
 </script>
+
+<!-- Global Modals Fragment -->
+<div th:fragment="global-modals">
+    <!-- 직무 선택 모달 (AI 면접 연습용) -->
+    <div th:replace="~{fragments/job-field-modal :: job-field-modal}"></div>
+</div>
 
 <!-- Phase 3: 다크모드 토글 스크립트 -->
 <script th:fragment="dark-mode-script">

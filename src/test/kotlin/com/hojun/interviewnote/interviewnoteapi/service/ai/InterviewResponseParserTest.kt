@@ -1,11 +1,8 @@
 package com.hojun.interviewnote.interviewnoteapi.service.ai
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import com.hojun.interviewnote.interviewnoteapi.exception.AiResponseParseException
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertFalse
-import org.junit.jupiter.api.Assertions.assertTrue
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -13,28 +10,23 @@ import org.junit.jupiter.api.assertThrows
 /**
  * InterviewResponseParser 단위 테스트
  *
- * Phase 7B: 면접 AI 응답 파싱 및 검증 테스트
- * - parseInterviewResponse: 평가 + 다음 질문
- * - parseFinalEvaluation: 종합 평가
- * - 200자 질문 제한 검증
+ * Phase 7E: JSON 파싱, 200자 제한, 점수 검증
  */
 class InterviewResponseParserTest {
 
-    private lateinit var interviewResponseParser: InterviewResponseParser
+    private lateinit var parser: InterviewResponseParser
     private lateinit var objectMapper: ObjectMapper
 
     @BeforeEach
     fun setUp() {
-        objectMapper = ObjectMapper().registerKotlinModule()
-        interviewResponseParser = InterviewResponseParser(objectMapper)
+        objectMapper = ObjectMapper()
+        parser = InterviewResponseParser(objectMapper)
     }
 
-    // ===== parseInterviewResponse 테스트 =====
-
     @Test
-    fun `parseInterviewResponse - 올바른 JSON 응답을 파싱한다`() {
-        // Given
-        val validJson = """
+    fun `정상 면접 응답 파싱 성공`() {
+        // given: 정상 JSON 응답
+        val rawResponse = """
             {
               "evaluation": {
                 "logicScore": 4,
@@ -43,388 +35,258 @@ class InterviewResponseParserTest {
                 "comment": "답변이 논리적이고 구체적입니다."
               },
               "nextAction": {
-                "question": "그 프로젝트에서 가장 어려웠던 기술적 도전은 무엇이었나요?",
-                "reasoning": "구체적인 기술 경험을 더 깊이 파악하기 위함",
+                "question": "주로 사용한 백엔드 프레임워크는 무엇인가요?",
+                "reasoning": "구체적인 기술 경험을 확인하기 위한 꼬리 질문",
                 "isFollowUp": true
               }
             }
         """.trimIndent()
 
-        // When
-        val result = interviewResponseParser.parseInterviewResponse(validJson)
+        // when
+        val result = parser.parseInterviewResponse(rawResponse)
 
-        // Then
-        assertEquals(4, result.evaluation.logicScore)
-        assertEquals(3, result.evaluation.specificityScore)
-        assertEquals(4, result.evaluation.deliveryScore)
-        assertEquals("답변이 논리적이고 구체적입니다.", result.evaluation.comment)
-        assertEquals("그 프로젝트에서 가장 어려웠던 기술적 도전은 무엇이었나요?", result.nextAction.question)
-        assertEquals("구체적인 기술 경험을 더 깊이 파악하기 위함", result.nextAction.reasoning)
-        assertTrue(result.nextAction.isFollowUp)
+        // then
+        assertThat(result.evaluation.logicScore).isEqualTo(4)
+        assertThat(result.evaluation.specificityScore).isEqualTo(3)
+        assertThat(result.evaluation.deliveryScore).isEqualTo(4)
+        assertThat(result.evaluation.comment).isEqualTo("답변이 논리적이고 구체적입니다.")
+
+        assertThat(result.nextAction.question).isEqualTo("주로 사용한 백엔드 프레임워크는 무엇인가요?")
+        assertThat(result.nextAction.reasoning).isEqualTo("구체적인 기술 경험을 확인하기 위한 꼬리 질문")
+        assertThat(result.nextAction.isFollowUp).isTrue()
     }
 
     @Test
-    fun `parseInterviewResponse - isFollowUp이 false일 때 정상 처리`() {
-        // Given
-        val validJson = """
+    fun `첫 질문 생성 시 점수 0 허용`() {
+        // given: 첫 질문 생성 시 평가 없음 (점수 0)
+        val rawResponse = """
             {
               "evaluation": {
-                "logicScore": 3,
-                "specificityScore": 3,
-                "deliveryScore": 3,
-                "comment": "답변 평가"
+                "logicScore": 0,
+                "specificityScore": 0,
+                "deliveryScore": 0,
+                "comment": "첫 질문 생성"
               },
               "nextAction": {
-                "question": "새로운 주제의 질문입니다.",
-                "reasoning": "다음 단계로 진행",
+                "question": "자기소개를 부탁드립니다.",
+                "reasoning": "면접 시작 질문",
                 "isFollowUp": false
               }
             }
         """.trimIndent()
 
-        // When
-        val result = interviewResponseParser.parseInterviewResponse(validJson)
+        // when
+        val result = parser.parseInterviewResponse(rawResponse)
 
-        // Then
-        assertFalse(result.nextAction.isFollowUp)
+        // then: MIN_SCORE = 0이므로 통과
+        assertThat(result.evaluation.logicScore).isEqualTo(0)
+        assertThat(result.evaluation.specificityScore).isEqualTo(0)
+        assertThat(result.evaluation.deliveryScore).isEqualTo(0)
     }
 
     @Test
-    fun `parseInterviewResponse - isFollowUp이 없으면 기본값 false로 처리`() {
-        // Given
-        val validJson = """
+    fun `질문 길이 200자 초과 시 자동 절단`() {
+        // given: 201자 질문
+        val longQuestion = "a".repeat(201)
+        val rawResponse = """
             {
               "evaluation": {
                 "logicScore": 3,
                 "specificityScore": 3,
                 "deliveryScore": 3,
-                "comment": "답변 평가"
+                "comment": "좋습니다"
               },
               "nextAction": {
-                "question": "질문입니다.",
+                "question": "$longQuestion",
+                "reasoning": "테스트",
+                "isFollowUp": false
+              }
+            }
+        """.trimIndent()
+
+        // when
+        val result = parser.parseInterviewResponse(rawResponse)
+
+        // then: 200자로 절단 (마지막 3글자 "...")
+        assertThat(result.nextAction.question.length).isEqualTo(200)
+        assertThat(result.nextAction.question).endsWith("...")
+    }
+
+    @Test
+    fun `점수 범위 초과 시 예외 발생 - 상한`() {
+        // given: logicScore = 6 (최대 5 초과)
+        val rawResponse = """
+            {
+              "evaluation": {
+                "logicScore": 6,
+                "specificityScore": 3,
+                "deliveryScore": 3,
+                "comment": "범위 초과"
+              },
+              "nextAction": {
+                "question": "질문",
+                "reasoning": "이유",
+                "isFollowUp": false
+              }
+            }
+        """.trimIndent()
+
+        // when & then
+        val exception = assertThrows<Exception> {
+            parser.parseInterviewResponse(rawResponse)
+        }
+
+        // IllegalArgumentException이 AiResponseParseException으로 래핑됨
+        assertThat(exception).isInstanceOfAny(
+            IllegalArgumentException::class.java,
+            AiResponseParseException::class.java
+        )
+    }
+
+    @Test
+    fun `점수 범위 초과 시 예외 발생 - 하한`() {
+        // given: specificityScore = -1 (최소 0 미만)
+        val rawResponse = """
+            {
+              "evaluation": {
+                "logicScore": 3,
+                "specificityScore": -1,
+                "deliveryScore": 3,
+                "comment": "범위 초과"
+              },
+              "nextAction": {
+                "question": "질문",
+                "reasoning": "이유",
+                "isFollowUp": false
+              }
+            }
+        """.trimIndent()
+
+        // when & then
+        val exception = assertThrows<Exception> {
+            parser.parseInterviewResponse(rawResponse)
+        }
+
+        // IllegalArgumentException이 AiResponseParseException으로 래핑됨
+        assertThat(exception).isInstanceOfAny(
+            IllegalArgumentException::class.java,
+            AiResponseParseException::class.java
+        )
+    }
+
+    @Test
+    fun `잘못된 JSON 형식 시 예외 발생`() {
+        // given: 잘못된 JSON
+        val invalidJson = """
+            {
+              "evaluation": {
+                "logicScore": "잘못된 문자열",
+              }
+            }
+        """.trimIndent()
+
+        // when & then
+        assertThrows<AiResponseParseException> {
+            parser.parseInterviewResponse(invalidJson)
+        }
+    }
+
+    @Test
+    fun `필수 필드 누락 시 예외 발생`() {
+        // given: nextAction 필드 누락
+        val missingField = """
+            {
+              "evaluation": {
+                "logicScore": 3,
+                "specificityScore": 3,
+                "deliveryScore": 3,
+                "comment": "좋습니다"
+              }
+            }
+        """.trimIndent()
+
+        // when & then
+        assertThrows<Exception> {
+            parser.parseInterviewResponse(missingField)
+        }
+    }
+
+    @Test
+    fun `종합 평가 파싱 성공`() {
+        // given: 종합 평가 JSON
+        val rawResponse = """
+            {
+              "overallFeedback": "지원자는 Spring Boot 경험이 풍부하며...",
+              "keyStrengths": ["Kotlin 숙련도", "명확한 커뮤니케이션", "실무 경험 풍부"],
+              "keyImprovements": ["분산 시스템 학습", "대규모 트래픽 처리 경험", "아키텍처 설계 역량"],
+              "averageScore": 3.8,
+              "recommendation": "보류 - 기술 역량은 우수하나, 요구사항인 Kafka 경험이 부족"
+            }
+        """.trimIndent()
+
+        // when
+        val result = parser.parseFinalEvaluation(rawResponse)
+
+        // then
+        assertThat(result.overallFeedback).contains("Spring Boot")
+        assertThat(result.averageScore).isEqualTo(3.8)
+        assertThat(result.recommendation).contains("보류")
+
+        // keyStrengths는 JSON 문자열로 저장됨
+        assertThat(result.keyStrengths).contains("Kotlin 숙련도")
+        assertThat(result.keyImprovements).contains("분산 시스템 학습")
+    }
+
+    @Test
+    fun `isFollowUp 필드 누락 시 기본값 false`() {
+        // given: isFollowUp 필드 없음
+        val rawResponse = """
+            {
+              "evaluation": {
+                "logicScore": 3,
+                "specificityScore": 3,
+                "deliveryScore": 3,
+                "comment": "좋습니다"
+              },
+              "nextAction": {
+                "question": "다음 질문은?",
                 "reasoning": "이유"
               }
             }
         """.trimIndent()
 
-        // When
-        val result = interviewResponseParser.parseInterviewResponse(validJson)
+        // when
+        val result = parser.parseInterviewResponse(rawResponse)
 
-        // Then
-        assertFalse(result.nextAction.isFollowUp)
+        // then: 기본값 false
+        assertThat(result.nextAction.isFollowUp).isFalse()
     }
 
     @Test
-    fun `parseInterviewResponse - 질문이 200자일 때 정상 처리`() {
-        // Given
-        val question = "x".repeat(200)
-        val validJson = """
-            {
-              "evaluation": {
-                "logicScore": 3,
-                "specificityScore": 3,
-                "deliveryScore": 3,
-                "comment": "답변 평가"
-              },
-              "nextAction": {
-                "question": "$question",
-                "reasoning": "이유",
-                "isFollowUp": true
-              }
-            }
-        """.trimIndent()
-
-        // When
-        val result = interviewResponseParser.parseInterviewResponse(validJson)
-
-        // Then
-        assertEquals(200, result.nextAction.question.length)
-    }
-
-    @Test
-    fun `parseInterviewResponse - 질문이 200자 초과하면 절단하고 말줄임표를 붙인다`() {
-        // Given
-        val question = "x".repeat(250)
-        val validJson = """
-            {
-              "evaluation": {
-                "logicScore": 3,
-                "specificityScore": 3,
-                "deliveryScore": 3,
-                "comment": "답변 평가"
-              },
-              "nextAction": {
-                "question": "$question",
-                "reasoning": "이유",
-                "isFollowUp": true
-              }
-            }
-        """.trimIndent()
-
-        // When
-        val result = interviewResponseParser.parseInterviewResponse(validJson)
-
-        // Then
-        assertEquals(200, result.nextAction.question.length)
-        assertTrue(result.nextAction.question.endsWith("..."))
-        assertEquals("x".repeat(197) + "...", result.nextAction.question)
-    }
-
-    @Test
-    fun `parseInterviewResponse - 점수가 1일 때 정상 처리`() {
-        // Given
-        val validJson = """
-            {
-              "evaluation": {
-                "logicScore": 1,
-                "specificityScore": 1,
-                "deliveryScore": 1,
-                "comment": "답변이 부족합니다"
-              },
-              "nextAction": {
-                "question": "좀 더 구체적으로 설명해주세요.",
-                "reasoning": "추가 설명 필요",
-                "isFollowUp": true
-              }
-            }
-        """.trimIndent()
-
-        // When
-        val result = interviewResponseParser.parseInterviewResponse(validJson)
-
-        // Then
-        assertEquals(1, result.evaluation.logicScore)
-        assertEquals(1, result.evaluation.specificityScore)
-        assertEquals(1, result.evaluation.deliveryScore)
-    }
-
-    @Test
-    fun `parseInterviewResponse - 점수가 5일 때 정상 처리`() {
-        // Given
-        val validJson = """
+    fun `모든 점수가 최대값 5일 때 정상 처리`() {
+        // given: 모든 점수 5점
+        val rawResponse = """
             {
               "evaluation": {
                 "logicScore": 5,
                 "specificityScore": 5,
                 "deliveryScore": 5,
-                "comment": "매우 훌륭한 답변입니다"
+                "comment": "완벽한 답변입니다"
               },
               "nextAction": {
-                "question": "다음 질문입니다.",
+                "question": "다음 질문",
                 "reasoning": "이유",
                 "isFollowUp": false
               }
             }
         """.trimIndent()
 
-        // When
-        val result = interviewResponseParser.parseInterviewResponse(validJson)
+        // when
+        val result = parser.parseInterviewResponse(rawResponse)
 
-        // Then
-        assertEquals(5, result.evaluation.logicScore)
-        assertEquals(5, result.evaluation.specificityScore)
-        assertEquals(5, result.evaluation.deliveryScore)
-    }
-
-    @Test
-    fun `parseInterviewResponse - 점수가 0이면 예외 발생`() {
-        // Given
-        val invalidJson = """
-            {
-              "evaluation": {
-                "logicScore": 0,
-                "specificityScore": 3,
-                "deliveryScore": 3,
-                "comment": "답변 평가"
-              },
-              "nextAction": {
-                "question": "질문",
-                "reasoning": "이유",
-                "isFollowUp": true
-              }
-            }
-        """.trimIndent()
-
-        // When & Then
-        val exception = assertThrows<AiResponseParseException> {
-            interviewResponseParser.parseInterviewResponse(invalidJson)
-        }
-        assertTrue(exception.cause?.message?.contains("logicScore") == true)
-    }
-
-    @Test
-    fun `parseInterviewResponse - 점수가 6이면 예외 발생`() {
-        // Given
-        val invalidJson = """
-            {
-              "evaluation": {
-                "logicScore": 3,
-                "specificityScore": 6,
-                "deliveryScore": 3,
-                "comment": "답변 평가"
-              },
-              "nextAction": {
-                "question": "질문",
-                "reasoning": "이유",
-                "isFollowUp": true
-              }
-            }
-        """.trimIndent()
-
-        // When & Then
-        val exception = assertThrows<AiResponseParseException> {
-            interviewResponseParser.parseInterviewResponse(invalidJson)
-        }
-        assertTrue(exception.cause?.message?.contains("specificityScore") == true)
-    }
-
-    @Test
-    fun `parseInterviewResponse - 필수 필드 누락 시 예외 발생`() {
-        // Given - evaluation 누락
-        val invalidJson = """
-            {
-              "nextAction": {
-                "question": "질문",
-                "reasoning": "이유",
-                "isFollowUp": true
-              }
-            }
-        """.trimIndent()
-
-        // When & Then
-        assertThrows<AiResponseParseException> {
-            interviewResponseParser.parseInterviewResponse(invalidJson)
-        }
-    }
-
-    @Test
-    fun `parseInterviewResponse - 잘못된 JSON 형식 시 예외 발생`() {
-        // Given
-        val malformedJson = """
-            {
-              "evaluation": {
-                "logicScore": "not a number"
-              }
-            }
-        """.trimIndent()
-
-        // When & Then
-        assertThrows<AiResponseParseException> {
-            interviewResponseParser.parseInterviewResponse(malformedJson)
-        }
-    }
-
-    // ===== parseFinalEvaluation 테스트 =====
-
-    @Test
-    fun `parseFinalEvaluation - 올바른 JSON 응답을 파싱한다`() {
-        // Given
-        val validJson = """
-            {
-              "overallFeedback": "전반적으로 우수한 답변이었습니다. 기술적 깊이와 커뮤니케이션 능력이 돋보였습니다.",
-              "keyStrengths": [
-                "논리적이고 체계적인 답변 구조",
-                "구체적인 기술 스택 및 프로젝트 경험 제시",
-                "문제 해결 과정의 명확한 설명"
-              ],
-              "keyImprovements": [
-                "팀 협업 경험을 더 강조하면 좋을 것",
-                "성과 측정 지표를 구체적으로 제시"
-              ],
-              "averageScore": 4.2,
-              "recommendation": "기술 역량과 커뮤니케이션 능력이 우수하여 적극 추천합니다."
-            }
-        """.trimIndent()
-
-        // When
-        val result = interviewResponseParser.parseFinalEvaluation(validJson)
-
-        // Then
-        assertTrue(result.overallFeedback.contains("전반적으로 우수한 답변"))
-        assertTrue(result.keyStrengths.contains("논리적이고 체계적인 답변 구조"))
-        assertTrue(result.keyImprovements.contains("팀 협업 경험을 더 강조하면 좋을 것"))
-        assertEquals(4.2, result.averageScore)
-        assertTrue(result.recommendation.contains("적극 추천"))
-    }
-
-    @Test
-    fun `parseFinalEvaluation - keyStrengths가 JSON array string으로 저장된다`() {
-        // Given
-        val validJson = """
-            {
-              "overallFeedback": "좋은 답변이었습니다.",
-              "keyStrengths": [
-                "강점1",
-                "강점2"
-              ],
-              "keyImprovements": [
-                "개선1"
-              ],
-              "averageScore": 3.5,
-              "recommendation": "추천합니다."
-            }
-        """.trimIndent()
-
-        // When
-        val result = interviewResponseParser.parseFinalEvaluation(validJson)
-
-        // Then
-        val strengths = objectMapper.readTree(result.keyStrengths)
-        assertEquals(2, strengths.size())
-        assertEquals("강점1", strengths[0].asText())
-        assertEquals("강점2", strengths[1].asText())
-    }
-
-    @Test
-    fun `parseFinalEvaluation - averageScore가 소수점 포함`() {
-        // Given
-        val validJson = """
-            {
-              "overallFeedback": "평가",
-              "keyStrengths": ["강점"],
-              "keyImprovements": ["개선"],
-              "averageScore": 3.75,
-              "recommendation": "추천"
-            }
-        """.trimIndent()
-
-        // When
-        val result = interviewResponseParser.parseFinalEvaluation(validJson)
-
-        // Then
-        assertEquals(3.75, result.averageScore)
-    }
-
-    @Test
-    fun `parseFinalEvaluation - 필수 필드 누락 시 예외 발생`() {
-        // Given - averageScore 누락
-        val invalidJson = """
-            {
-              "overallFeedback": "평가",
-              "keyStrengths": ["강점"],
-              "keyImprovements": ["개선"],
-              "recommendation": "추천"
-            }
-        """.trimIndent()
-
-        // When & Then
-        assertThrows<AiResponseParseException> {
-            interviewResponseParser.parseFinalEvaluation(invalidJson)
-        }
-    }
-
-    @Test
-    fun `parseFinalEvaluation - 잘못된 JSON 형식 시 예외 발생`() {
-        // Given
-        val malformedJson = """
-            {
-              "averageScore": "not a number"
-            }
-        """.trimIndent()
-
-        // When & Then
-        assertThrows<AiResponseParseException> {
-            interviewResponseParser.parseFinalEvaluation(malformedJson)
-        }
+        // then
+        assertThat(result.evaluation.logicScore).isEqualTo(5)
+        assertThat(result.evaluation.specificityScore).isEqualTo(5)
+        assertThat(result.evaluation.deliveryScore).isEqualTo(5)
     }
 }

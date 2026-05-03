@@ -79,27 +79,7 @@
                             <div class="bg-green-100 dark:bg-green-900/30 border border-green-200 dark:border-green-800 rounded-lg px-4 py-3">
                                 <p class="text-gray-900 dark:text-dark-text whitespace-pre-wrap"
                                    th:text="${message.content}">안녕하세요, 저는...</p>
-
-                                <!-- 평가 점수 (있는 경우) -->
-                                <div th:if="${message.logicScore != null}" class="mt-3 pt-3 border-t border-green-300 dark:border-green-700">
-                                    <div class="grid grid-cols-3 gap-2 text-xs">
-                                        <div class="text-center">
-                                            <div class="font-semibold text-gray-700 dark:text-dark-muted">논리성</div>
-                                            <div class="text-lg font-bold text-green-700 dark:text-green-400" th:text="${message.logicScore}">3</div>
-                                        </div>
-                                        <div class="text-center">
-                                            <div class="font-semibold text-gray-700 dark:text-dark-muted">구체성</div>
-                                            <div class="text-lg font-bold text-green-700 dark:text-green-400" th:text="${message.specificityScore}">2</div>
-                                        </div>
-                                        <div class="text-center">
-                                            <div class="font-semibold text-gray-700 dark:text-dark-muted">전달력</div>
-                                            <div class="text-lg font-bold text-green-700 dark:text-green-400" th:text="${message.deliveryScore}">4</div>
-                                        </div>
-                                    </div>
-                                    <p class="mt-2 text-xs text-gray-600 dark:text-dark-muted italic" th:text="${message.feedbackComment}">
-                                        답변이 간결하나, 구체적인 기술 스택 언급이 부족합니다.
-                                    </p>
-                                </div>
+                                <!-- 평가 점수는 최종 결과 페이지에서만 표시 -->
                             </div>
                         </div>
                     </div>
@@ -204,6 +184,9 @@
     const charCount = document.getElementById('charCount');
     const loadingIndicator = document.getElementById('loadingIndicator');
 
+    // 중복 메시지 방지용 Set (POST와 SSE 모두에서 USER 메시지가 올 수 있음)
+    const displayedMessageIds = new Set();
+
     // SSE 연결 (Server-Sent Events)
     const eventSource = new EventSource(`/mock-interviews/${interviewId}/stream`);
 
@@ -213,8 +196,18 @@
 
         try {
             const message = JSON.parse(event.data);
+
+            // 중복 체크 후 메시지 추가
             appendMessage(message);
-            hideLoadingIndicator();
+
+            // 메시지 종류에 따른 로딩 처리
+            if (message.sender === 'USER') {
+                // 사용자 메시지 추가 후 → AI 응답 대기 로딩 표시 (사용자 답변 아래)
+                showLoadingIndicator();
+            } else if (message.sender === 'AI') {
+                // AI 메시지 추가 전 → 로딩 숨김 (로딩을 AI 메시지가 대체)
+                hideLoadingIndicator();
+            }
         } catch (error) {
             console.error('SSE 메시지 파싱 실패:', error);
         }
@@ -246,7 +239,7 @@
         // UI 비활성화
         sendButton.disabled = true;
         messageContent.disabled = true;
-        showLoadingIndicator();
+        // showLoadingIndicator()는 SSE로 사용자 메시지 수신 후 표시 (자연스러운 흐름)
 
         try {
             const response = await fetch(`/mock-interviews/${interviewId}/messages`, {
@@ -261,9 +254,17 @@
             const result = await response.json();
 
             if (result.success) {
+                // ✅ 서버에서 받은 메시지 데이터로 UI 업데이트
+                // (SSE가 더 빠를 수 있으므로 중복 체크로 방어)
+                if (result.message) {
+                    appendMessage(result.message);
+                }
+
                 // 입력 초기화
                 messageContent.value = '';
                 updateCharCount();
+
+                // 로딩 인디케이터는 AI 응답이 올 때까지 유지 (hideLoadingIndicator 호출 안 함)
             } else {
                 hideLoadingIndicator();
                 showToast(result.error || '메시지 전송 실패', 'error');
@@ -301,11 +302,24 @@
         }
     }
 
-    // 메시지 DOM 추가
+    // 메시지 DOM 추가 (중복 체크 포함)
     function appendMessage(message) {
+        // 중복 체크: 같은 ID의 메시지가 이미 표시되었으면 무시
+        if (displayedMessageIds.has(message.id)) {
+            console.log('중복 메시지 무시 - ID:', message.id, 'sender:', message.sender);
+            return;
+        }
+
         const messageDiv = createMessageElement(message);
+        messageDiv.dataset.messageId = message.id;  // 메시지 ID 저장
+        messageDiv.dataset.createdAt = message.createdAt;  // 생성 시간 저장
+
         messagesContainer.appendChild(messageDiv);
         scrollToBottom();
+
+        // 표시된 메시지 ID 기록
+        displayedMessageIds.add(message.id);
+        console.log('메시지 추가 완료 - ID:', message.id, 'sender:', message.sender, 'createdAt:', message.createdAt);
     }
 
     // 메시지 HTML 생성
@@ -330,27 +344,7 @@
                 </div>
             `;
         } else {
-            // USER 메시지
-            const scoresHtml = message.logicScore ? `
-                <div class="mt-3 pt-3 border-t border-green-300 dark:border-green-700">
-                    <div class="grid grid-cols-3 gap-2 text-xs">
-                        <div class="text-center">
-                            <div class="font-semibold text-gray-700 dark:text-dark-muted">논리성</div>
-                            <div class="text-lg font-bold text-green-700 dark:text-green-400">${message.logicScore}</div>
-                        </div>
-                        <div class="text-center">
-                            <div class="font-semibold text-gray-700 dark:text-dark-muted">구체성</div>
-                            <div class="text-lg font-bold text-green-700 dark:text-green-400">${message.specificityScore}</div>
-                        </div>
-                        <div class="text-center">
-                            <div class="font-semibold text-gray-700 dark:text-dark-muted">전달력</div>
-                            <div class="text-lg font-bold text-green-700 dark:text-green-400">${message.deliveryScore}</div>
-                        </div>
-                    </div>
-                    <p class="mt-2 text-xs text-gray-600 dark:text-dark-muted italic">${escapeHtml(message.feedbackComment || '')}</p>
-                </div>
-            ` : '';
-
+            // USER 메시지 (평가 점수는 최종 결과 페이지에서만 표시)
             div.innerHTML = `
                 <div class="flex justify-end">
                     <div class="max-w-xl">
@@ -362,7 +356,6 @@
                         </div>
                         <div class="bg-green-100 dark:bg-green-900/30 border border-green-200 dark:border-green-800 rounded-lg px-4 py-3">
                             <p class="text-gray-900 dark:text-dark-text whitespace-pre-wrap">${escapeHtml(message.content)}</p>
-                            ${scoresHtml}
                         </div>
                     </div>
                 </div>
@@ -379,6 +372,11 @@
 
     // 로딩 인디케이터 표시
     function showLoadingIndicator() {
+        // 핵심: 로딩 인디케이터를 항상 컨테이너의 마지막으로 이동
+        // (사용자 답변 바로 아래 위치하도록)
+        messagesContainer.appendChild(loadingIndicator);
+
+        // 표시
         loadingIndicator.classList.remove('hidden');
         scrollToBottom();
     }

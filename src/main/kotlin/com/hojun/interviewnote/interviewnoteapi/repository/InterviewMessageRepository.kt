@@ -13,9 +13,9 @@ interface InterviewMessageRepository : JpaRepository<InterviewMessage, Long> {
 
     /**
      * 면접 세션의 모든 메시지 조회 (시간순)
-     * messageIndex 오름차순 정렬
+     * createdAt 오름차순 정렬 (비동기 AI 응답으로 인한 순서 문제 해결)
      */
-    fun findByMockInterviewIdOrderByMessageIndexAsc(
+    fun findByMockInterviewIdOrderByCreatedAtAsc(
         mockInterviewId: Long
     ): List<InterviewMessage>
 
@@ -36,9 +36,9 @@ interface InterviewMessageRepository : JpaRepository<InterviewMessage, Long> {
 
     /**
      * 면접 세션의 마지막 메시지 조회
-     * 대화 흐름 추적용
+     * 대화 흐름 추적용 (시간 기준)
      */
-    fun findTopByMockInterviewIdOrderByMessageIndexDesc(
+    fun findTopByMockInterviewIdOrderByCreatedAtDesc(
         mockInterviewId: Long
     ): InterviewMessage?
 }

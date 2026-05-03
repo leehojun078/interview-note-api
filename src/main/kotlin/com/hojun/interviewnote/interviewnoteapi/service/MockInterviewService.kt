@@ -113,7 +113,7 @@ class MockInterviewService(
 
         // 2. 대화 히스토리 조회
         val messages = interviewMessageRepository
-            .findByMockInterviewIdOrderByMessageIndexAsc(interviewId)
+            .findByMockInterviewIdOrderByCreatedAtAsc(interviewId)
 
         // 3. 턴 수 체크
         if (messages.size >= MAX_TURNS) {
@@ -134,7 +134,7 @@ class MockInterviewService(
                     "messageIndex: ${savedUserMessage.messageIndex}"
         )
 
-        // Phase 7C: SSE 브로드캐스트 (사용자 메시지)
+        // Phase 7C: SSE 브로드캐스트 (네트워크 지연 대응 - POST보다 빠를 수 있음)
         broadcastMessage(interviewId, savedUserMessage)
 
         // Phase 7C: AI 응답 비동기 생성
@@ -153,7 +153,7 @@ class MockInterviewService(
         val interview = validateAndGetInterview(interviewId, userId)
 
         val messages = interviewMessageRepository
-            .findByMockInterviewIdOrderByMessageIndexAsc(interviewId)
+            .findByMockInterviewIdOrderByCreatedAtAsc(interviewId)
 
         // 공고 조회 (있는 경우)
         val jobPosting = interview.jobPostingId?.let {
@@ -193,7 +193,7 @@ class MockInterviewService(
     @Transactional(readOnly = true)
     fun getMessages(interviewId: Long): List<InterviewMessage> {
         return interviewMessageRepository
-            .findByMockInterviewIdOrderByMessageIndexAsc(interviewId)
+            .findByMockInterviewIdOrderByCreatedAtAsc(interviewId)
     }
 
     /**

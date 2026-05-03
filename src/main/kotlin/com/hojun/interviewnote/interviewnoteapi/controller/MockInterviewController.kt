@@ -103,7 +103,7 @@ class MockInterviewController(
      * 요청:
      * - content: String (사용자 답변, 200자 이내)
      *
-     * 응답: JSON {"success": true}
+     * 응답: JSON {"success": true, "message": {...}}
      *
      * SSE를 통해 메시지 브로드캐스트 수행 (비동기)
      */
@@ -126,9 +126,23 @@ class MockInterviewController(
                 )
             }
 
-            mockInterviewService.sendUserMessage(id, user.id, content)
+            val savedMessage = mockInterviewService.sendUserMessage(id, user.id, content)
 
-            mapOf("success" to true)
+            // 메시지 데이터를 응답에 포함
+            mapOf(
+                "success" to true,
+                "message" to mapOf(
+                    "id" to savedMessage.id,
+                    "sender" to savedMessage.sender.name,
+                    "content" to savedMessage.content,
+                    "createdAt" to savedMessage.createdAt.toString(),
+                    "messageIndex" to savedMessage.messageIndex,
+                    "logicScore" to savedMessage.logicScore,
+                    "specificityScore" to savedMessage.specificityScore,
+                    "deliveryScore" to savedMessage.deliveryScore,
+                    "feedbackComment" to savedMessage.feedbackComment
+                )
+            )
         } catch (e: Exception) {
             logger.error("메시지 전송 실패 - interviewId: $id", e)
             mapOf(

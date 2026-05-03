@@ -205,6 +205,61 @@ class InterviewAiService(
     }
 
     /**
+     * 가중 평균 점수 계산 (Phase 8A)
+     *
+     * 첫 답변(자기소개)을 제외하고 나머지 답변의 평균 점수를 계산합니다.
+     * 저품질 답변이 50% 이상이면 0.8 패널티를 적용합니다.
+     *
+     * @param messages 전체 메시지 목록 (AI + USER)
+     * @return 가중 평균 점수 (1.0-5.0)
+     */
+    fun calculateWeightedScore(messages: List<InterviewMessage>): Double {
+        // 1. USER 메시지만 필터링 (평균 점수가 있는 것만)
+        val userAnswers = messages
+            .filter { it.sender == MessageSender.USER && it.averageScore != null }
+            .sortedBy { it.messageIndex }
+
+        logger.debug("가중 평균 계산 - 전체 USER 답변: ${userAnswers.size}개")
+
+        // 2. 엣지 케이스: 자기소개만 있거나 답변이 1개인 경우
+        if (userAnswers.size < 2) {
+            val score = userAnswers.firstOrNull()?.averageScore ?: 1.0
+            logger.debug("답변 1개 이하 - 첫 답변 점수 사용: $score")
+            return score
+        }
+
+        // 3. 첫 답변(자기소개) 제외
+        val answersExceptFirst = userAnswers.drop(1)
+
+        if (answersExceptFirst.isEmpty()) {
+            val score = userAnswers.first().averageScore ?: 1.0
+            logger.debug("자기소개만 존재 - 첫 답변 점수 사용: $score")
+            return score
+        }
+
+        // 4. 평균 점수 계산
+        val avg = answersExceptFirst.mapNotNull { it.averageScore }.average()
+
+        // 5. 저품질 답변 비율 체크
+        val lowQualityCount = answersExceptFirst.count { (it.averageScore ?: 5.0) < 2.0 }
+        val lowQualityRatio = lowQualityCount.toDouble() / answersExceptFirst.size
+
+        logger.debug(
+            "가중 평균 계산 - 평균: $avg, 저품질 답변: $lowQualityCount/${answersExceptFirst.size} " +
+                    "(비율: ${String.format("%.2f", lowQualityRatio * 100)}%)"
+        )
+
+        // 6. 저품질 답변 50% 이상 시 패널티 적용
+        return if (lowQualityRatio >= 0.5) {
+            val penalizedScore = (avg * 0.8).coerceAtLeast(1.0)
+            logger.info("저품질 답변 50% 이상 - 패널티 적용: $avg → $penalizedScore")
+            penalizedScore
+        } else {
+            avg
+        }
+    }
+
+    /**
      * 대화 히스토리 포맷
      *
      * AI에게 전달할 대화 내용 문자열로 변환

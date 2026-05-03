@@ -162,17 +162,23 @@ class MockInterviewService(
 
         // Phase 7B: AI 종합 평가 생성
         val evaluation = interviewAiService.generateFinalEvaluation(interview, messages, jobPosting)
+
+        // Phase 8A: 가중 평균 점수 계산 (첫 답변 제외 + 저품질 패널티)
+        val weightedScore = interviewAiService.calculateWeightedScore(messages)
+
         interview.complete(
             overallFeedback = evaluation.overallFeedback,
             keyStrengths = evaluation.keyStrengths,
             keyImprovements = evaluation.keyImprovements,
             averageScore = evaluation.averageScore,
+            weightedAverageScore = weightedScore,
             recommendation = evaluation.recommendation
         )
 
         val saved = mockInterviewRepository.save(interview)
 
-        logger.info("면접 종료 - interviewId: $interviewId, averageScore: ${evaluation.averageScore}")
+        logger.info("면접 종료 - interviewId: $interviewId, " +
+                    "averageScore: ${evaluation.averageScore}, weightedScore: $weightedScore")
         meterRegistry.counter("mock_interview.ended").increment()
 
         return saved

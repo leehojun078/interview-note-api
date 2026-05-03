@@ -73,7 +73,7 @@ class InterviewResponseParser(
     }
 
     /**
-     * 종합 평가 응답 파싱
+     * 종합 평가 응답 파싱 (Phase 8A: 엄격한 검증)
      *
      * @param rawResponse OpenAI JSON 응답
      * @return 종합 평가 결과
@@ -82,19 +82,66 @@ class InterviewResponseParser(
         try {
             val json = objectMapper.readTree(rawResponse)
 
-            val keyStrengths = json["keyStrengths"].map { it.asText() }
-            val keyImprovements = json["keyImprovements"].map { it.asText() }
+            // 1. overallFeedback 파싱 및 검증
+            val overallFeedback = json["overallFeedback"]?.asText()
+                ?: throw IllegalArgumentException("overallFeedback 필드 누락")
+
+            // Phase 8A: 최소 500자 요구 (권장: 800-1200자)
+            if (overallFeedback.length < 500) {
+                logger.warn("종합 피드백 길이 부족: ${overallFeedback.length}자 (권장: 800-1200자)")
+            }
+
+            require(overallFeedback.length >= 300) {
+                "종합 피드백이 너무 짧습니다: ${overallFeedback.length}자 (최소 300자)"
+            }
+
+            // 2. keyStrengths 파싱 및 검증
+            val keyStrengths = json["keyStrengths"]?.map { it.asText() }
+                ?: throw IllegalArgumentException("keyStrengths 필드 누락")
+
+            // Phase 8A: 0-5개 허용
+            require(keyStrengths.size in 0..5) {
+                "keyStrengths 개수 오류: ${keyStrengths.size}개 (0-5개 허용)"
+            }
+
+            // 3. keyImprovements 파싱 및 검증
+            val keyImprovements = json["keyImprovements"]?.map { it.asText() }
+                ?: throw IllegalArgumentException("keyImprovements 필드 누락")
+
+            // Phase 8A: 1-5개 허용 (최소 1개)
+            require(keyImprovements.size in 1..5) {
+                "keyImprovements 개수 오류: ${keyImprovements.size}개 (1-5개 필요)"
+            }
+
+            // 4. averageScore 파싱 및 검증
+            val averageScore = json["averageScore"]?.asDouble()
+                ?: throw IllegalArgumentException("averageScore 필드 누락")
+
+            require(averageScore in 1.0..5.0) {
+                "averageScore 범위 오류: $averageScore (1.0-5.0 허용)"
+            }
+
+            // 5. recommendation 파싱
+            val recommendation = json["recommendation"]?.asText()
+                ?: throw IllegalArgumentException("recommendation 필드 누락")
+
+            logger.info(
+                "종합 평가 파싱 완료 - 피드백: ${overallFeedback.length}자, " +
+                        "강점: ${keyStrengths.size}개, 개선: ${keyImprovements.size}개, " +
+                        "평균: $averageScore"
+            )
 
             return FinalEvaluationResult(
-                overallFeedback = json["overallFeedback"].asText(),
+                overallFeedback = overallFeedback,
                 keyStrengths = objectMapper.writeValueAsString(keyStrengths),
                 keyImprovements = objectMapper.writeValueAsString(keyImprovements),
-                averageScore = json["averageScore"].asDouble(),
-                recommendation = json["recommendation"].asText()
+                averageScore = averageScore,
+                recommendation = recommendation
             )
         } catch (e: Exception) {
             logger.error("종합 평가 파싱 실패: ${e.message}", e)
-            throw AiResponseParseException("종합 평가 파싱 실패", rawResponse, e)
+            logger.debug("원본 응답: $rawResponse")
+            throw AiResponseParseException("종합 평가 파싱 실패: ${e.message}", rawResponse, e)
         }
     }
 

@@ -36,6 +36,15 @@ class MockInterview(
     @Column(nullable = false, length = 50)
     val selectedJobField: JobField,
 
+    /**
+     * 경력 수준 (Phase 8A)
+     * - null: 기본 난이도
+     * - ENTRY, JUNIOR, SENIOR, SENIOR_PLUS
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20)
+    var careerLevel: CareerLevel? = null,
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     var status: MockInterviewStatus = MockInterviewStatus.IN_PROGRESS,
@@ -67,6 +76,21 @@ class MockInterview(
     var averageScore: Double? = null,
 
     /**
+     * 가중 평균 점수 (Phase 8A)
+     * - 첫 답변(자기소개) 제외한 평균
+     * - 저품질 답변 50% 이상 시 0.8 패널티
+     */
+    var weightedAverageScore: Double? = null,
+
+    /**
+     * 점수 계산 방법 (Phase 8A)
+     * - SIMPLE_AVERAGE: Phase 7 방식 (모든 답변 평균)
+     * - WEIGHTED_AVERAGE: Phase 8 방식 (첫 답변 제외 + 패널티)
+     */
+    @Column(length = 50)
+    var scoreCalculationMethod: String = "WEIGHTED_AVERAGE",
+
+    /**
      * 채용 추천도
      * 예: "추천 - 기술 역량 우수", "보류 - Kafka 경험 부족"
      */
@@ -74,28 +98,49 @@ class MockInterview(
     var recommendation: String? = null
 ) {
     /**
-     * 면접 종료 및 종합 평가 저장
+     * 면접 종료 및 종합 평가 저장 (Phase 8A: weightedAverageScore 추가)
      */
     fun complete(
         overallFeedback: String,
         keyStrengths: String,
         keyImprovements: String,
         averageScore: Double,
+        weightedAverageScore: Double,
         recommendation: String
     ) {
+        require(status == MockInterviewStatus.IN_PROGRESS) {
+            "진행 중인 면접만 완료할 수 있습니다: status=$status"
+        }
+
         this.status = MockInterviewStatus.COMPLETED
         this.endedAt = LocalDateTime.now()
         this.overallFeedback = overallFeedback
         this.keyStrengths = keyStrengths
         this.keyImprovements = keyImprovements
         this.averageScore = averageScore
+        this.weightedAverageScore = weightedAverageScore
         this.recommendation = recommendation
+    }
+
+    /**
+     * 면접 재개 (Phase 8C)
+     * COMPLETED 상태의 면접을 다시 IN_PROGRESS로 전환
+     */
+    fun resume() {
+        require(status == MockInterviewStatus.COMPLETED) {
+            "완료된 면접만 재개할 수 있습니다: status=$status"
+        }
+        this.status = MockInterviewStatus.IN_PROGRESS
+        this.endedAt = null
     }
 
     /**
      * 면접 중단 (사용자 취소)
      */
     fun abort() {
+        require(status == MockInterviewStatus.IN_PROGRESS) {
+            "진행 중인 면접만 중단할 수 있습니다: status=$status"
+        }
         this.status = MockInterviewStatus.ABORTED
         this.endedAt = LocalDateTime.now()
     }

@@ -189,6 +189,28 @@ class MockInterviewService(
     }
 
     /**
+     * 면접 재개
+     *
+     * Phase 8C: 완료된 면접을 다시 시작
+     * COMPLETED → IN_PROGRESS 상태 전환
+     */
+    fun resumeInterview(interviewId: Long, userId: Long): MockInterview {
+        val interview = getInterview(interviewId, userId)
+
+        require(interview.status == MockInterviewStatus.COMPLETED) {
+            "완료된 면접만 재개할 수 있습니다: interviewId=$interviewId, status=${interview.status.name}"
+        }
+
+        interview.resume()
+        val resumed = mockInterviewRepository.save(interview)
+
+        logger.info("면접 재개 - interviewId: $interviewId, userId: $userId")
+        meterRegistry.counter("mock_interview.resumed").increment()
+
+        return resumed
+    }
+
+    /**
      * 면접 세션 조회 (소유권 검증 포함)
      */
     @Transactional(readOnly = true)

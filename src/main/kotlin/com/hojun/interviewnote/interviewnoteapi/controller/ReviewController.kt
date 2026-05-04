@@ -25,6 +25,7 @@ class ReviewController(
      * 리뷰 이력 목록 페이지
      * Phase 4A-2에서 수정: 사용자별 리뷰 조회
      * Phase 2 (UI/UX): 페이지네이션 추가
+     * Phase 8C에서 수정: AI 면접 이력 추가 (2개 탭)
      */
     @GetMapping
     fun list(
@@ -37,12 +38,16 @@ class ReviewController(
         val user = userRepository.findByEmail(userDetails.username)
             ?: throw IllegalStateException("로그인한 사용자를 찾을 수 없습니다")
 
-        // 페이지네이션된 리뷰 조회
+        // 질문 연습 이력 (페이지네이션)
         val pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"))
         val reviewsPage = reviewService.getUserReviewsPage(user.id, pageable)
 
+        // Phase 8C: AI 면접 이력 추가
+        val mockInterviewReviews = reviewService.getUserMockInterviewReviews(user.id)
+
         model.addAttribute("reviews", reviewsPage.content)
         model.addAttribute("page", reviewsPage)
+        model.addAttribute("mockInterviewReviews", mockInterviewReviews)
         model.addAttribute("currentUser", user)
 
         return "reviews/list"

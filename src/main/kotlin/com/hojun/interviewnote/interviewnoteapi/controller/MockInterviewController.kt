@@ -246,6 +246,47 @@ class MockInterviewController(
     }
 
     /**
+     * POST /mock-interviews/{id}/resume
+     *
+     * Phase 8C: 완료된 면접 재개
+     *
+     * 요청: interviewId (완료된 면접만 재개 가능)
+     * 응답: redirect to /mock-interviews/{id}/chat
+     */
+    @PostMapping("/{id}/resume")
+    fun resumeInterview(
+        @PathVariable id: Long,
+        @AuthenticationPrincipal userDetails: UserDetails,
+        redirectAttributes: RedirectAttributes
+    ): String {
+        val user = userRepository.findByEmail(userDetails.username)
+            ?: throw IllegalStateException("로그인한 사용자를 찾을 수 없습니다")
+
+        return try {
+            mockInterviewService.resumeInterview(id, user.id)
+
+            redirectAttributes.addFlashAttribute("info",
+                "면접이 재개되었습니다. 이어서 연습해보세요!")
+
+            logger.info("면접 재개 - interviewId: $id, userId: ${user.id}")
+
+            "redirect:/mock-interviews/$id/chat"
+        } catch (e: IllegalArgumentException) {
+            logger.error("면접 재개 실패 - interviewId: $id: ${e.message}")
+            redirectAttributes.addFlashAttribute("error", e.message)
+            "redirect:/mock-interviews/$id/result"
+        } catch (e: MockInterviewNotFoundException) {
+            logger.error("면접을 찾을 수 없음 - interviewId: $id", e)
+            redirectAttributes.addFlashAttribute("error", "면접을 찾을 수 없습니다")
+            "redirect:/reviews"
+        } catch (e: Exception) {
+            logger.error("면접 재개 실패 - interviewId: $id", e)
+            redirectAttributes.addFlashAttribute("error", "면접 재개 중 오류가 발생했습니다")
+            "redirect:/mock-interviews/$id/result"
+        }
+    }
+
+    /**
      * GET /mock-interviews/{id}/result
      *
      * 종합 평가 결과 페이지

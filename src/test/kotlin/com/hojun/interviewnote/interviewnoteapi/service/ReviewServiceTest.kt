@@ -4,7 +4,11 @@ import com.hojun.interviewnote.interviewnoteapi.domain.AiFeedback
 import com.hojun.interviewnote.interviewnoteapi.domain.InterviewAnswer
 import com.hojun.interviewnote.interviewnoteapi.domain.Question
 import com.hojun.interviewnote.interviewnoteapi.repository.AiFeedbackRepository
+import com.hojun.interviewnote.interviewnoteapi.repository.GeneratedQuestionRepository
 import com.hojun.interviewnote.interviewnoteapi.repository.InterviewAnswerRepository
+import com.hojun.interviewnote.interviewnoteapi.repository.InterviewMessageRepository
+import com.hojun.interviewnote.interviewnoteapi.repository.JobPostingRepository
+import com.hojun.interviewnote.interviewnoteapi.repository.MockInterviewRepository
 import com.hojun.interviewnote.interviewnoteapi.repository.QuestionRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -26,7 +30,20 @@ class ReviewServiceTest {
     private lateinit var questionRepository: QuestionRepository
 
     @Mock
+    private lateinit var generatedQuestionRepository: GeneratedQuestionRepository
+
+    @Mock
     private lateinit var aiFeedbackRepository: AiFeedbackRepository
+
+    // Phase 8C: 추가된 의존성들
+    @Mock
+    private lateinit var mockInterviewRepository: MockInterviewRepository
+
+    @Mock
+    private lateinit var interviewMessageRepository: InterviewMessageRepository
+
+    @Mock
+    private lateinit var jobPostingRepository: JobPostingRepository
 
     @InjectMocks
     private lateinit var reviewService: ReviewService

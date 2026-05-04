@@ -918,18 +918,20 @@ fun startInterview(
 
 ---
 
-### Step 4: job-postings/questions.html - AI 면접 버튼 추가
+### Step 4: job-postings/questions.html - AI 면접 버튼 추가 ✅
 
 **파일**: `src/main/resources/templates/job-postings/questions.html`
 
 **추가 위치**: "10개 질문으로 연습" 버튼 옆
 
+**구현 결정**: **옵션 A 적용** - User 프로필에서 careerLevel 가져오기
+
 ```html
 <!-- 액션 버튼 영역 -->
 <div class="flex flex-col sm:flex-row gap-4 mb-8">
     <!-- 기존: 10개 질문으로 연습 -->
-    <a th:href="@{/questions/answer/{id}(id=${questions[0].id})}"
-       class="flex-1 btn-neon text-center">
+    <a th:href="@{/generated-questions/{id}/answer(id=${jobPosting.questions[0].id})}"
+       class="flex-1 btn-neon text-center py-4 text-lg">
         📝 10개 질문으로 연습
     </a>
 
@@ -940,8 +942,8 @@ fun startInterview(
         <input type="hidden" name="selectedJobField" th:value="${jobPosting.effectiveJobField.name}" />
 
         <button type="submit"
-                class="w-full btn-neon flex items-center justify-center gap-2">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                class="w-full btn-neon py-4 text-lg flex items-center justify-center gap-2">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                       d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
             </svg>
@@ -953,16 +955,29 @@ fun startInterview(
 <!-- 안내 메시지 -->
 <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6">
     <p class="text-sm text-blue-800 dark:text-blue-300">
-        💡 <strong>AI 면접 연습</strong>: 이 채용 공고를 바탕으로 실전 같은 모의 면접을 진행합니다 (2-5개 질문, 실시간 평가)
+        💡 <strong>AI 면접 연습</strong>: 이 채용 공고를 바탕으로 실전 같은 모의 면접을 진행합니다 (2-5개 질문, 실시간 평가).
+        경력 수준은 프로필 설정을 따릅니다 (기본값: 신입).
     </p>
 </div>
 ```
 
-**주의**: 채용 공고 기반 AI 면접 시작 시 경력 수준 선택 UI가 없으므로, 다음 중 하나 선택:
-1. **옵션 A**: User 프로필에서 careerLevel 가져오기
-2. **옵션 B**: 모달 한 번 더 띄우기 (경력 수준 선택)
+**경력 수준 처리 로직** (MockInterviewController.kt):
+1. URL 파라미터 `careerLevel`이 있으면 사용
+2. 없으면 `user.careerLevel` (프로필 설정) 사용
+3. 둘 다 없으면 기본값 `CareerLevel.ENTRY` (신입) 사용
 
-**권장**: 옵션 A (User 프로필 활용)
+```kotlin
+val career = when {
+    !careerLevel.isNullOrBlank() -> CareerLevel.valueOf(careerLevel)
+    user.careerLevel != null -> user.careerLevel
+    else -> CareerLevel.ENTRY
+}
+```
+
+**장점**:
+- 사용자가 프로필에서 한 번만 경력 수준 설정
+- 채용 공고 기반 면접 시작이 간편함 (클릭 한 번)
+- 일반 AI 면접 시작 모달에서는 여전히 선택 가능 (우선순위 높음)
 
 ---
 

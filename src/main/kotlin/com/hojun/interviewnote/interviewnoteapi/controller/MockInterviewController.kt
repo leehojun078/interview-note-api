@@ -1,5 +1,6 @@
 package com.hojun.interviewnote.interviewnoteapi.controller
 
+import com.hojun.interviewnote.interviewnoteapi.domain.CareerLevel
 import com.hojun.interviewnote.interviewnoteapi.domain.JobField
 import com.hojun.interviewnote.interviewnoteapi.exception.MockInterviewNotFoundException
 import com.hojun.interviewnote.interviewnoteapi.repository.UserRepository
@@ -35,6 +36,7 @@ class MockInterviewController(
      * 요청:
      * - jobPostingId: Long? (선택 사항, 공고 기반 면접 시)
      * - selectedJobField: String (필수)
+     * - careerLevel: String? (Phase 8B: 선택 사항, 기본값 ENTRY)
      *
      * 응답: redirect to /mock-interviews/{id}/chat
      */
@@ -43,6 +45,7 @@ class MockInterviewController(
         @AuthenticationPrincipal userDetails: UserDetails,
         @RequestParam(required = false) jobPostingId: Long?,
         @RequestParam selectedJobField: String,
+        @RequestParam(required = false) careerLevel: String?,
         redirectAttributes: RedirectAttributes
     ): String {
         val user = userRepository.findByEmail(userDetails.username)
@@ -51,18 +54,30 @@ class MockInterviewController(
         return try {
             val jobField = JobField.valueOf(selectedJobField)
 
+            // Phase 8B: 경력 수준 처리
+            // 1. 파라미터로 전달된 경우 사용
+            // 2. 없으면 User 프로필에서 가져오기
+            // 3. 둘 다 없으면 기본값 ENTRY
+            val career = when {
+                !careerLevel.isNullOrBlank() -> CareerLevel.valueOf(careerLevel)
+                user.careerLevel != null -> user.careerLevel
+                else -> CareerLevel.ENTRY
+            }
+
             val interview = mockInterviewService.startInterview(
                 userId = user.id,
                 jobPostingId = jobPostingId,
-                selectedJobField = jobField
+                selectedJobField = jobField,
+                careerLevel = career
             )
 
-            logger.info("면접 시작 - interviewId: ${interview.id}, userId: ${user.id}, jobField: $jobField")
+            logger.info("면접 시작 - interviewId: ${interview.id}, userId: ${user.id}, " +
+                       "jobField: $jobField, careerLevel: $career")
 
             "redirect:/mock-interviews/${interview.id}/chat"
         } catch (e: IllegalArgumentException) {
-            logger.error("잘못된 직무 필드: $selectedJobField", e)
-            redirectAttributes.addFlashAttribute("error", "잘못된 직무가 선택되었습니다")
+            logger.error("잘못된 파라미터 - selectedJobField: $selectedJobField, careerLevel: $careerLevel", e)
+            redirectAttributes.addFlashAttribute("error", "잘못된 직무 또는 경력 수준이 선택되었습니다")
             "redirect:/"
         } catch (e: Exception) {
             logger.error("면접 시작 실패", e)

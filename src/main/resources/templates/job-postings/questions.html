@@ -23,6 +23,39 @@
             </div>
         </div>
 
+        <!-- Phase 8B: 액션 버튼 영역 (10개 질문 + AI 면접) -->
+        <div class="flex flex-col sm:flex-row gap-4 mb-8">
+            <!-- 기존: 10개 질문으로 연습 -->
+            <a th:href="@{/generated-questions/{id}/answer(id=${jobPosting.questions[0].id})}"
+               class="flex-1 btn-neon text-center py-4 text-lg">
+                📝 10개 질문으로 연습
+            </a>
+
+            <!-- Phase 8B: 채용 공고 기반 AI 면접 추가 -->
+            <form th:action="@{/mock-interviews/start}" method="post" class="flex-1">
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                <input type="hidden" name="jobPostingId" th:value="${jobPosting.id}" />
+                <input type="hidden" name="selectedJobField" th:value="${jobPosting.effectiveJobField.name}" />
+
+                <button type="submit"
+                        class="w-full btn-neon py-4 text-lg flex items-center justify-center gap-2">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                    </svg>
+                    이 공고로 AI 면접 연습
+                </button>
+            </form>
+        </div>
+
+        <!-- 안내 메시지 -->
+        <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6">
+            <p class="text-sm text-blue-800 dark:text-blue-300">
+                💡 <strong>AI 면접 연습</strong>: 이 채용 공고를 바탕으로 실전 같은 모의 면접을 진행합니다 (2-5개 질문, 실시간 평가).
+                경력 수준은 프로필 설정을 따릅니다 (기본값: 신입).
+            </p>
+        </div>
+
         <h2 class="text-2xl font-bold text-gray-900 dark:text-dark-text mb-6">
             📋 생성된 질문 (<span th:text="${jobPosting.questions.size()}">10</span>개)
         </h2>

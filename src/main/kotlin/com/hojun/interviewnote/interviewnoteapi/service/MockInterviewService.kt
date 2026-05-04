@@ -49,11 +49,13 @@ class MockInterviewService(
      *
      * Phase 7A: 세션 생성 + Rate Limiting
      * Phase 7B: AI 첫 질문 생성 (동기)
+     * Phase 8B: careerLevel 파라미터 추가
      */
     fun startInterview(
         userId: Long,
         jobPostingId: Long?,
-        selectedJobField: JobField
+        selectedJobField: JobField,
+        careerLevel: CareerLevel? = null
     ): MockInterview {
         // 1. Rate Limiting 체크
         rateLimitService.checkMockInterviewLimit(userId)
@@ -74,17 +76,19 @@ class MockInterviewService(
         // 3. 직무 결정 (공고 기반 면접 시 공고의 effectiveJobField 사용)
         val effectiveJobField = jobPosting?.effectiveJobField ?: selectedJobField
 
-        // 4. 면접 세션 생성
+        // 4. 면접 세션 생성 (Phase 8B: careerLevel 추가)
         val interview = MockInterview(
             userId = userId,
             jobPostingId = jobPostingId,
-            selectedJobField = effectiveJobField
+            selectedJobField = effectiveJobField,
+            careerLevel = careerLevel
         )
         val savedInterview = mockInterviewRepository.save(interview)
 
         logger.info(
             "면접 시작 - interviewId: ${savedInterview.id}, " +
                     "userId: $userId, jobField: $effectiveJobField, " +
+                    "careerLevel: ${careerLevel?.name}, " +
                     "jobPostingId: $jobPostingId"
         )
 

@@ -68,6 +68,29 @@
                     </select>
                 </div>
 
+                <!-- Phase 8B: 경력 수준 선택 추가 -->
+                <div>
+                    <label for="careerLevel" class="block text-sm font-semibold text-gray-700 dark:text-dark-text mb-2">
+                        경력 수준
+                    </label>
+                    <select id="careerLevel"
+                            name="careerLevel"
+                            required
+                            class="block w-full px-4 py-3 border border-gray-300 dark:border-dark-border rounded-lg
+                                   bg-white dark:bg-dark-bg text-gray-900 dark:text-dark-text
+                                   focus:ring-2 focus:ring-primary focus:border-primary
+                                   transition-all duration-200 shadow-sm">
+                        <option value="">선택해주세요</option>
+                        <option value="ENTRY">신입 (경험 1년 미만)</option>
+                        <option value="JUNIOR">주니어 (1-3년)</option>
+                        <option value="SENIOR">시니어 (3-7년)</option>
+                        <option value="SENIOR_PLUS">시니어+ (7년 이상)</option>
+                    </select>
+                    <p class="mt-2 text-xs text-gray-500 dark:text-dark-muted">
+                        경력 수준에 따라 질문 난이도가 조정됩니다
+                    </p>
+                </div>
+
                 <!-- 채용 공고 안내 -->
                 <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
                     <div class="flex items-start">

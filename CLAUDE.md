@@ -514,31 +514,44 @@ IT 단일 직무에서 17개 직무로 확장 + 사용자 프로필
 92. ✅ UI/UX (채팅 인터페이스, 타이핑 애니메이션)
 93. ✅ Nginx 프록시 설정 (SSE 버퍼링 방지)
 
-### ⏳ Phase 8: AI 채팅 면접 개선 (진행 중) 🔧
+### ⏳ Phase 8: AI 채팅 면접 개선 (부분 완료) 🔧
 
 **브랜치**: `feat/interview-improvement`
 **시작일**: 2026-05-04
+**완료일**: Phase 8C 완료 (2026-05-04)
 **문서**:
 - PHASE8_AI_CHAT_INTERVIEW_IMPROVEMENTS.md (개선 사항 요약)
 - phase8_ai_chat_interview_plan.md (상세 실행 계획)
+- PHASE8C_COMPLETION_REPORT.md (Phase 8C 완료 보고서)
 
 **핵심 개선 사항** (10가지):
 1. ⏳ 종합 평가 점수 계산 로직 개선 (가중 평균, AI 프롬프트 엄격화)
 2. ⏳ 종합 피드백 길이 증가 (400-600자 → 800-1200자)
 3. ⏳ 강점/개선점 개수 유연화 (고정 3개 → 0-5개)
 4. ✅ URL 구조 검토 (변경 안함)
-5. ⏳ 리뷰 이력 페이지 통합 (질문 연습 + AI 면접 2개 탭)
-6. ⏳ "이어서 연습하기" vs "새로 연습하기" 구분
+5. ✅ 리뷰 이력 페이지 통합 (질문 연습 + AI 면접 2개 탭) - **Phase 8C 완료**
+6. ✅ "이어서 연습하기" vs "새로 연습하기" 구분 - **Phase 8C 완료**
 7. ⏳ 채용 공고 기반 AI 면접 UI 추가
 8. ⏳ 사용 방법 안내 UI 추가
 9. ⏳ 경력 수준 선택 및 난이도 조정 (4단계)
 10. ⏳ 짧은 답변 품질 검증 강화
 
 **구현 계획**:
-- Phase 8A: 점수 계산 및 피드백 개선 (최우선) 🔴
-- Phase 8B: 경력 수준 및 UI 개선 🟡
-- Phase 8C: 리뷰 통합 및 재개 기능 🟢
-- Phase 8D: 테스트 및 문서화 🔴
+- Phase 8A: 점수 계산 및 피드백 개선 (최우선) 🔴 ⏳
+- Phase 8B: 경력 수준 및 UI 개선 🟡 ⏳
+- Phase 8C: 리뷰 통합 및 재개 기능 🟢 ✅ **완료**
+- Phase 8D: 테스트 및 문서화 🔴 ✅ **완료 (Phase 8C 범위)**
+
+#### Phase 8C: 리뷰 통합 및 재개 기능 (완료)
+
+94. ✅ MockInterviewReviewDto 생성 (채용 공고 정보, 경력 수준 포함)
+95. ✅ ReviewService.getUserMockInterviewReviews() 추가
+96. ✅ ReviewController 2개 탭 데이터 제공
+97. ✅ reviews/list.html 탭 구조 (질문 연습 / AI 면접)
+98. ✅ MockInterviewController.resumeInterview() 엔드포인트
+99. ✅ MockInterviewService.resumeInterview() 메서드
+100. ✅ result.html 버튼 2개로 분리 (이어서 / 새로)
+101. ✅ Phase8CIntegrationTest 작성 (8개 테스트)
 
 ### 📝 향후 작업 제안 (Phase 9+)
 

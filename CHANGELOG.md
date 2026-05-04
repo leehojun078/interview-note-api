@@ -6,6 +6,60 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-05-04
+
+### Added - Phase 8C (Review Integration & Resume Feature)
+
+#### 리뷰 이력 통합
+- 📊 **2개 탭 리뷰 시스템**
+  - 탭 1: 질문 연습 (기존 InterviewAnswer + AiFeedback)
+  - 탭 2: AI 면접 (MockInterview 종합 평가)
+  - `/reviews` 페이지에서 모든 리뷰 한눈에 조회
+  - AI 면접 재조회율: 0% → 40% (예상)
+
+#### 면접 재개 기능
+- ▶️ **"이어서 연습하기" vs "새로 연습하기" 구분**
+  - 이어서 연습하기: COMPLETED → IN_PROGRESS 전환, 기존 대화 이어감
+  - 새로 연습하기: 새로운 면접 세션 시작
+  - POST `/mock-interviews/{id}/resume` 엔드포인트 추가
+  - `MockInterview.resume()` 메서드 추가
+  - 사용자 혼란 방지 및 학습 연속성 제공
+
+#### AI 면접 리뷰 상세 정보
+- 📝 **MockInterviewReviewDto**
+  - 채용 공고 정보 표시 (회사명, 직무명)
+  - 경력 수준 표시 (신입, 주니어, 시니어 등)
+  - AI 질문 개수 표시
+  - weightedAverageScore 우선 표시 (없으면 averageScore)
+- 🔍 **리뷰 정렬**: 최신순 정렬 (startedAt DESC)
+
+### Changed
+- **ReviewService**: 3개 Repository 의존성 추가 (MockInterviewRepository, InterviewMessageRepository, JobPostingRepository)
+- **ReviewController**: `mockInterviewReviews` 데이터 추가 제공
+- **result.html**: 액션 버튼 2개로 분리 (이어서 연습하기 / 새로 연습하기)
+- **reviews/list.html**: 탭 구조 및 JavaScript 탭 전환 추가
+
+### Testing
+- **Phase8CIntegrationTest**: 8개 통합 테스트 추가
+  - 리뷰 이력 2개 탭 조회
+  - 면접 재개 기능 (COMPLETED → IN_PROGRESS)
+  - 채용 공고 정보 포함 리뷰
+  - 경력 수준 표시
+  - weightedAverageScore 우선 표시
+  - 면접 재개 실패 케이스 (IN_PROGRESS 재개 불가)
+  - 빈 리뷰 목록 조회
+  - 여러 면접 정렬 순서
+
+### Performance
+- **리뷰 조회 최적화**: JOIN 쿼리 대신 개별 조회 (N+1 허용, 데이터 양 적음)
+- **캐싱 없음**: 리뷰 데이터는 실시간 조회 (최신 데이터 보장)
+
+### Documentation
+- PHASE8C_COMPLETION_REPORT.md 작성
+- CLAUDE.md 업데이트 (Phase 8C 완료 상태 반영)
+
+---
+
 ## [0.7.0] - 2026-05-02
 
 ### Added - Phase 7 (Real-time AI Chat Interview)

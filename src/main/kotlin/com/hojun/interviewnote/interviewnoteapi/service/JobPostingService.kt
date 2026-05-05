@@ -9,7 +9,7 @@ import com.hojun.interviewnote.interviewnoteapi.exception.JobPostingNotFoundExce
 import com.hojun.interviewnote.interviewnoteapi.exception.JobPostingParseException
 import com.hojun.interviewnote.interviewnoteapi.repository.GeneratedQuestionRepository
 import com.hojun.interviewnote.interviewnoteapi.repository.JobPostingRepository
-import com.hojun.interviewnote.interviewnoteapi.service.cache.JobPostingCache
+import com.hojun.interviewnote.interviewnoteapi.service.cache.QuestionCache
 import com.hojun.interviewnote.interviewnoteapi.service.ratelimit.RateLimitService
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.slf4j.LoggerFactory
@@ -31,7 +31,7 @@ class JobPostingService(
     private val jobPostingParserService: JobPostingParserService,
     private val questionGeneratorService: QuestionGeneratorService,
     private val rateLimitService: RateLimitService,
-    private val jobPostingCache: JobPostingCache,
+    private val questionCache: QuestionCache,
     private val objectMapper: ObjectMapper
 ) {
 
@@ -40,13 +40,15 @@ class JobPostingService(
     /**
      * 채용 공고 등록 및 질문 생성
      *
-     * 흐름:
+     * 흐름 (Phase 6E 버그 수정):
      * 1. Rate Limiting 체크 (10회/24시간)
-     * 2. 7일 캐시 체크 (동일 URL 재사용)
-     * 3. URL 파싱 (Jsoup + AI Fallback)
-     * 4. JobPosting 엔티티 저장
-     * 5. AI 질문 10개 생성
-     * 6. GeneratedQuestion 엔티티 저장
+     * 2. 질문 캐시 체크 (7일 이내 동일 URL)
+     * 3-a. 캐시 히트: 파싱 스킵, JobPosting 새로 생성, 질문 복사
+     * 3-b. 캐시 미스: URL 파싱, JobPosting 생성, AI 질문 생성
+     * 4. GeneratedQuestion 엔티티 저장
+     *
+     * **중요**: 동일 URL이라도 각 사용자는 자신만의 JobPosting을 생성합니다.
+     * 질문만 캐싱하여 재사용함으로써 AI 비용을 절감하면서도 소유권 문제를 방지합니다.
      *
      * @param userId 사용자 ID
      * @param originalUrl 채용 공고 URL
@@ -65,41 +67,84 @@ class JobPostingService(
         // 1. Rate Limiting 체크
         rateLimitService.checkAndRecordQuestionGeneration(userId)
 
-        // 2. 7일 캐시 체크
-        val cached = jobPostingCache.findCachedByUrl(originalUrl)
-        if (cached != null) {
-            logger.info("캐시된 공고 재사용 - 공고 ID: ${cached.id}")
-            return cached
+        // 2. 질문 캐시 체크 (공고는 항상 새로 생성)
+        val cachedQuestions = questionCache.findCachedQuestions(originalUrl)
+
+        val jobPosting: JobPosting
+        val questions: List<com.hojun.interviewnote.interviewnoteapi.domain.GeneratedQuestion>
+
+        if (cachedQuestions.isNotEmpty()) {
+            // 3-a. 캐시 히트: 파싱 스킵, 질문 복사
+            logger.info("캐시된 질문 재사용 - URL: $originalUrl, 질문 ${cachedQuestions.size}개")
+
+            // 캐시된 질문의 원본 공고에서 파싱 정보 가져오기
+            val firstCachedPosting = jobPostingRepository.findById(cachedQuestions[0].jobPostingId)
+                .orElseThrow { IllegalStateException("캐시된 질문의 원본 공고를 찾을 수 없습니다") }
+
+            // 새 JobPosting 생성 (userId는 현재 사용자)
+            jobPosting = JobPosting(
+                userId = userId,
+                originalUrl = originalUrl,
+                companyName = firstCachedPosting.companyName,
+                jobTitle = firstCachedPosting.jobTitle,
+                jobDescription = firstCachedPosting.jobDescription,
+                selectedJobField = selectedJobField,
+                inferredJobField = firstCachedPosting.inferredJobField,
+                requiredSkills = firstCachedPosting.requiredSkills,
+                preferredSkills = firstCachedPosting.preferredSkills
+            )
+
+            val saved = jobPostingRepository.save(jobPosting)
+            logger.info(
+                "공고 저장 완료 (캐시 재사용) - 공고 ID: ${saved.id}, 사용자 ID: $userId, " +
+                        "회사: ${saved.companyName}"
+            )
+
+            // 질문 복사 (jobPostingId만 교체)
+            questions = cachedQuestions.map { cached ->
+                com.hojun.interviewnote.interviewnoteapi.domain.GeneratedQuestion(
+                    jobPostingId = saved.id,
+                    content = cached.content,
+                    category = cached.category,
+                    difficulty = cached.difficulty,
+                    aiReasoning = cached.aiReasoning,
+                    orderIndex = cached.orderIndex
+                )
+            }
+
+        } else {
+            // 3-b. 캐시 미스: 파싱 + AI 질문 생성
+            logger.info("캐시 미스 - 파싱 및 AI 질문 생성 시작")
+
+            // URL 파싱
+            val parsed = jobPostingParserService.parseFromUrl(originalUrl)
+                ?: throw JobPostingParseException("채용 공고 파싱에 실패했습니다. URL을 확인해주세요.")
+
+            // JobPosting 엔티티 생성 및 저장
+            jobPosting = JobPosting(
+                userId = userId,
+                originalUrl = originalUrl,
+                companyName = parsed.companyName,
+                jobTitle = parsed.jobTitle,
+                jobDescription = parsed.jobDescription,
+                selectedJobField = selectedJobField,
+                inferredJobField = parsed.inferredJobField,
+                requiredSkills = parsed.requiredSkills?.let { objectMapper.writeValueAsString(it) },
+                preferredSkills = parsed.preferredSkills?.let { objectMapper.writeValueAsString(it) }
+            )
+
+            val saved = jobPostingRepository.save(jobPosting)
+            logger.info("공고 저장 완료 - 공고 ID: ${saved.id}, 회사: ${saved.companyName}")
+
+            // AI 질문 생성
+            questions = questionGeneratorService.generateQuestions(saved)
         }
 
-        // 3. URL 파싱
-        val parsed = jobPostingParserService.parseFromUrl(originalUrl)
-            ?: throw JobPostingParseException("채용 공고 파싱에 실패했습니다. URL을 확인해주세요.")
-
-        // 4. JobPosting 엔티티 생성 및 저장
-        val jobPosting = JobPosting(
-            userId = userId,
-            originalUrl = originalUrl,
-            companyName = parsed.companyName,
-            jobTitle = parsed.jobTitle,
-            jobDescription = parsed.jobDescription,
-            selectedJobField = selectedJobField,
-            inferredJobField = parsed.inferredJobField,
-            requiredSkills = parsed.requiredSkills?.let { objectMapper.writeValueAsString(it) },
-            preferredSkills = parsed.preferredSkills?.let { objectMapper.writeValueAsString(it) }
-        )
-
-        val saved = jobPostingRepository.save(jobPosting)
-        logger.info("공고 저장 완료 - 공고 ID: ${saved.id}, 회사: ${saved.companyName}")
-
-        // 5. AI 질문 생성
-        val questions = questionGeneratorService.generateQuestions(saved)
-
-        // 6. GeneratedQuestion 엔티티 저장
+        // 4. GeneratedQuestion 엔티티 저장
         questions.forEach { generatedQuestionRepository.save(it) }
-        logger.info("질문 생성 완료 - 공고 ID: ${saved.id}, 질문 개수: ${questions.size}")
+        logger.info("질문 생성 완료 - 공고 ID: ${jobPosting.id}, 질문 개수: ${questions.size}")
 
-        return saved
+        return jobPosting
     }
 
     /**

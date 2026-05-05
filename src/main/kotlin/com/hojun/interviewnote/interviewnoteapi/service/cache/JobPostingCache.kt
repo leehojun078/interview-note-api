@@ -12,7 +12,17 @@ import java.time.LocalDateTime
  * Phase 6B에서 추가됨
  * - 동일 URL의 공고를 7일 이내에 재생성하지 않도록 방지
  * - 비용 절감 및 중복 방지
+ *
+ * **Phase 6E에서 Deprecated**:
+ * - 소유권 버그 발생: 다른 사용자가 동일 URL 등록 시 타인의 공고를 재사용하여 접근 권한 오류
+ * - 대체: QuestionCache 사용 (질문만 캐싱, 공고는 사용자별 독립 생성)
+ *
+ * @deprecated Use QuestionCache instead. This class causes ownership issues.
  */
+@Deprecated(
+    message = "Use QuestionCache instead. JobPostingCache causes ownership issues when multiple users register the same URL.",
+    replaceWith = ReplaceWith("QuestionCache", "com.hojun.interviewnote.interviewnoteapi.service.cache.QuestionCache")
+)
 @Service
 class JobPostingCache(
     private val jobPostingRepository: JobPostingRepository

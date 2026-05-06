@@ -6,8 +6,8 @@
 <div th:replace="~{fragments/layout :: toast}"></div>
 
 <main class="flex-1 py-12 md:py-16">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h1 class="hero-title text-4xl md:text-5xl font-bold text-gray-900 dark:text-dark-text mb-8">📚 면접 질문 목록</h1>
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+        <h1 class="text-3xl font-bold text-gray-900 dark:text-dark-text mb-8">📚 면접 질문 목록</h1>
 
         <!-- 필터 (데스크톱에서만 표시) -->
         <div class="fade-in-section delay-200 hidden md:block sticky top-16 z-40 bg-white dark:bg-dark-card rounded-lg shadow-md p-6 mb-8 dark:border dark:border-dark-lighter">
@@ -22,7 +22,7 @@
                     <label class="block text-sm font-medium text-gray-700 dark:text-dark-muted mb-2">직무 분야</label>
                     <select name="jobField" id="jobFieldSelect"
                             class="w-full px-4 py-2 border border-gray-300 dark:border-dark-lighter dark:bg-dark-bg dark:text-dark-text rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
-                        <option value="">전체 (기본값 적용)</option>
+                        <option value="" th:selected="${#strings.isEmpty(selectedJobField)}">전체 (기본값 적용)</option>
                         <option th:each="job : ${jobFields}"
                                 th:value="${job.name()}"
                                 th:text="${job.displayName}"
@@ -83,7 +83,7 @@
                             <label class="block text-sm font-medium text-gray-700 dark:text-dark-text mb-2">직무 분야</label>
                             <select name="jobField" id="mobileJobFieldSelect"
                                     class="w-full px-4 py-3 border border-gray-300 dark:border-dark-lighter dark:bg-dark-bg dark:text-dark-text rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
-                                <option value="">전체 (기본값 적용)</option>
+                                <option value="" th:selected="${#strings.isEmpty(selectedJobField)}">전체 (기본값 적용)</option>
                                 <option th:each="job : ${jobFields}"
                                         th:value="${job.name()}"
                                         th:text="${job.displayName}"

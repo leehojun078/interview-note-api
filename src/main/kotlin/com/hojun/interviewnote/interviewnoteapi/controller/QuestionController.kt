@@ -39,10 +39,14 @@ class QuestionController(
             userService.findByEmail(details.username)?.jobField?.name
         }
 
-        // jobField 파라미터가 없으면 사용자 기본 직무 사용
-        val effectiveJobField = jobField ?: defaultJobField
+        // jobField 파라미터가 없거나 빈 문자열이면 사용자 기본 직무 사용
+        val effectiveJobField = jobField?.takeIf { it.isNotBlank() } ?: defaultJobField
+
+        println("🔍 [QuestionController.list] jobField=$jobField, defaultJobField=$defaultJobField, effectiveJobField=$effectiveJobField")
 
         val questions = questionService.findAll(effectiveJobField, category, difficulty)
+
+        println("🔍 [QuestionController.list] questions.size=${questions.size}")
 
         // Phase 5: 직무별 카테고리 맵 전달 (동적 필터링용)
         val categoriesByJobField = questionService.getCategoriesByAllJobFields()
@@ -75,15 +79,19 @@ class QuestionController(
             userService.findByEmail(details.username)?.jobField?.name
         }
 
-        // jobField 파라미터가 없으면 사용자 기본 직무 사용
-        val effectiveJobField = jobField ?: defaultJobField
+        // jobField 파라미터가 없거나 빈 문자열이면 사용자 기본 직무 사용
+        val effectiveJobField = jobField?.takeIf { it.isNotBlank() } ?: defaultJobField
+
+        println("🔍 [QuestionController.listFragment] jobField=$jobField, defaultJobField=$defaultJobField, effectiveJobField=$effectiveJobField, category=$category, difficulty=$difficulty")
 
         val questions = questionService.findAll(effectiveJobField, category, difficulty)
+
+        println("🔍 [QuestionController.listFragment] questions.size=${questions.size}")
 
         model.addAttribute("questions", questions)
 
         // Fragment만 반환
-        return "questions/list :: question-list-fragment"
+        return "questions/list-fragment :: question-list-fragment"
     }
 
     /**

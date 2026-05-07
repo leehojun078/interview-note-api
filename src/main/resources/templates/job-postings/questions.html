@@ -23,16 +23,10 @@
             </div>
         </div>
 
-        <!-- Phase 8B: 액션 버튼 영역 (10개 질문 + AI 면접) -->
-        <div class="flex flex-col sm:flex-row gap-4 mb-8">
-            <!-- 기존: 10개 질문으로 연습 -->
-            <a th:href="@{/generated-questions/{id}/answer(id=${jobPosting.questions[0].id})}"
-               class="flex-1 btn-neon text-center py-4 text-lg">
-                📝 10개 질문으로 연습
-            </a>
-
-            <!-- Phase 8B: 채용 공고 기반 AI 면접 추가 -->
-            <form th:action="@{/mock-interviews/start}" method="post" class="flex-1">
+        <!-- Phase 8B: 액션 버튼 영역 (AI 면접 연습) -->
+        <div class="mb-8">
+            <!-- 채용 공고 기반 AI 면접 -->
+            <form th:action="@{/mock-interviews/start}" method="post">
                 <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
                 <input type="hidden" name="jobPostingId" th:value="${jobPosting.id}" />
                 <input type="hidden" name="selectedJobField" th:value="${jobPosting.effectiveJobField.name}" />

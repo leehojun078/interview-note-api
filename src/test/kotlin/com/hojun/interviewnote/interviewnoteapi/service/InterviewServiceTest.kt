@@ -8,6 +8,7 @@ import com.hojun.interviewnote.interviewnoteapi.exception.AnswerNotFoundExceptio
 import com.hojun.interviewnote.interviewnoteapi.exception.FeedbackNotFoundException
 import com.hojun.interviewnote.interviewnoteapi.repository.GeneratedQuestionRepository
 import com.hojun.interviewnote.interviewnoteapi.repository.InterviewAnswerRepository
+import com.hojun.interviewnote.interviewnoteapi.service.cache.DuplicateRequestCache
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -34,6 +35,9 @@ class InterviewServiceTest {
 
     @Mock
     private lateinit var generatedQuestionRepository: GeneratedQuestionRepository
+
+    @Mock
+    private lateinit var duplicateRequestCache: DuplicateRequestCache
 
     @InjectMocks
     private lateinit var interviewService: InterviewService

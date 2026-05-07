@@ -36,6 +36,14 @@ class InterviewAnswer(
     @Column(name = "generated_question_id")
     val generatedQuestionId: Long? = null,
 
+    /**
+     * 중복 답변 방지를 위한 해시 (Phase 8D에서 추가)
+     * - SHA-256 해시 (questionId/generatedQuestionId + answerText)
+     * - 동일한 질문에 동일한 답변 재제출 방지용
+     */
+    @Column(name = "answer_text_hash", length = 64)
+    val answerTextHash: String? = null,
+
     @Column(nullable = false)
     val createdAt: LocalDateTime = LocalDateTime.now(),
 

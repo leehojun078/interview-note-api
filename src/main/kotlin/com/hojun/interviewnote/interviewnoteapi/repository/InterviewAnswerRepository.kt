@@ -22,4 +22,24 @@ interface InterviewAnswerRepository : JpaRepository<InterviewAnswer, Long> {
      * Phase 2 (UI/UX): 리뷰 페이지네이션
      */
     fun findByUserIdOrderByCreatedAtDesc(userId: Long, pageable: Pageable): Page<InterviewAnswer>
+
+    /**
+     * 중복 답변 검색 (정적 질문용)
+     * Phase 8D: 동일한 사용자가 동일한 정적 질문에 동일한 답변을 제출했는지 확인
+     */
+    fun findFirstByUserIdAndQuestionIdAndAnswerTextHashOrderByCreatedAtDesc(
+        userId: Long,
+        questionId: Long,
+        answerTextHash: String
+    ): InterviewAnswer?
+
+    /**
+     * 중복 답변 검색 (AI 생성 질문용)
+     * Phase 8D: 동일한 사용자가 동일한 AI 생성 질문에 동일한 답변을 제출했는지 확인
+     */
+    fun findFirstByUserIdAndGeneratedQuestionIdAndAnswerTextHashOrderByCreatedAtDesc(
+        userId: Long,
+        generatedQuestionId: Long,
+        answerTextHash: String
+    ): InterviewAnswer?
 }

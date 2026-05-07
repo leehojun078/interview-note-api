@@ -35,6 +35,42 @@
             </div>
         </div>
 
+        <!-- Phase 8D: 중복 답변 알림 배너 -->
+        <div th:if="${duplicateAnswer}" class="bg-blue-50 border-l-4 border-blue-500 rounded-lg p-6 mb-6">
+            <div class="flex items-start">
+                <svg class="w-8 h-8 text-blue-500 mr-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <div class="flex-1">
+                    <h3 class="font-bold text-blue-900 text-lg mb-2">
+                        💡 이전과 동일한 답변입니다
+                    </h3>
+                    <p class="text-blue-800 mb-4">
+                        이 답변은 이전에 제출하신 답변과 동일합니다.
+                        답변을 수정하여 더 나은 평가를 받아보세요!
+                        같은 답변은 항상 같은 평가를 받습니다.
+                    </p>
+                    <div class="flex flex-col sm:flex-row gap-3">
+                        <a th:if="${!answer.isGenerated}"
+                           th:href="@{/questions/{id}/answer(id=${answer.questionId})}"
+                           class="inline-block bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 rounded-lg text-center transition">
+                            답변 수정하기
+                        </a>
+                        <a th:if="${answer.isGenerated}"
+                           th:href="@{/generated-questions/{id}/answer(id=${answer.generatedQuestionId})}"
+                           class="inline-block bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 rounded-lg text-center transition">
+                            답변 수정하기
+                        </a>
+                        <a th:href="@{/questions}"
+                           class="inline-block bg-white hover:bg-gray-50 text-blue-900 font-semibold px-6 py-2 rounded-lg border-2 border-blue-600 text-center transition">
+                            다른 질문 보기
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- 탭 네비게이션 (Sticky) - 스크롤 네비게이션으로 변경 -->
         <div class="sticky top-16 z-40 bg-white dark:bg-dark-card border-b border-gray-200 dark:border-dark-lighter mb-6 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8">
             <nav class="flex gap-2 sm:gap-4 overflow-x-auto scrollbar-hide" role="tablist">

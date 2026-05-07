@@ -8,6 +8,7 @@ import com.hojun.interviewnote.interviewnoteapi.exception.AnswerNotFoundExceptio
 import com.hojun.interviewnote.interviewnoteapi.exception.FeedbackNotFoundException
 import com.hojun.interviewnote.interviewnoteapi.repository.GeneratedQuestionRepository
 import com.hojun.interviewnote.interviewnoteapi.repository.InterviewAnswerRepository
+import com.hojun.interviewnote.interviewnoteapi.service.cache.DuplicateRequestCache
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
@@ -18,7 +19,8 @@ class InterviewService(
     private val interviewAnswerRepository: InterviewAnswerRepository,
     private val questionService: QuestionService,
     private val aiFeedbackService: AiFeedbackService,
-    private val generatedQuestionRepository: GeneratedQuestionRepository
+    private val generatedQuestionRepository: GeneratedQuestionRepository,
+    private val duplicateRequestCache: DuplicateRequestCache
 ) {
     /**
      * 답변 제출 및 AI 평가
@@ -33,11 +35,13 @@ class InterviewService(
         // 1. 질문 존재 여부 확인
         val question = questionService.findById(questionId)
 
-        // 2. 답변 저장 (userId 포함)
+        // 2. 답변 저장 (userId 포함, Phase 8D: answerTextHash 추가)
+        val answerHash = duplicateRequestCache.generateHash(questionId, answerText)
         val answer = InterviewAnswer(
             questionId = questionId,
             userId = userId,
             answerText = answerText,
+            answerTextHash = answerHash,
             createdAt = LocalDateTime.now(),
             updatedAt = LocalDateTime.now()
         )
@@ -75,12 +79,15 @@ class InterviewService(
         val generatedQuestion = generatedQuestionRepository.findById(generatedQuestionId)
             .orElseThrow { IllegalArgumentException("생성된 질문을 찾을 수 없습니다: ID=$generatedQuestionId") }
 
-        // 2. 답변 저장 (generatedQuestionId 포함, questionId는 null)
+        // 2. 답변 저장 (generatedQuestionId 포함, questionId는 null, Phase 8D: answerTextHash 추가)
+        // generatedQuestionId를 사용하여 해시 생성
+        val answerHash = duplicateRequestCache.generateHash(generatedQuestionId, answerText)
         val answer = InterviewAnswer(
             questionId = null,  // 생성된 질문의 경우 questionId는 null
             userId = userId,
             answerText = answerText,
             generatedQuestionId = generatedQuestionId,  // 핵심: 생성된 질문 ID 저장
+            answerTextHash = answerHash,
             createdAt = LocalDateTime.now(),
             updatedAt = LocalDateTime.now()
         )

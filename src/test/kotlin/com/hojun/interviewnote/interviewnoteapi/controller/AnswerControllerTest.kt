@@ -50,6 +50,12 @@ class AnswerControllerTest {
     @MockitoBean
     private lateinit var draftRepository: InterviewDraftRepository
 
+    @MockitoBean
+    private lateinit var duplicateRequestCache: com.hojun.interviewnote.interviewnoteapi.service.cache.DuplicateRequestCache
+
+    @MockitoBean
+    private lateinit var interviewAnswerRepository: com.hojun.interviewnote.interviewnoteapi.repository.InterviewAnswerRepository
+
     private val testUser = User(
         id = 1L,
         email = "test@example.com",

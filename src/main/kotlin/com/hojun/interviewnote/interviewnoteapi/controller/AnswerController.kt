@@ -3,9 +3,11 @@ package com.hojun.interviewnote.interviewnoteapi.controller
 import com.hojun.interviewnote.interviewnoteapi.domain.InterviewDraft
 import com.hojun.interviewnote.interviewnoteapi.dto.AnswerSubmitDto
 import com.hojun.interviewnote.interviewnoteapi.exception.RateLimitExceededException
+import com.hojun.interviewnote.interviewnoteapi.repository.InterviewAnswerRepository
 import com.hojun.interviewnote.interviewnoteapi.repository.InterviewDraftRepository
 import com.hojun.interviewnote.interviewnoteapi.repository.UserRepository
 import com.hojun.interviewnote.interviewnoteapi.service.InterviewService
+import com.hojun.interviewnote.interviewnoteapi.service.cache.DuplicateRequestCache
 import com.hojun.interviewnote.interviewnoteapi.service.ratelimit.RateLimitService
 import com.hojun.interviewnote.interviewnoteapi.service.validation.AnswerValidator
 import com.hojun.interviewnote.interviewnoteapi.service.validation.ValidationResult
@@ -28,7 +30,9 @@ class AnswerController(
     private val rateLimitService: RateLimitService,
     private val answerValidator: AnswerValidator,
     private val userRepository: UserRepository,
-    private val draftRepository: InterviewDraftRepository
+    private val draftRepository: InterviewDraftRepository,
+    private val duplicateRequestCache: DuplicateRequestCache,
+    private val interviewAnswerRepository: InterviewAnswerRepository
 ) {
     private val logger = LoggerFactory.getLogger(AnswerController::class.java)
     /**
@@ -68,6 +72,24 @@ class AnswerController(
         if (validationResult is ValidationResult.Invalid) {
             redirectAttributes.addFlashAttribute("validationError", validationResult.message)
             return "redirect:/questions/$questionId/answer?error=invalid_answer"
+        }
+
+        // Phase 8D: 중복 답변 제출 방지
+        val answerText = dto.answerText ?: ""
+        val answerHash = duplicateRequestCache.generateHash(questionId, answerText)
+
+        val existingAnswer = interviewAnswerRepository
+            .findFirstByUserIdAndQuestionIdAndAnswerTextHashOrderByCreatedAtDesc(
+                user.id, questionId, answerHash
+            )
+
+        if (existingAnswer != null) {
+            logger.info("중복 답변 감지 - userId: ${user.id}, questionId: $questionId, 기존 answerId: ${existingAnswer.id}")
+
+            redirectAttributes.addFlashAttribute("info",
+                "이전과 동일한 답변입니다. 답변을 수정해서 더 나은 평가를 받아보세요!")
+
+            return "redirect:/answers/${existingAnswer.id}/feedback?duplicate=true"
         }
 
         // 답변 제출 및 AI 평가 (userId 전달)
@@ -114,6 +136,7 @@ class AnswerController(
     fun feedback(
         @PathVariable answerId: Long,
         @RequestParam(required = false) warning: String?,
+        @RequestParam(required = false) duplicate: String?,
         model: Model
     ): String {
         val answerWithFeedback = interviewService.getAnswerWithFeedback(answerId)
@@ -124,6 +147,11 @@ class AnswerController(
         // Phase 3A: 저품질 경고
         if (warning == "low_quality") {
             model.addAttribute("lowQualityWarning", true)
+        }
+
+        // Phase 8D: 중복 답변 알림
+        if (duplicate == "true") {
+            model.addAttribute("duplicateAnswer", true)
         }
 
         return "answers/feedback"

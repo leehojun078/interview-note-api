@@ -67,8 +67,32 @@ class AiFeedbackService(
             val cached = duplicateRequestCache.findCached(question.id, answer.answerText)
             if (cached != null) {
                 cacheHitsCounter.increment()
-                logger.info("캐시된 피드백 반환 - 피드백 ID: ${cached.id}")
-                return cached
+                logger.info("캐시된 피드백 발견 - 원본 피드백 ID: ${cached.id}, 새 답변 ID: ${answer.id}")
+
+                // 캐시된 피드백을 새로운 InterviewAnswer ID로 복사하여 저장
+                val copiedFeedback = AiFeedback(
+                    interviewAnswerId = answer.id,  // 새로운 답변 ID로 연결
+                    logicScore = cached.logicScore,
+                    specificityScore = cached.specificityScore,
+                    jobFitScore = cached.jobFitScore,
+                    deliveryScore = cached.deliveryScore,
+                    strengths = cached.strengths,
+                    improvements = cached.improvements,
+                    modelAnswer = cached.modelAnswer,
+                    overallComment = cached.overallComment,
+                    jobField = cached.jobField,
+                    modelName = cached.modelName,
+                    promptVersion = cached.promptVersion,
+                    tokenUsageInput = cached.tokenUsageInput,
+                    tokenUsageOutput = cached.tokenUsageOutput,
+                    rawResponse = cached.rawResponse,
+                    answerTextHash = cached.answerTextHash,
+                    createdAt = LocalDateTime.now()
+                )
+
+                val savedCopy = aiFeedbackRepository.save(copiedFeedback)
+                logger.info("캐시 피드백 복사 완료 - 새 피드백 ID: ${savedCopy.id}, 답변 ID: ${answer.id}")
+                return savedCopy
             }
             cacheMissesCounter.increment()
 

@@ -122,6 +122,42 @@
             </div>
         </div>
 
+        <!-- AI 면접 연습 섹션 (로그인 사용자만) -->
+        <div th:if="${isLoggedIn}" class="fade-in-section bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-900 dark:from-opacity-20 dark:to-teal-900 dark:to-opacity-20 border border-emerald-200 dark:border-emerald-800 rounded-xl p-8 mb-12 shadow-sm">
+            <div class="flex flex-col md:flex-row items-center gap-6">
+                <div class="flex-shrink-0">
+                    <div class="w-16 h-16 bg-emerald-500 rounded-full flex items-center justify-center text-white text-3xl">
+                        🤖
+                    </div>
+                </div>
+                <div class="flex-1 text-center md:text-left">
+                    <h3 class="text-2xl font-bold text-gray-900 dark:text-dark-text mb-2">
+                        AI 실시간 채팅 면접 연습
+                    </h3>
+                    <p class="text-gray-700 dark:text-dark-muted mb-4">
+                        실제 면접처럼 AI와 대화하며 면접을 연습하고, 실시간으로 피드백을 받아보세요.
+                        여러 질문에 연속으로 답변하며 면접 감각을 익힐 수 있습니다.
+                    </p>
+                    <ul class="text-sm text-gray-600 dark:text-dark-muted space-y-1 mb-4">
+                        <li>✓ 실시간 AI 대화형 면접 (채팅 방식)</li>
+                        <li>✓ 답변별 즉각 피드백 & 점수 평가</li>
+                        <li>✓ 종합 평가 및 개선 포인트 제공</li>
+                        <li>✓ 17개 직무 & 경력 수준별 맞춤 질문</li>
+                    </ul>
+                    <div class="flex flex-col sm:flex-row gap-3">
+                        <button onclick="openJobFieldModal()"
+                                class="inline-block bg-emerald-500 hover:bg-emerald-600 text-white font-semibold px-6 py-3 rounded-lg transition shadow-md hover:shadow-lg text-center">
+                            🤖 AI 면접 시작하기
+                        </button>
+                        <a th:href="@{/reviews}"
+                           class="inline-block bg-white dark:bg-dark-card hover:bg-gray-50 dark:hover:bg-dark-lighter text-emerald-600 dark:text-emerald-400 font-semibold px-6 py-3 rounded-lg transition border-2 border-emerald-500 dark:border-emerald-600 text-center">
+                            📊 내 면접 기록 보기
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- 추천 질문 섹션 (로그인 사용자만) -->
         <div th:if="${isLoggedIn and not #lists.isEmpty(recommendedQuestions)}" class="mb-20">
             <h2 class="fade-in-section text-3xl md:text-4xl font-bold text-gray-800 dark:text-dark-text mb-8">

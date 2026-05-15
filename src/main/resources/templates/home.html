@@ -7,62 +7,168 @@
 
 <main class="flex-1 py-12 md:py-16">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <!-- Hero Section -->
-        <div class="hero-section-wrapper py-12 md:py-24 xl:py-32">
+        <!-- Hero Section (Two-Column Layout) -->
+        <div class="hero-section-wrapper py-12 md:py-16">
             <!-- 배경 레이어 (여러 그라데이션 조합) -->
             <div class="hero-bg-glow-primary"></div>
             <div class="hero-bg-glow-accent"></div>
             <div class="hero-bg-spotlight"></div>
             <div class="hero-bg-fade-bottom"></div>
 
-            <div class="relative max-w-4xl mx-auto text-center px-4">
-                <h1 class="hero-title text-5xl md:text-6xl xl:text-8xl font-extrabold text-white mb-6 md:mb-8 leading-tight">
-                    면접에서 살아남는<br>
-                    <span class="hero-answer-gradient">
-                        답변력을 증명하세요
-                    </span>
-                </h1>
+            <!-- 2-Column Container -->
+            <div class="relative flex flex-col lg:flex-row gap-8 lg:gap-12 items-center">
 
-                <p class="fade-in-section delay-200 text-lg md:text-xl xl:text-2xl text-gray-300 mb-8 md:mb-12 leading-relaxed font-medium">
-                    🎯 실전 면접 질문 340개<br>
-                    🤖 AI 실시간 평가 & 피드백<br>
-                    📈 답변 품질 개선 트래킹
-                </p>
+                <!-- LEFT COLUMN: Hero Content -->
+                <div class="w-full lg:w-1/2 text-left px-4">
+                    <h1 class="hero-title text-4xl md:text-5xl lg:text-6xl font-extrabold text-white mb-6 leading-tight">
+                        면접에서 살아남는<br>
+                        <span class="hero-answer-gradient">
+                            답변력을 증명하세요
+                        </span>
+                    </h1>
 
-                <!-- CTA 버튼 -->
-                <div class="fade-in-section delay-300 flex flex-col sm:flex-row gap-4 justify-center items-center">
-                    <!-- AI 면접 연습 버튼: 로그인 여부에 따라 다른 동작 -->
-                    <a th:if="${!isLoggedIn}" th:href="@{/auth/login}" class="btn-neon">
-                        🤖 AI 면접 연습
-                    </a>
-                    <button th:if="${isLoggedIn}"
-                            onclick="openJobFieldModal()"
-                            class="btn-neon">
-                        🤖 AI 면접 연습
-                    </button>
-                    <a th:href="@{/questions}" class="btn-secondary">
-                        무료로 시작하기 →
-                    </a>
-                    <a th:href="@{/reviews}" class="btn-secondary">
-                        내 리뷰 보기
-                    </a>
-                </div>
+                    <p class="fade-in-section delay-200 text-base md:text-lg text-gray-300 mb-8 leading-relaxed font-medium">
+                        🎯 실전 면접 질문 340개<br>
+                        🤖 AI 실시간 평가 & 피드백<br>
+                        📈 답변 품질 개선 트래킹
+                    </p>
 
-                <!-- 소셜 프루프 -->
-                <div class="fade-in-section delay-500 mt-10 md:mt-16 flex flex-wrap justify-center gap-8 md:gap-12 text-sm md:text-base text-gray-400">
-                    <div class="flex flex-col items-center gap-1">
-                        <span class="text-4xl md:text-5xl font-bold text-blue-400">340+</span>
-                        <span class="font-medium">면접 질문</span>
+                    <!-- CTA 버튼 -->
+                    <div class="fade-in-section delay-300 flex flex-col sm:flex-row gap-4 mb-8">
+                        <a th:href="@{/questions}" class="btn-secondary">
+                            무료로 시작하기 →
+                        </a>
+                        <a th:href="@{/reviews}" class="btn-secondary">
+                            내 리뷰 보기
+                        </a>
                     </div>
-                    <div class="flex flex-col items-center gap-1">
-                        <span class="text-4xl md:text-5xl font-bold text-emerald-400">17</span>
-                        <span class="font-medium">직무 분야</span>
-                    </div>
-                    <div class="flex flex-col items-center gap-1">
-                        <span class="text-4xl md:text-5xl font-bold text-purple-400">AI</span>
-                        <span class="font-medium">실시간 평가</span>
+
+                    <!-- 소셜 프루프 -->
+                    <div class="fade-in-section delay-500 flex flex-wrap gap-8 text-sm text-gray-400">
+                        <div class="flex flex-col items-start gap-1">
+                            <span class="text-3xl md:text-4xl font-bold text-blue-400">340+</span>
+                            <span class="font-medium">면접 질문</span>
+                        </div>
+                        <div class="flex flex-col items-start gap-1">
+                            <span class="text-3xl md:text-4xl font-bold text-emerald-400">17</span>
+                            <span class="font-medium">직무 분야</span>
+                        </div>
+                        <div class="flex flex-col items-start gap-1">
+                            <span class="text-3xl md:text-4xl font-bold text-purple-400">AI</span>
+                            <span class="font-medium">실시간 평가</span>
+                        </div>
                     </div>
                 </div>
+
+                <!-- RIGHT COLUMN: Feedback Preview Card -->
+                <div class="w-full lg:w-1/2 px-4">
+                    <div class="card bg-white dark:bg-dark-card dark:border dark:border-dark-lighter">
+                        <!-- Preview Label -->
+                        <div class="mb-4 pb-3 border-b border-gray-200 dark:border-dark-lighter">
+                            <span class="text-xs font-semibold text-primary dark:text-primary-light uppercase tracking-wider">
+                                💡 AI 평가 결과 미리보기
+                            </span>
+                        </div>
+
+                        <!-- 질문 -->
+                        <div class="mb-6">
+                            <h4 class="text-sm font-semibold text-gray-900 dark:text-dark-text mb-2">질문</h4>
+                            <p class="text-sm text-gray-800 dark:text-dark-text line-clamp-2"
+                               th:text="${sampleFeedback.questionContent}">
+                                질문 내용
+                            </p>
+                        </div>
+
+                        <!-- 내 답변 -->
+                        <div class="mb-6">
+                            <h4 class="text-sm font-semibold text-gray-900 dark:text-dark-text mb-2">내 답변</h4>
+                            <p class="text-sm text-gray-700 dark:text-dark-muted line-clamp-3"
+                               th:text="${sampleFeedback.answerText}">
+                                답변 내용
+                            </p>
+                        </div>
+
+                        <!-- 종합 코멘트 -->
+                        <div class="mb-6 p-4 bg-gray-50 dark:bg-dark-bg rounded-lg">
+                            <h4 class="text-sm font-semibold text-gray-900 dark:text-dark-text mb-2">종합 코멘트</h4>
+                            <p class="text-sm text-gray-700 dark:text-dark-muted line-clamp-3"
+                               th:text="${sampleFeedback.feedback.overallComment}">
+                                코멘트 내용
+                            </p>
+                        </div>
+
+                        <!-- 세부 점수 -->
+                        <div>
+                            <h4 class="text-sm font-semibold text-gray-900 dark:text-dark-text mb-3">세부 점수</h4>
+                            <div class="grid grid-cols-2 gap-3">
+                                <!-- 논리성 -->
+                                <div>
+                                    <div class="flex justify-between items-center mb-1">
+                                        <span class="text-xs font-medium text-gray-600 dark:text-dark-muted">논리성</span>
+                                        <span class="text-sm font-bold text-primary"
+                                              th:text="${sampleFeedback.feedback.logicScore} + '/5'">
+                                            5/5
+                                        </span>
+                                    </div>
+                                    <div class="bg-gray-200 dark:bg-dark-lighter h-2 rounded-full overflow-hidden">
+                                        <div class="bg-primary h-full rounded-full"
+                                             th:style="'width: ' + ${sampleFeedback.feedback.logicScore * 20} + '%'">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 구체성 -->
+                                <div>
+                                    <div class="flex justify-between items-center mb-1">
+                                        <span class="text-xs font-medium text-gray-600 dark:text-dark-muted">구체성</span>
+                                        <span class="text-sm font-bold text-primary"
+                                              th:text="${sampleFeedback.feedback.specificityScore} + '/5'">
+                                            4/5
+                                        </span>
+                                    </div>
+                                    <div class="bg-gray-200 dark:bg-dark-lighter h-2 rounded-full overflow-hidden">
+                                        <div class="bg-primary h-full rounded-full"
+                                             th:style="'width: ' + ${sampleFeedback.feedback.specificityScore * 20} + '%'">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 직무적합성 -->
+                                <div>
+                                    <div class="flex justify-between items-center mb-1">
+                                        <span class="text-xs font-medium text-gray-600 dark:text-dark-muted">직무적합성</span>
+                                        <span class="text-sm font-bold text-primary"
+                                              th:text="${sampleFeedback.feedback.jobFitScore} + '/5'">
+                                            5/5
+                                        </span>
+                                    </div>
+                                    <div class="bg-gray-200 dark:bg-dark-lighter h-2 rounded-full overflow-hidden">
+                                        <div class="bg-primary h-full rounded-full"
+                                             th:style="'width: ' + ${sampleFeedback.feedback.jobFitScore * 20} + '%'">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 전달력 -->
+                                <div>
+                                    <div class="flex justify-between items-center mb-1">
+                                        <span class="text-xs font-medium text-gray-600 dark:text-dark-muted">전달력</span>
+                                        <span class="text-sm font-bold text-primary"
+                                              th:text="${sampleFeedback.feedback.deliveryScore} + '/5'">
+                                            4/5
+                                        </span>
+                                    </div>
+                                    <div class="bg-gray-200 dark:bg-dark-lighter h-2 rounded-full overflow-hidden">
+                                        <div class="bg-primary h-full rounded-full"
+                                             th:style="'width: ' + ${sampleFeedback.feedback.deliveryScore * 20} + '%'">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
             </div>
         </div>
 

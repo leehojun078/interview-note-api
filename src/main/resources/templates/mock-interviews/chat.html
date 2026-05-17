@@ -9,6 +9,23 @@
 
 <main class="flex-1 py-8">
     <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <!-- 에러 메시지 표시 영역 -->
+        <div id="errorAlert" class="hidden mb-6 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+            <div class="flex items-start">
+                <div class="flex-1">
+                    <strong class="font-bold" id="errorTitle">오류 발생</strong>
+                    <p class="text-sm mt-1" id="errorMessage"></p>
+                    <p class="text-xs mt-1 text-red-600" id="errorDetail"></p>
+                </div>
+                <button onclick="closeErrorAlert()" class="ml-4">
+                    <svg class="fill-current h-6 w-6 text-red-500" role="button" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                        <title>닫기</title>
+                        <path d="M14.348 14.849a1.2 1.2 0 0 1-1.697 0L10 11.819l-2.651 3.029a1.2 1.2 0 1 1-1.697-1.697l2.758-3.15-2.759-3.152a1.2 1.2 0 1 1 1.697-1.697L10 8.183l2.651-3.031a1.2 1.2 0 1 1 1.697 1.697l-2.758 3.152 2.758 3.15a1.2 1.2 0 0 1 0 1.698z"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
         <!-- 헤더 -->
         <div class="card mb-6">
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -27,9 +44,9 @@
                         시작: <span th:text="${#temporals.format(interview.startedAt, 'yyyy-MM-dd HH:mm')}">2026-05-01 10:25</span>
                     </p>
                 </div>
-                <form th:action="@{/mock-interviews/{id}/end(id=${interview.id})}" method="post" onsubmit="return handleEndSubmit(event)">
+                <form id="endInterviewForm" th:action="@{/mock-interviews/{id}/end(id=${interview.id})}" method="post">
                     <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
-                    <button type="submit" id="endBtn"
+                    <button type="button" id="endBtn"
                             class="px-6 py-3 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg transition-colors shadow-md disabled:opacity-50 disabled:cursor-not-allowed">
                         <span id="endText">면접 종료</span>
                         <span id="endLoadingText" class="hidden flex items-center justify-center gap-2">
@@ -152,29 +169,96 @@
     const csrfToken = /*[[${_csrf.token}]]*/ '';
     const csrfHeader = /*[[${_csrf.headerName}]]*/ '';
 
-    // 면접 종료 핸들러
-    function handleEndSubmit(event) {
+    // 에러 알림 표시
+    function showErrorAlert(title, message, detail = '') {
+        const errorAlert = document.getElementById('errorAlert');
+        const errorTitle = document.getElementById('errorTitle');
+        const errorMessage = document.getElementById('errorMessage');
+        const errorDetail = document.getElementById('errorDetail');
+
+        errorTitle.textContent = title;
+        errorMessage.textContent = message;
+        errorDetail.textContent = detail;
+
+        errorAlert.classList.remove('hidden');
+
+        // 자동으로 스크롤
+        errorAlert.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    // 에러 알림 닫기
+    function closeErrorAlert() {
+        document.getElementById('errorAlert').classList.add('hidden');
+    }
+
+    // 면접 종료 핸들러 (AJAX)
+    async function handleEndInterview() {
         // 확인 다이얼로그
         if (!confirm('면접을 종료하시겠습니까? 종합 평가가 생성됩니다.')) {
-            event.preventDefault();
-            return false;
+            return;
         }
 
         const endBtn = document.getElementById('endBtn');
         const endText = document.getElementById('endText');
         const endLoadingText = document.getElementById('endLoadingText');
 
+        // 에러 알림 숨김
+        closeErrorAlert();
+
         // 로딩 UI 표시
         endText.classList.add('hidden');
         endLoadingText.classList.remove('hidden');
+        endBtn.disabled = true;
 
-        // 버튼 비활성화
-        setTimeout(() => {
-            endBtn.disabled = true;
-        }, 0);
+        try {
+            const response = await fetch(`/mock-interviews/${interviewId}/end`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    [csrfHeader]: csrfToken
+                }
+            });
 
-        return true;
+            const data = await response.json();
+
+            if (data.success) {
+                // 성공: 결과 페이지로 이동
+                window.location.href = data.redirectUrl;
+            } else {
+                // 실패: 에러 메시지 표시
+                const errorMessages = {
+                    'AI_PARSE_ERROR': '종합 평가 생성 중 오류가 발생했습니다',
+                    'INVALID_REQUEST': '잘못된 요청입니다',
+                    'NOT_FOUND': '면접을 찾을 수 없습니다',
+                    'UNKNOWN_ERROR': '서버 오류가 발생했습니다'
+                };
+
+                const errorTitle = errorMessages[data.errorType] || '오류 발생';
+                showErrorAlert(errorTitle, data.error, data.detail || '');
+
+                // 로딩 UI 복원
+                endText.classList.remove('hidden');
+                endLoadingText.classList.add('hidden');
+                endBtn.disabled = false;
+            }
+        } catch (error) {
+            console.error('면접 종료 요청 실패:', error);
+
+            showErrorAlert(
+                '네트워크 오류',
+                '서버와의 연결이 끊어졌습니다',
+                '인터넷 연결을 확인하고 다시 시도해주세요'
+            );
+
+            // 로딩 UI 복원
+            endText.classList.remove('hidden');
+            endLoadingText.classList.add('hidden');
+            endBtn.disabled = false;
+        }
     }
+
+    // 면접 종료 버튼 이벤트 리스너
+    document.getElementById('endBtn').addEventListener('click', handleEndInterview);
 
     // DOM 요소
     const messagesContainer = document.getElementById('messagesContainer');

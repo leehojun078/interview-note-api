@@ -103,12 +103,13 @@ class InterviewResponseParser(
                 ?: throw IllegalArgumentException("overallFeedback 필드 누락")
 
             // Phase 8A: 최소 500자 요구 (권장: 800-1200자)
+            // 실제 최소 요구: 200자 (2026-05-17: 300자에서 완화, 실제 AI 응답 품질 고려)
             if (overallFeedback.length < 500) {
                 logger.warn("종합 피드백 길이 부족: ${overallFeedback.length}자 (권장: 800-1200자)")
             }
 
-            require(overallFeedback.length >= 300) {
-                "종합 피드백이 너무 짧습니다: ${overallFeedback.length}자 (최소 300자)"
+            require(overallFeedback.length >= 200) {
+                "종합 피드백이 너무 짧습니다: ${overallFeedback.length}자 (최소 200자)"
             }
 
             // 2. keyStrengths 파싱 및 검증

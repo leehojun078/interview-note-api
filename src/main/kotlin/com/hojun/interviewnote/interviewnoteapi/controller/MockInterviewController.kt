@@ -2,6 +2,7 @@ package com.hojun.interviewnote.interviewnoteapi.controller
 
 import com.hojun.interviewnote.interviewnoteapi.domain.CareerLevel
 import com.hojun.interviewnote.interviewnoteapi.domain.JobField
+import com.hojun.interviewnote.interviewnoteapi.exception.AiResponseParseException
 import com.hojun.interviewnote.interviewnoteapi.exception.MockInterviewNotFoundException
 import com.hojun.interviewnote.interviewnoteapi.repository.UserRepository
 import com.hojun.interviewnote.interviewnoteapi.service.MockInterviewService
@@ -221,27 +222,58 @@ class MockInterviewController(
      *
      * 면접 종료 및 종합 평가 생성
      *
-     * 응답: redirect to /mock-interviews/{id}/result
+     * 응답: JSON {"success": true/false, "redirectUrl": "...", "error": "...", "errorType": "..."}
      */
     @PostMapping("/{id}/end")
+    @ResponseBody
     fun endInterview(
         @PathVariable id: Long,
-        @AuthenticationPrincipal userDetails: UserDetails,
-        redirectAttributes: RedirectAttributes
-    ): String {
+        @AuthenticationPrincipal userDetails: UserDetails
+    ): Map<String, Any> {
         val user = userRepository.findByEmail(userDetails.username)
             ?: throw IllegalStateException("로그인한 사용자를 찾을 수 없습니다")
 
         return try {
             mockInterviewService.endInterview(id, user.id)
 
-            logger.info("면접 종료 - interviewId: $id, userId: ${user.id}")
+            logger.info("면접 종료 성공 - interviewId: $id, userId: ${user.id}")
 
-            "redirect:/mock-interviews/$id/result"
+            mapOf(
+                "success" to true,
+                "redirectUrl" to "/mock-interviews/$id/result"
+            )
+        } catch (e: AiResponseParseException) {
+            logger.error("면접 종료 실패 (AI 파싱 오류) - interviewId: $id", e)
+            mapOf(
+                "success" to false,
+                "error" to "AI 평가 생성에 실패했습니다",
+                "detail" to (e.message ?: "종합 평가 파싱 중 오류 발생"),
+                "errorType" to "AI_PARSE_ERROR"
+            )
+        } catch (e: IllegalArgumentException) {
+            logger.error("면접 종료 실패 (잘못된 요청) - interviewId: $id", e)
+            mapOf(
+                "success" to false,
+                "error" to "잘못된 요청입니다",
+                "detail" to (e.message ?: "면접 정보가 올바르지 않습니다"),
+                "errorType" to "INVALID_REQUEST"
+            )
+        } catch (e: MockInterviewNotFoundException) {
+            logger.error("면접 종료 실패 (면접 없음) - interviewId: $id", e)
+            mapOf(
+                "success" to false,
+                "error" to "면접을 찾을 수 없습니다",
+                "detail" to (e.message ?: "존재하지 않는 면접입니다"),
+                "errorType" to "NOT_FOUND"
+            )
         } catch (e: Exception) {
-            logger.error("면접 종료 실패 - interviewId: $id", e)
-            redirectAttributes.addFlashAttribute("error", "면접 종료 중 오류가 발생했습니다: ${e.message}")
-            "redirect:/mock-interviews/$id/chat"
+            logger.error("면접 종료 실패 (예상치 못한 오류) - interviewId: $id", e)
+            mapOf(
+                "success" to false,
+                "error" to "면접 종료 중 오류가 발생했습니다",
+                "detail" to (e.message ?: "서버 오류가 발생했습니다"),
+                "errorType" to "UNKNOWN_ERROR"
+            )
         }
     }
 

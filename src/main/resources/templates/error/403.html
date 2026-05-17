@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head}"></head>
+<body class="bg-gray-50 min-h-screen flex flex-col">
+<nav th:replace="~{fragments/layout :: navbar}"></nav>
+
+<main class="flex-1 flex items-center justify-center py-12">
+    <div class="max-w-md mx-auto px-4 text-center">
+        <!-- 403 Icon -->
+        <div class="mb-8">
+            <svg class="mx-auto h-48 w-48 text-red-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1"
+                      d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+            </svg>
+        </div>
+
+        <!-- 403 Text -->
+        <h1 class="text-9xl font-bold text-red-200 mb-4">403</h1>
+        <h2 class="text-3xl font-semibold text-gray-800 mb-4">
+            접근 권한이 없습니다
+        </h2>
+        <p class="text-gray-600 mb-8">
+            요청하신 리소스에 접근할 권한이 없습니다.<br>
+            본인의 데이터만 조회할 수 있습니다.
+        </p>
+
+        <!-- Action Buttons -->
+        <div class="flex flex-col sm:flex-row gap-4 justify-center">
+            <a href="/"
+               class="inline-block bg-primary hover:bg-primary-dark text-white font-semibold px-8 py-3 rounded-lg transition shadow-md hover:shadow-lg">
+                홈으로 돌아가기
+            </a>
+            <a href="/reviews"
+               class="inline-block bg-white hover:bg-gray-50 text-gray-700 font-semibold px-8 py-3 rounded-lg border border-gray-300 transition shadow-md hover:shadow-lg">
+                내 리뷰 보기
+            </a>
+        </div>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>

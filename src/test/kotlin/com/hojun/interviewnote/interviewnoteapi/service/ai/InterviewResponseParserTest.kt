@@ -213,10 +213,10 @@ class InterviewResponseParserTest {
 
     @Test
     fun `종합 평가 파싱 성공`() {
-        // given: 종합 평가 JSON
+        // given: 종합 평가 JSON (overallFeedback 최소 300자)
         val rawResponse = """
             {
-              "overallFeedback": "지원자는 Spring Boot 경험이 풍부하며...",
+              "overallFeedback": "지원자는 Spring Boot와 Kotlin을 활용한 백엔드 개발 경험이 풍부하며, 면접 전반에 걸쳐 높은 기술적 이해도를 보여주었습니다. 특히 JPA와 트랜잭션 관리, RESTful API 설계, 마이크로서비스 아키텍처에 대한 깊이 있는 지식이 인상적이었습니다. 실무 프로젝트에서 Redis 캐싱을 도입하여 성능을 30% 개선한 경험과 Docker, Kubernetes를 활용한 컨테이너 오케스트레이션 경험도 구체적으로 설명하였습니다. 다만 대규모 트래픽 처리나 분산 시스템 설계에 대한 실무 경험이 다소 부족한 점은 아쉬웠습니다. 전반적으로 중급에서 시니어 수준의 백엔드 개발자로서 충분한 역량을 갖추고 있으나, 더 높은 수준의 시스템 설계 경험을 쌓는다면 시니어 포지션에도 적합할 것으로 판단됩니다.",
               "keyStrengths": ["Kotlin 숙련도", "명확한 커뮤니케이션", "실무 경험 풍부"],
               "keyImprovements": ["분산 시스템 학습", "대규모 트래픽 처리 경험", "아키텍처 설계 역량"],
               "averageScore": 3.8,
@@ -229,6 +229,7 @@ class InterviewResponseParserTest {
 
         // then
         assertThat(result.overallFeedback).contains("Spring Boot")
+        assertThat(result.overallFeedback.length).isGreaterThanOrEqualTo(300)
         assertThat(result.averageScore).isEqualTo(3.8)
         assertThat(result.recommendation).contains("보류")
 

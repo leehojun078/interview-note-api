@@ -125,12 +125,11 @@ class ReviewServiceTest {
     fun `Question이 없는 답변은 결과에서 제외된다`() {
         // given
         val answer = createAnswer(1L, 999L)
-        val feedback = createFeedback(1L)
 
         whenever(interviewAnswerRepository.findAllByOrderByCreatedAtDesc())
             .thenReturn(listOf(answer))
         whenever(questionRepository.findById(999L)).thenReturn(Optional.empty())
-        whenever(aiFeedbackRepository.findByInterviewAnswerId(1L)).thenReturn(feedback)
+        // Question이 없으면 feedback 조회 전에 필터링되므로 stubbing 불필요
 
         // when
         val result = reviewService.getReviewList()

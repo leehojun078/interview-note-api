@@ -73,6 +73,12 @@ class AiFeedbackServiceTest {
             val callable = invocation.getArgument<Callable<Any>>(0)
             callable.call()
         }
+
+        // ObjectMapper Mock 설정 (lenient로 실제 동작하도록 stub)
+        val realObjectMapper = ObjectMapper()
+        lenient().`when`(objectMapper.writeValueAsString(any())).thenAnswer { invocation ->
+            realObjectMapper.writeValueAsString(invocation.arguments[0])
+        }
     }
 
     private fun createAnswer(answerText: String): InterviewAnswer {
@@ -231,6 +237,11 @@ class AiFeedbackServiceTest {
 
         whenever(duplicateRequestCache.findCached(question.id, answer.answerText))
             .thenReturn(cachedFeedback)
+
+        // aiFeedbackRepository.save() 호출 시 저장된 피드백 반환
+        whenever(aiFeedbackRepository.save(any())).thenAnswer { invocation ->
+            invocation.getArgument<AiFeedback>(0)
+        }
 
         // when
         val result = aiFeedbackService.generateFeedback(answer, question)

@@ -34,19 +34,34 @@ class InterviewResponseParser(
         try {
             val json = objectMapper.readTree(rawResponse)
 
-            // 평가 파싱
+            // 평가 파싱 (null 안전성 추가)
             val evalNode = json["evaluation"]
+                ?: throw IllegalArgumentException("evaluation 필드 누락")
+
+            val logicScore = evalNode["logicScore"]?.asInt()
+                ?: throw IllegalArgumentException("logicScore 필드 누락")
+            val specificityScore = evalNode["specificityScore"]?.asInt()
+                ?: throw IllegalArgumentException("specificityScore 필드 누락")
+            val deliveryScore = evalNode["deliveryScore"]?.asInt()
+                ?: throw IllegalArgumentException("deliveryScore 필드 누락")
+            val comment = evalNode["comment"]?.asText()
+                ?: throw IllegalArgumentException("comment 필드 누락")
+
             val evaluation = InterviewEvaluation(
-                logicScore = evalNode["logicScore"].asInt(),
-                specificityScore = evalNode["specificityScore"].asInt(),
-                deliveryScore = evalNode["deliveryScore"].asInt(),
-                comment = evalNode["comment"].asText()
+                logicScore = logicScore,
+                specificityScore = specificityScore,
+                deliveryScore = deliveryScore,
+                comment = comment
             )
 
-            // 다음 질문 파싱
+            // 다음 질문 파싱 (null 안전성 추가)
             val actionNode = json["nextAction"]
-            var question = actionNode["question"].asText()
-            val reasoning = actionNode["reasoning"].asText()
+                ?: throw IllegalArgumentException("nextAction 필드 누락")
+
+            var question = actionNode["question"]?.asText()
+                ?: throw IllegalArgumentException("question 필드 누락")
+            val reasoning = actionNode["reasoning"]?.asText()
+                ?: throw IllegalArgumentException("reasoning 필드 누락")
             val isFollowUp = actionNode["isFollowUp"]?.asBoolean() ?: false
 
             // 질문 길이 검증 (200자 초과 시 절단)
@@ -68,6 +83,7 @@ class InterviewResponseParser(
             )
         } catch (e: Exception) {
             logger.error("면접 응답 파싱 실패: ${e.message}", e)
+            logger.debug("원본 응답: $rawResponse")
             throw AiResponseParseException("면접 응답 파싱 실패", rawResponse, e)
         }
     }

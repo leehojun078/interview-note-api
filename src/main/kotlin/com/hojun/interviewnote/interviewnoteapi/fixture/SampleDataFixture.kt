@@ -36,7 +36,7 @@ object SampleDataFixture {
             feedback = FeedbackDto(
                 logicScore = 4,
                 specificityScore = 3,
-                jobFitScore = 5,
+                jobFitScore = 4,
                 deliveryScore = 4,
                 strengths = listOf(
                     "문제 상황과 해결 과정이 명확하게 제시됨",

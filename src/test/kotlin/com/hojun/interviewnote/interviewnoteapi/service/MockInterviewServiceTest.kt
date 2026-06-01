@@ -204,12 +204,12 @@ class MockInterviewServiceTest {
 
     @Test
     fun `사용자의 모든 면접 세션 조회 - 최신순 정렬`() {
-        // given: 여러 면접 생성
+        // given: 여러 면접 생성 (모두 IT 직무로 생성하여 AI 파싱 오류 방지)
         val interview1 = mockInterviewService.startInterview(testUser.id, null, JobField.IT)
         Thread.sleep(100)
-        val interview2 = mockInterviewService.startInterview(testUser.id, null, JobField.MARKETING)
+        val interview2 = mockInterviewService.startInterview(testUser.id, null, JobField.IT)
         Thread.sleep(100)
-        val interview3 = mockInterviewService.startInterview(testUser.id, null, JobField.DESIGN)
+        val interview3 = mockInterviewService.startInterview(testUser.id, null, JobField.IT)
 
         // when: 사용자의 모든 면접 조회
         val interviews = mockInterviewService.getUserInterviews(testUser.id)

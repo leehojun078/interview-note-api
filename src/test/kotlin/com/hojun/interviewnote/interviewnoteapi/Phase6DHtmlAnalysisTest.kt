@@ -2,6 +2,8 @@ package com.hojun.interviewnote.interviewnoteapi
 
 import com.hojun.interviewnote.interviewnoteapi.service.JobPostingParserService
 import org.jsoup.Jsoup
+import org.junit.jupiter.api.Assumptions.assumeTrue
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
@@ -23,6 +25,7 @@ class Phase6DHtmlAnalysisTest {
     private lateinit var jobPostingParserService: JobPostingParserService
 
     @Test
+    @Disabled("Requires external network access to wanted.co.kr")
     fun `analyze current cleanedHtml content and size`() {
         println("\n========================================")
         println("Phase 6D: cleanedHtml 분석 테스트")
@@ -95,6 +98,7 @@ class Phase6DHtmlAnalysisTest {
     }
 
     @Test
+    @Disabled("Requires external network access to wanted.co.kr")
     fun `compare 3 approaches for HTML cleaning`() {
         println("\n========================================")
         println("Phase 6D: 3가지 방안 비교 테스트")

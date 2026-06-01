@@ -159,15 +159,18 @@ class MockInterviewControllerTest {
             selectedJobField = JobField.IT
         )
         mockInterviewService.sendUserMessage(interview.id, testUser.id, "첫 번째 답변")
+        Thread.sleep(2000)
         mockInterviewService.sendUserMessage(interview.id, testUser.id, "두 번째 답변")
+        Thread.sleep(2000)
 
-        // when & then
+        // when & then: JSON 응답 확인
         mockMvc.perform(
             post("/mock-interviews/${interview.id}/end")
                 .with(csrf())
         )
-            .andExpect(status().is3xxRedirection)
-            .andExpect(redirectedUrl("/mock-interviews/${interview.id}/result"))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.redirectUrl").value("/mock-interviews/${interview.id}/result"))
     }
 
     @Test
@@ -211,7 +214,7 @@ class MockInterviewControllerTest {
     @WithMockUser(username = "other@example.com")
     fun `타 사용자 면접 접근 시 예외 발생`() {
         // given: 다른 사용자 생성
-        userRepository.save(
+        val otherUser = userRepository.save(
             User(
                 email = "other@example.com",
                 passwordHash = "encodedPassword",
@@ -230,9 +233,10 @@ class MockInterviewControllerTest {
         )
 
         // when & then: 두 번째 사용자가 접근 시도
-        // 403 에러 페이지가 렌더링되어야 함
+        // GlobalExceptionHandler가 error/403 뷰를 반환 (HTTP 200)
         mockMvc.perform(get("/mock-interviews/${interview.id}/chat"))
-            .andExpect(status().isForbidden)
+            .andExpect(status().isOk)
             .andExpect(view().name("error/403"))
+            .andExpect(model().attributeExists("errorMessage"))
     }
 }

@@ -238,16 +238,36 @@ class AiFeedbackServiceTest {
         whenever(duplicateRequestCache.findCached(question.id, answer.answerText))
             .thenReturn(cachedFeedback)
 
-        // aiFeedbackRepository.save() 호출 시 저장된 피드백 반환
-        whenever(aiFeedbackRepository.save(any())).thenAnswer { invocation ->
-            invocation.getArgument<AiFeedback>(0)
-        }
+        // aiFeedbackRepository.save() 호출 시 새 ID를 할당하여 저장된 피드백 반환
+        doAnswer { invocation ->
+            val arg = invocation.arguments[0] as AiFeedback
+            AiFeedback(
+                id = 200L,  // 새로운 ID (캐시된 100L이 아닌 새 레코드)
+                interviewAnswerId = arg.interviewAnswerId,
+                logicScore = arg.logicScore,
+                specificityScore = arg.specificityScore,
+                jobFitScore = arg.jobFitScore,
+                deliveryScore = arg.deliveryScore,
+                strengths = arg.strengths,
+                improvements = arg.improvements,
+                modelAnswer = arg.modelAnswer,
+                overallComment = arg.overallComment,
+                jobField = arg.jobField,
+                modelName = arg.modelName,
+                promptVersion = arg.promptVersion,
+                tokenUsageInput = arg.tokenUsageInput,
+                tokenUsageOutput = arg.tokenUsageOutput,
+                rawResponse = arg.rawResponse,
+                answerTextHash = arg.answerTextHash,
+                createdAt = arg.createdAt
+            )
+        }.whenever(aiFeedbackRepository).save(any())
 
         // when
         val result = aiFeedbackService.generateFeedback(answer, question)
 
         // then
-        assertThat(result.id).isEqualTo(100L)
+        assertThat(result.id).isEqualTo(200L)  // 새로 저장된 ID
         assertThat(result.modelAnswer).isEqualTo("캐시된 모범답변")
         // AI 클라이언트가 호출되지 않음을 확인
         org.mockito.kotlin.verify(aiClient, org.mockito.kotlin.never()).requestFeedback(any(), any())

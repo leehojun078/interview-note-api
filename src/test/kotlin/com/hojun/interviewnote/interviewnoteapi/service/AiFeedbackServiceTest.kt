@@ -7,7 +7,7 @@ import com.hojun.interviewnote.interviewnoteapi.domain.InterviewAnswer
 import com.hojun.interviewnote.interviewnoteapi.domain.Question
 import com.hojun.interviewnote.interviewnoteapi.repository.AiFeedbackRepository
 import com.hojun.interviewnote.interviewnoteapi.service.ai.AiClient
-import com.hojun.interviewnote.interviewnoteapi.service.ai.PromptBuilder
+import com.hojun.interviewnote.interviewnoteapi.service.ai.prompt.FeedbackPromptBuilder
 import com.hojun.interviewnote.interviewnoteapi.service.ai.ResponseParser
 import com.hojun.interviewnote.interviewnoteapi.service.cache.DuplicateRequestCache
 import io.micrometer.core.instrument.Counter
@@ -40,7 +40,7 @@ class AiFeedbackServiceTest {
     private lateinit var aiClient: AiClient
 
     @Mock
-    private lateinit var promptBuilder: PromptBuilder
+    private lateinit var feedbackPromptBuilder: FeedbackPromptBuilder
 
     @Mock
     private lateinit var responseParser: ResponseParser
@@ -304,8 +304,8 @@ class AiFeedbackServiceTest {
 
         // Mocking
         whenever(duplicateRequestCache.findCached(question.id, answer.answerText)).thenReturn(null)
-        whenever(promptBuilder.buildSystemPrompt(question.jobField, question.targetJob)).thenReturn(systemPrompt)
-        whenever(promptBuilder.buildUserPrompt(question, answer.answerText)).thenReturn(userPrompt)
+        whenever(feedbackPromptBuilder.buildSystemPrompt(question.jobField, question.targetJob)).thenReturn(systemPrompt)
+        whenever(feedbackPromptBuilder.buildUserPrompt(question, answer.answerText)).thenReturn(userPrompt)
         whenever(aiClient.requestFeedback(systemPrompt, userPrompt)).thenReturn(rawResponse)
         whenever(responseParser.parseOpenAiResponse(rawResponse, rawResponse)).thenReturn(parsedFeedback)
         whenever(duplicateRequestCache.generateHash(question.id, answer.answerText)).thenReturn("test-hash")
@@ -351,8 +351,8 @@ class AiFeedbackServiceTest {
 
         // 모든 단계가 호출되었는지 확인
         org.mockito.kotlin.verify(duplicateRequestCache).findCached(question.id, answer.answerText)
-        org.mockito.kotlin.verify(promptBuilder).buildSystemPrompt(question.jobField, question.targetJob)
-        org.mockito.kotlin.verify(promptBuilder).buildUserPrompt(question, answer.answerText)
+        org.mockito.kotlin.verify(feedbackPromptBuilder).buildSystemPrompt(question.jobField, question.targetJob)
+        org.mockito.kotlin.verify(feedbackPromptBuilder).buildUserPrompt(question, answer.answerText)
         org.mockito.kotlin.verify(aiClient).requestFeedback(systemPrompt, userPrompt)
         org.mockito.kotlin.verify(responseParser).parseOpenAiResponse(rawResponse, rawResponse)
         org.mockito.kotlin.verify(duplicateRequestCache).generateHash(question.id, answer.answerText)
@@ -366,8 +366,8 @@ class AiFeedbackServiceTest {
         val question = createQuestion()
 
         whenever(duplicateRequestCache.findCached(question.id, answer.answerText)).thenReturn(null)
-        whenever(promptBuilder.buildSystemPrompt(any(), any())).thenReturn("system")
-        whenever(promptBuilder.buildUserPrompt(any(), any())).thenReturn("user")
+        whenever(feedbackPromptBuilder.buildSystemPrompt(any(), any())).thenReturn("system")
+        whenever(feedbackPromptBuilder.buildUserPrompt(any(), any())).thenReturn("user")
         whenever(aiClient.requestFeedback(any(), any()))
             .thenThrow(com.hojun.interviewnote.interviewnoteapi.exception.AiApiException("API 오류", null))
         whenever(objectMapper.writeValueAsString(any())).thenReturn("[]")
@@ -415,7 +415,7 @@ class AiFeedbackServiceTest {
         val question = createQuestion()
 
         whenever(duplicateRequestCache.findCached(question.id, answer.answerText)).thenReturn(null)
-        whenever(promptBuilder.buildSystemPrompt(any(), any())).thenThrow(RuntimeException("예상치 못한 오류"))
+        whenever(feedbackPromptBuilder.buildSystemPrompt(any(), any())).thenThrow(RuntimeException("예상치 못한 오류"))
         whenever(objectMapper.writeValueAsString(any())).thenReturn("[]")
 
         doAnswer { invocation ->
@@ -472,8 +472,8 @@ class AiFeedbackServiceTest {
         )
 
         whenever(duplicateRequestCache.findCached(any(), any())).thenReturn(null)
-        whenever(promptBuilder.buildSystemPrompt(any(), any())).thenReturn(systemPrompt)
-        whenever(promptBuilder.buildUserPrompt(any(), any())).thenReturn(userPrompt)
+        whenever(feedbackPromptBuilder.buildSystemPrompt(any(), any())).thenReturn(systemPrompt)
+        whenever(feedbackPromptBuilder.buildUserPrompt(any(), any())).thenReturn(userPrompt)
         whenever(aiClient.requestFeedback(any(), any())).thenReturn(rawResponse)
         whenever(responseParser.parseOpenAiResponse(any(), any())).thenReturn(parsedFeedback)
         whenever(duplicateRequestCache.generateHash(any(), any())).thenReturn("hash")

@@ -9,7 +9,7 @@ import com.hojun.interviewnote.interviewnoteapi.repository.QuestionRepository
 import com.hojun.interviewnote.interviewnoteapi.repository.UserRepository
 import com.hojun.interviewnote.interviewnoteapi.service.QuestionService
 import com.hojun.interviewnote.interviewnoteapi.service.UserService
-import com.hojun.interviewnote.interviewnoteapi.service.ai.PromptBuilder
+import com.hojun.interviewnote.interviewnoteapi.service.ai.prompt.FeedbackPromptBuilder
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.BeforeEach
 import org.springframework.beans.factory.annotation.Autowired
@@ -50,7 +50,7 @@ class Phase5IntegrationTest {
     private lateinit var userService: UserService
 
     @Autowired
-    private lateinit var promptBuilder: PromptBuilder
+    private lateinit var feedbackPromptBuilder: FeedbackPromptBuilder
 
     @Autowired
     private lateinit var passwordEncoder: PasswordEncoder
@@ -284,7 +284,7 @@ class Phase5IntegrationTest {
         val targetJob = "백엔드 개발자"
 
         // When
-        val prompt = promptBuilder.buildSystemPrompt(jobField, targetJob)
+        val prompt = feedbackPromptBuilder.buildSystemPrompt(jobField, targetJob)
 
         // Then
         assertNotNull(prompt)
@@ -300,7 +300,7 @@ class Phase5IntegrationTest {
         val targetJob = "영업매니저"
 
         // When
-        val prompt = promptBuilder.buildSystemPrompt(jobField, targetJob)
+        val prompt = feedbackPromptBuilder.buildSystemPrompt(jobField, targetJob)
 
         // Then
         assertNotNull(prompt)
@@ -320,7 +320,7 @@ class Phase5IntegrationTest {
 
         // When & Then
         jobFields.forEach { jobField ->
-            val prompt = promptBuilder.buildSystemPrompt(jobField, "테스트 직무")
+            val prompt = feedbackPromptBuilder.buildSystemPrompt(jobField, "테스트 직무")
             assertNotNull(prompt, "$jobField 프롬프트가 생성되어야 합니다")
             assertTrue(prompt.length > 100, "$jobField 프롬프트가 충분한 길이여야 합니다")
         }
@@ -333,7 +333,7 @@ class Phase5IntegrationTest {
 
         // When & Then
         assertFailsWith<IllegalArgumentException> {
-            promptBuilder.buildSystemPrompt(invalidJobField, "테스트 직무")
+            feedbackPromptBuilder.buildSystemPrompt(invalidJobField, "테스트 직무")
         }
     }
 

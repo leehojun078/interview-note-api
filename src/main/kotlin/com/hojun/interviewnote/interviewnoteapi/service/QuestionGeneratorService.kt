@@ -5,7 +5,7 @@ import com.hojun.interviewnote.interviewnoteapi.domain.JobField
 import com.hojun.interviewnote.interviewnoteapi.domain.JobPosting
 import com.hojun.interviewnote.interviewnoteapi.exception.AiException
 import com.hojun.interviewnote.interviewnoteapi.service.ai.AiClient
-import com.hojun.interviewnote.interviewnoteapi.service.ai.PromptBuilder
+import com.hojun.interviewnote.interviewnoteapi.service.ai.prompt.QuestionPromptBuilder
 import com.hojun.interviewnote.interviewnoteapi.service.ai.QuestionResponseParser
 import io.micrometer.core.instrument.MeterRegistry
 import org.slf4j.LoggerFactory
@@ -24,7 +24,7 @@ import java.time.LocalDateTime
 @Service
 class QuestionGeneratorService(
     private val aiClient: AiClient,
-    private val promptBuilder: PromptBuilder,
+    private val questionPromptBuilder: QuestionPromptBuilder,
     private val questionResponseParser: QuestionResponseParser,
     private val meterRegistry: MeterRegistry
 ) {
@@ -75,13 +75,13 @@ class QuestionGeneratorService(
                 ?: throw IllegalArgumentException("JobPosting에 effectiveJobField가 없습니다")
 
             // 2. 프롬프트 생성
-            val systemPrompt = promptBuilder.buildQuestionGenerationSystemPrompt(
+            val systemPrompt = questionPromptBuilder.buildQuestionGenerationSystemPrompt(
                 jobField = jobField.code,
                 companyName = jobPosting.companyName,
                 jobTitle = jobPosting.jobTitle
             )
 
-            val userPrompt = promptBuilder.buildQuestionGenerationUserPrompt(
+            val userPrompt = questionPromptBuilder.buildQuestionGenerationUserPrompt(
                 jobDescription = jobPosting.jobDescription,
                 requiredSkills = jobPosting.requiredSkills,
                 preferredSkills = jobPosting.preferredSkills

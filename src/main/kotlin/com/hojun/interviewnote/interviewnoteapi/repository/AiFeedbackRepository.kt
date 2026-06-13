@@ -17,4 +17,13 @@ interface AiFeedbackRepository : JpaRepository<AiFeedback, Long> {
         answerTextHash: String,
         createdAt: LocalDateTime
     ): AiFeedback?
+
+    /**
+     * 리팩토링 Week 3: N+1 쿼리 최적화
+     * 여러 답변 ID에 대한 피드백을 한 번에 조회 (배치 조회)
+     *
+     * @param interviewAnswerIds 답변 ID 목록
+     * @return 피드백 목록
+     */
+    fun findAllByInterviewAnswerIdIn(interviewAnswerIds: List<Long>): List<AiFeedback>
 }

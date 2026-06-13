@@ -3,6 +3,7 @@ package com.hojun.interviewnote.interviewnoteapi.controller
 import com.hojun.interviewnote.interviewnoteapi.domain.JobField
 import com.hojun.interviewnote.interviewnoteapi.service.QuestionService
 import com.hojun.interviewnote.interviewnoteapi.service.UserService
+import org.slf4j.LoggerFactory
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.security.core.userdetails.UserDetails
 import org.springframework.stereotype.Controller
@@ -18,6 +19,7 @@ class QuestionController(
     private val questionService: QuestionService,
     private val userService: UserService
 ) {
+    private val logger = LoggerFactory.getLogger(javaClass)
     /**
      * 질문 목록 페이지
      *
@@ -42,11 +44,12 @@ class QuestionController(
         // jobField 파라미터가 없거나 빈 문자열이면 사용자 기본 직무 사용
         val effectiveJobField = jobField?.takeIf { it.isNotBlank() } ?: defaultJobField
 
-        println("🔍 [QuestionController.list] jobField=$jobField, defaultJobField=$defaultJobField, effectiveJobField=$effectiveJobField")
+        logger.debug("질문 목록 조회 - jobField: {}, defaultJobField: {}, effectiveJobField: {}",
+            jobField, defaultJobField, effectiveJobField)
 
         val questions = questionService.findAll(effectiveJobField, category, difficulty)
 
-        println("🔍 [QuestionController.list] questions.size=${questions.size}")
+        logger.debug("질문 목록 조회 완료 - questions.size: {}", questions.size)
 
         // Phase 5: 직무별 카테고리 맵 전달 (동적 필터링용)
         val categoriesByJobField = questionService.getCategoriesByAllJobFields()
@@ -82,11 +85,12 @@ class QuestionController(
         // jobField 파라미터가 없거나 빈 문자열이면 사용자 기본 직무 사용
         val effectiveJobField = jobField?.takeIf { it.isNotBlank() } ?: defaultJobField
 
-        println("🔍 [QuestionController.listFragment] jobField=$jobField, defaultJobField=$defaultJobField, effectiveJobField=$effectiveJobField, category=$category, difficulty=$difficulty")
+        logger.debug("질문 목록 Fragment 조회 - jobField: {}, defaultJobField: {}, effectiveJobField: {}, category: {}, difficulty: {}",
+            jobField, defaultJobField, effectiveJobField, category, difficulty)
 
         val questions = questionService.findAll(effectiveJobField, category, difficulty)
 
-        println("🔍 [QuestionController.listFragment] questions.size=${questions.size}")
+        logger.debug("질문 목록 Fragment 조회 완료 - questions.size: {}", questions.size)
 
         model.addAttribute("questions", questions)
 

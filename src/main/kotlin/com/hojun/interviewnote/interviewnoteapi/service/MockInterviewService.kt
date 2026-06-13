@@ -23,6 +23,7 @@ import java.util.concurrent.ConcurrentHashMap
  * Phase 7A: 기본 CRUD
  * Phase 7B: AI 통합 (InterviewAiService 연동)
  * Phase 7C: SSE 실시간 통신
+ * Phase 리팩토링 Week 2: SSE 관리를 SseEmitterService로 분리
  */
 @Service
 @Transactional
@@ -32,6 +33,7 @@ class MockInterviewService(
     private val jobPostingRepository: JobPostingRepository,
     private val rateLimitService: RateLimitService,
     private val interviewAiService: InterviewAiService,
+    private val sseEmitterService: SseEmitterService,
     private val objectMapper: ObjectMapper,
     private val meterRegistry: MeterRegistry
 ) {
@@ -40,9 +42,6 @@ class MockInterviewService(
     companion object {
         const val MAX_TURNS = 30
     }
-
-    // Phase 7C: SSE Emitter 관리 (stub)
-    private val emitters = ConcurrentHashMap<Long, SseEmitter>()
 
     /**
      * 면접 시작
@@ -274,7 +273,7 @@ class MockInterviewService(
         return interviewMessageRepository.save(message)
     }
 
-    // ===== Phase 7C: SSE 관리 =====
+    // ===== Phase 7C: SSE 관리 (SseEmitterService 위임) =====
 
     /**
      * SSE Emitter 등록
@@ -282,9 +281,7 @@ class MockInterviewService(
      * 클라이언트가 /stream 엔드포인트에 연결하면 호출됨
      */
     fun registerEmitter(interviewId: Long, emitter: SseEmitter) {
-        emitters[interviewId] = emitter
-        logger.info("SSE emitter 등록 - interviewId: $interviewId")
-        meterRegistry.gauge("mock_interview.active_connections", emitters.size)
+        sseEmitterService.register(interviewId, emitter)
     }
 
     /**
@@ -293,9 +290,7 @@ class MockInterviewService(
      * 연결 종료, 타임아웃, 에러 발생 시 호출됨
      */
     fun removeEmitter(interviewId: Long) {
-        emitters.remove(interviewId)
-        logger.info("SSE emitter 제거 - interviewId: $interviewId")
-        meterRegistry.gauge("mock_interview.active_connections", emitters.size)
+        sseEmitterService.remove(interviewId)
     }
 
     /**
@@ -306,32 +301,15 @@ class MockInterviewService(
      * @return 전송 성공 여부
      */
     fun broadcastMessage(interviewId: Long, message: InterviewMessage): Boolean {
-        val emitter = emitters[interviewId]
-        if (emitter == null) {
-            logger.warn("SSE emitter가 없음 - interviewId: $interviewId")
-            return false
-        }
+        val messageDto = mapToMessageDto(message)
+        val success = sseEmitterService.broadcast(interviewId, "message", messageDto)
 
-        return try {
-            val messageDto = mapToMessageDto(message)
-            emitter.send(
-                SseEmitter.event()
-                    .name("message")
-                    .data(messageDto)
-            )
+        if (success) {
             logger.debug("SSE 메시지 전송 성공 - interviewId: $interviewId, sender: ${message.sender}")
             meterRegistry.counter("mock_interview.sse.messages_sent").increment()
-            true
-        } catch (e: IOException) {
-            logger.error("SSE 전송 실패 - interviewId: $interviewId", e)
-            removeEmitter(interviewId)
-            meterRegistry.counter("mock_interview.sse.errors").increment()
-            false
-        } catch (e: Exception) {
-            logger.error("SSE 전송 중 예외 발생 - interviewId: $interviewId", e)
-            meterRegistry.counter("mock_interview.sse.errors").increment()
-            false
         }
+
+        return success
     }
 
     /**

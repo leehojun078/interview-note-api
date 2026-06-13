@@ -5,7 +5,8 @@ import com.hojun.interviewnote.interviewnoteapi.domain.MessageSender
 import com.hojun.interviewnote.interviewnoteapi.service.InterviewAiService
 import com.hojun.interviewnote.interviewnoteapi.service.ai.AiClient
 import com.hojun.interviewnote.interviewnoteapi.service.ai.InterviewResponseParser
-import com.hojun.interviewnote.interviewnoteapi.service.ai.PromptBuilder
+import com.hojun.interviewnote.interviewnoteapi.service.ai.prompt.InterviewPromptBuilder
+import com.hojun.interviewnote.interviewnoteapi.service.ai.prompt.EvaluationPromptBuilder
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
@@ -24,12 +25,13 @@ import org.mockito.Mockito.mock
 class Phase8AWeightedScoreTest {
 
     private val aiClient = mock(AiClient::class.java)
-    private val promptBuilder = mock(PromptBuilder::class.java)
+    private val interviewPromptBuilder = mock(InterviewPromptBuilder::class.java)
+    private val evaluationPromptBuilder = mock(EvaluationPromptBuilder::class.java)
     private val parser = mock(InterviewResponseParser::class.java)
     private val meterRegistry = SimpleMeterRegistry()
 
     private val interviewAiService = InterviewAiService(
-        aiClient, promptBuilder, parser, meterRegistry
+        aiClient, interviewPromptBuilder, evaluationPromptBuilder, parser, meterRegistry
     )
 
     @Test

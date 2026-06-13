@@ -1,8 +1,8 @@
 package com.hojun.interviewnote.interviewnoteapi.service.ai
 
-import com.hojun.interviewnote.interviewnoteapi.config.OpenAiProperties
 import com.hojun.interviewnote.interviewnoteapi.domain.JobField
 import com.hojun.interviewnote.interviewnoteapi.domain.Question
+import com.hojun.interviewnote.interviewnoteapi.service.ai.prompt.FeedbackPromptBuilder
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
@@ -13,24 +13,17 @@ import org.junit.jupiter.params.provider.EnumSource
 import java.time.LocalDateTime
 
 /**
- * PromptBuilder 단위 테스트
+ * FeedbackPromptBuilder 단위 테스트
  *
- * 시스템 프롬프트와 사용자 프롬프트 생성 로직을 테스트합니다.
+ * Phase 2 리팩토링: PromptBuilder에서 분리된 FeedbackPromptBuilder 테스트
  */
-class PromptBuilderTest {
+class FeedbackPromptBuilderTest {
 
-    private lateinit var promptBuilder: PromptBuilder
-    private lateinit var properties: OpenAiProperties
+    private lateinit var feedbackPromptBuilder: FeedbackPromptBuilder
 
     @BeforeEach
     fun setUp() {
-        properties = OpenAiProperties().apply {
-            model = "gpt-4o-mini"
-            promptVersion = "v1.0"
-            maxTokens = 800
-            temperature = 0.7
-        }
-        promptBuilder = PromptBuilder(properties)
+        feedbackPromptBuilder = FeedbackPromptBuilder()
     }
 
     @Test
@@ -40,7 +33,7 @@ class PromptBuilderTest {
         val targetJob = "백엔드 개발자"
 
         // When
-        val result = promptBuilder.buildSystemPrompt(jobField, targetJob)
+        val result = feedbackPromptBuilder.buildSystemPrompt(jobField, targetJob)
 
         // Then
         assertTrue(result.contains("백엔드 개발자"))
@@ -66,7 +59,7 @@ class PromptBuilderTest {
 
         // When & Then
         testCases.forEach { targetJob ->
-            val result = promptBuilder.buildSystemPrompt("IT", targetJob)
+            val result = feedbackPromptBuilder.buildSystemPrompt("IT", targetJob)
             assertTrue(result.contains(targetJob), "프롬프트에 직무명 '$targetJob'이 포함되어야 함")
         }
     }
@@ -78,7 +71,7 @@ class PromptBuilderTest {
 
         // When & Then
         val exception = assertThrows<IllegalArgumentException> {
-            promptBuilder.buildSystemPrompt(unsupportedJobField, "미지의 직무")
+            feedbackPromptBuilder.buildSystemPrompt(unsupportedJobField, "미지의 직무")
         }
         assertTrue(exception.message!!.contains("지원하지 않는 직무 분야"))
         assertTrue(exception.message!!.contains("UNKNOWN"))
@@ -91,7 +84,7 @@ class PromptBuilderTest {
         val targetJob = "백엔드 개발자"
 
         // When
-        val result = promptBuilder.buildSystemPrompt(jobField, targetJob)
+        val result = feedbackPromptBuilder.buildSystemPrompt(jobField, targetJob)
 
         // Then
         assertTrue(result.contains("\"scores\""))
@@ -112,7 +105,7 @@ class PromptBuilderTest {
         val targetJob = "백엔드 개발자"
 
         // When
-        val result = promptBuilder.buildSystemPrompt(jobField, targetJob)
+        val result = feedbackPromptBuilder.buildSystemPrompt(jobField, targetJob)
 
         // Then
         assertTrue(result.contains("기술적 사고"))
@@ -129,7 +122,7 @@ class PromptBuilderTest {
         val targetJob = "백엔드 개발자"
 
         // When
-        val result = promptBuilder.buildSystemPrompt(jobField, targetJob)
+        val result = feedbackPromptBuilder.buildSystemPrompt(jobField, targetJob)
 
         // Then
         assertTrue(result.contains("0-5개"))  // strengths는 0개도 가능
@@ -145,7 +138,7 @@ class PromptBuilderTest {
         val targetJob = "백엔드 개발자"
 
         // When
-        val result = promptBuilder.buildSystemPrompt(jobField, targetJob)
+        val result = feedbackPromptBuilder.buildSystemPrompt(jobField, targetJob)
 
         // Then
         assertTrue(result.contains("정직한 평가"))
@@ -172,7 +165,7 @@ class PromptBuilderTest {
         val answer = "Spring Boot는 설정이 간편하고 자동 설정 기능이 있습니다."
 
         // When
-        val result = promptBuilder.buildUserPrompt(question, answer)
+        val result = feedbackPromptBuilder.buildUserPrompt(question, answer)
 
         // Then
         assertTrue(result.contains("면접 질문"))
@@ -200,7 +193,7 @@ class PromptBuilderTest {
         val longAnswer = "답변 ".repeat(500) // 3000자
 
         // When
-        val result = promptBuilder.buildUserPrompt(question, longAnswer)
+        val result = feedbackPromptBuilder.buildUserPrompt(question, longAnswer)
 
         // Then
         assertTrue(result.contains(longAnswer))
@@ -223,7 +216,7 @@ class PromptBuilderTest {
         val answer = "REST는 \"Resource\"를 중심으로, GraphQL은 '쿼리'를 중심으로 설계되었습니다."
 
         // When
-        val result = promptBuilder.buildUserPrompt(question, answer)
+        val result = feedbackPromptBuilder.buildUserPrompt(question, answer)
 
         // Then
         assertTrue(result.contains(question.content))
@@ -254,7 +247,7 @@ class PromptBuilderTest {
         """.trimIndent()
 
         // When
-        val result = promptBuilder.buildUserPrompt(question, answer)
+        val result = feedbackPromptBuilder.buildUserPrompt(question, answer)
 
         // Then
         assertTrue(result.contains(answer))
@@ -277,8 +270,8 @@ class PromptBuilderTest {
         val answer = "Spring Boot는 설정이 간편합니다."
 
         // When
-        val systemPrompt = promptBuilder.buildSystemPrompt(question.jobField, question.targetJob)
-        val userPrompt = promptBuilder.buildUserPrompt(question, answer)
+        val systemPrompt = feedbackPromptBuilder.buildSystemPrompt(question.jobField, question.targetJob)
+        val userPrompt = feedbackPromptBuilder.buildUserPrompt(question, answer)
 
         // Then
         // System prompt 검증
@@ -301,7 +294,7 @@ class PromptBuilderTest {
         val targetJob = "백엔드 개발자"
 
         // When
-        val result = promptBuilder.buildSystemPrompt(jobField, targetJob)
+        val result = feedbackPromptBuilder.buildSystemPrompt(jobField, targetJob)
 
         // Then
         // 너무 짧거나 너무 길지 않은지 확인 (200자 이상, 2000자 이하)
@@ -315,7 +308,7 @@ class PromptBuilderTest {
     @EnumSource(JobField::class)
     fun `모든 직무에 대해 시스템 프롬프트를 생성할 수 있다`(jobField: JobField) {
         // When
-        val prompt = promptBuilder.buildSystemPrompt(jobField.name, "${jobField.displayName} 담당자")
+        val prompt = feedbackPromptBuilder.buildSystemPrompt(jobField.name, "${jobField.displayName} 담당자")
 
         // Then
         assertTrue(prompt.isNotBlank())
@@ -331,7 +324,7 @@ class PromptBuilderTest {
     @EnumSource(JobField::class)
     fun `모든 직무의 프롬프트는 2000자 이하이다`(jobField: JobField) {
         // When
-        val prompt = promptBuilder.buildSystemPrompt(jobField.name, "${jobField.displayName} 담당자")
+        val prompt = feedbackPromptBuilder.buildSystemPrompt(jobField.name, "${jobField.displayName} 담당자")
 
         // Then
         assertTrue(prompt.length <= 2000,
@@ -341,7 +334,7 @@ class PromptBuilderTest {
     @Test
     fun `영업 직무 프롬프트는 영업 관련 키워드를 포함한다`() {
         // When
-        val prompt = promptBuilder.buildSystemPrompt("SALES", "영업관리자")
+        val prompt = feedbackPromptBuilder.buildSystemPrompt("SALES", "영업관리자")
 
         // Then
         assertTrue(prompt.contains("영업관리자"))
@@ -351,7 +344,7 @@ class PromptBuilderTest {
     @Test
     fun `회계 직무 프롬프트는 재무 관련 키워드를 포함한다`() {
         // When
-        val prompt = promptBuilder.buildSystemPrompt("ACCOUNTING", "회계담당자")
+        val prompt = feedbackPromptBuilder.buildSystemPrompt("ACCOUNTING", "회계담당자")
 
         // Then
         assertTrue(prompt.contains("회계담당자"))
@@ -361,7 +354,7 @@ class PromptBuilderTest {
     @Test
     fun `마케팅 직무 프롬프트는 마케팅 관련 키워드를 포함한다`() {
         // When
-        val prompt = promptBuilder.buildSystemPrompt("MARKETING", "마케팅매니저")
+        val prompt = feedbackPromptBuilder.buildSystemPrompt("MARKETING", "마케팅매니저")
 
         // Then
         assertTrue(prompt.contains("마케팅매니저"))
@@ -371,7 +364,7 @@ class PromptBuilderTest {
     @Test
     fun `HR 직무 프롬프트는 인사 관련 키워드를 포함한다`() {
         // When
-        val prompt = promptBuilder.buildSystemPrompt("HR", "인사담당자")
+        val prompt = feedbackPromptBuilder.buildSystemPrompt("HR", "인사담당자")
 
         // Then
         assertTrue(prompt.contains("인사담당자"))
@@ -381,7 +374,7 @@ class PromptBuilderTest {
     @Test
     fun `디자인 직무 프롬프트는 디자인 관련 키워드를 포함한다`() {
         // When
-        val prompt = promptBuilder.buildSystemPrompt("DESIGN", "UI/UX 디자이너")
+        val prompt = feedbackPromptBuilder.buildSystemPrompt("DESIGN", "UI/UX 디자이너")
 
         // Then
         assertTrue(prompt.contains("UI/UX 디자이너"))
@@ -391,7 +384,7 @@ class PromptBuilderTest {
     @Test
     fun `의료 직무 프롬프트는 의료 관련 키워드를 포함한다`() {
         // When
-        val prompt = promptBuilder.buildSystemPrompt("MEDICAL", "간호사")
+        val prompt = feedbackPromptBuilder.buildSystemPrompt("MEDICAL", "간호사")
 
         // Then
         assertTrue(prompt.contains("간호사"))
@@ -401,7 +394,7 @@ class PromptBuilderTest {
     @Test
     fun `교육 직무 프롬프트는 교육 관련 키워드를 포함한다`() {
         // When
-        val prompt = promptBuilder.buildSystemPrompt("EDUCATION", "교사")
+        val prompt = feedbackPromptBuilder.buildSystemPrompt("EDUCATION", "교사")
 
         // Then
         assertTrue(prompt.contains("교사"))
@@ -411,7 +404,7 @@ class PromptBuilderTest {
     @Test
     fun `금융 직무 프롬프트는 금융 관련 키워드를 포함한다`() {
         // When
-        val prompt = promptBuilder.buildSystemPrompt("FINANCE", "금융상담사")
+        val prompt = feedbackPromptBuilder.buildSystemPrompt("FINANCE", "금융상담사")
 
         // Then
         assertTrue(prompt.contains("금융상담사"))
@@ -421,7 +414,7 @@ class PromptBuilderTest {
     @Test
     fun `기획 직무 프롬프트는 기획 관련 키워드를 포함한다`() {
         // When
-        val prompt = promptBuilder.buildSystemPrompt("PLANNING", "경영기획자")
+        val prompt = feedbackPromptBuilder.buildSystemPrompt("PLANNING", "경영기획자")
 
         // Then
         assertTrue(prompt.contains("경영기획자"))
@@ -431,9 +424,9 @@ class PromptBuilderTest {
     @Test
     fun `각 직무별 프롬프트는 서로 다른 평가 기준을 가진다`() {
         // When
-        val itPrompt = promptBuilder.buildSystemPrompt("IT", "개발자")
-        val salesPrompt = promptBuilder.buildSystemPrompt("SALES", "영업사원")
-        val accountingPrompt = promptBuilder.buildSystemPrompt("ACCOUNTING", "회계사")
+        val itPrompt = feedbackPromptBuilder.buildSystemPrompt("IT", "개발자")
+        val salesPrompt = feedbackPromptBuilder.buildSystemPrompt("SALES", "영업사원")
+        val accountingPrompt = feedbackPromptBuilder.buildSystemPrompt("ACCOUNTING", "회계사")
 
         // Then - IT는 기술 관련
         assertTrue(itPrompt.contains("기술"))
@@ -454,9 +447,9 @@ class PromptBuilderTest {
     @Test
     fun `모든 프롬프트는 공통 평가 지침을 포함한다`() {
         // When
-        val itPrompt = promptBuilder.buildSystemPrompt("IT", "개발자")
-        val salesPrompt = promptBuilder.buildSystemPrompt("SALES", "영업사원")
-        val medicalPrompt = promptBuilder.buildSystemPrompt("MEDICAL", "간호사")
+        val itPrompt = feedbackPromptBuilder.buildSystemPrompt("IT", "개발자")
+        val salesPrompt = feedbackPromptBuilder.buildSystemPrompt("SALES", "영업사원")
+        val medicalPrompt = feedbackPromptBuilder.buildSystemPrompt("MEDICAL", "간호사")
 
         // Then - 공통 지침
         val commonKeywords = listOf(
@@ -496,7 +489,7 @@ class PromptBuilderTest {
         val emptyAnswer = ""
 
         // When
-        val result = promptBuilder.buildUserPrompt(question, emptyAnswer)
+        val result = feedbackPromptBuilder.buildUserPrompt(question, emptyAnswer)
 
         // Then
         assertTrue(result.contains("면접 질문"))

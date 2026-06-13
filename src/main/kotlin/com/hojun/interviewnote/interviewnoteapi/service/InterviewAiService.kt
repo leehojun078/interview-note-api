@@ -9,7 +9,8 @@ import com.hojun.interviewnote.interviewnoteapi.service.ai.AiInterviewResponse
 import com.hojun.interviewnote.interviewnoteapi.service.ai.FinalEvaluationResult
 import com.hojun.interviewnote.interviewnoteapi.service.ai.InterviewEvaluation
 import com.hojun.interviewnote.interviewnoteapi.service.ai.InterviewResponseParser
-import com.hojun.interviewnote.interviewnoteapi.service.ai.PromptBuilder
+import com.hojun.interviewnote.interviewnoteapi.service.ai.prompt.InterviewPromptBuilder
+import com.hojun.interviewnote.interviewnoteapi.service.ai.prompt.EvaluationPromptBuilder
 import io.micrometer.core.instrument.MeterRegistry
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
@@ -25,7 +26,8 @@ import org.springframework.stereotype.Service
 @Service
 class InterviewAiService(
     private val aiClient: AiClient,
-    private val promptBuilder: PromptBuilder,
+    private val interviewPromptBuilder: InterviewPromptBuilder,
+    private val evaluationPromptBuilder: EvaluationPromptBuilder,
     private val interviewResponseParser: InterviewResponseParser,
     private val meterRegistry: MeterRegistry
 ) {
@@ -54,7 +56,7 @@ class InterviewAiService(
         logger.info("첫 질문 생성 시작 - interviewId: ${interview.id}")
 
         val systemPrompt = if (jobPosting != null) {
-            promptBuilder.buildInterviewSystemPromptWithJobPosting(
+            interviewPromptBuilder.buildInterviewSystemPromptWithJobPosting(
                 jobField = interview.selectedJobField.name,
                 companyName = jobPosting.companyName,
                 jobTitle = jobPosting.jobTitle,
@@ -63,10 +65,10 @@ class InterviewAiService(
                 preferredSkills = jobPosting.preferredSkills
             )
         } else {
-            promptBuilder.buildInterviewSystemPrompt(interview.selectedJobField.name)
+            interviewPromptBuilder.buildInterviewSystemPrompt(interview.selectedJobField.name)
         }
 
-        val userPrompt = promptBuilder.buildFirstQuestionPrompt(
+        val userPrompt = interviewPromptBuilder.buildFirstQuestionPrompt(
             jobField = interview.selectedJobField.displayName,
             companyName = jobPosting?.companyName,
             jobTitle = jobPosting?.jobTitle
@@ -93,7 +95,7 @@ class InterviewAiService(
         logger.info("꼬리 질문 생성 시작 - interviewId: ${interview.id}")
 
         val systemPrompt = if (jobPosting != null) {
-            promptBuilder.buildInterviewSystemPromptWithJobPosting(
+            interviewPromptBuilder.buildInterviewSystemPromptWithJobPosting(
                 jobField = interview.selectedJobField.name,
                 companyName = jobPosting.companyName,
                 jobTitle = jobPosting.jobTitle,
@@ -102,11 +104,11 @@ class InterviewAiService(
                 preferredSkills = jobPosting.preferredSkills
             )
         } else {
-            promptBuilder.buildInterviewSystemPrompt(interview.selectedJobField.name)
+            interviewPromptBuilder.buildInterviewSystemPrompt(interview.selectedJobField.name)
         }
 
         val conversationHistory = buildConversationHistory(conversation)
-        val userPrompt = promptBuilder.buildFollowUpPrompt(conversationHistory)
+        val userPrompt = interviewPromptBuilder.buildFollowUpPrompt(conversationHistory)
 
         return interviewAiTimer.recordCallable {
             interviewAiCallsCounter.increment()
@@ -157,7 +159,7 @@ class InterviewAiService(
             .mapIndexed { idx, msg -> "답변 ${idx + 1}: ${msg.content}" }
             .joinToString("\n")
 
-        val userPrompt = promptBuilder.buildFinalEvaluationPrompt(
+        val userPrompt = evaluationPromptBuilder.buildFinalEvaluationPrompt(
             jobField = interview.selectedJobField.displayName,
             companyName = jobPosting?.companyName,
             jobTitle = jobPosting?.jobTitle,

@@ -2,6 +2,8 @@ package com.hojun.interviewnote.interviewnoteapi.service
 
 import com.hojun.interviewnote.interviewnoteapi.domain.*
 import com.hojun.interviewnote.interviewnoteapi.service.ai.*
+import com.hojun.interviewnote.interviewnoteapi.service.ai.prompt.InterviewPromptBuilder
+import com.hojun.interviewnote.interviewnoteapi.service.ai.prompt.EvaluationPromptBuilder
 import io.micrometer.core.instrument.Counter
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.Timer
@@ -32,7 +34,10 @@ class InterviewAiServiceTest {
     private lateinit var aiClient: AiClient
 
     @Mock
-    private lateinit var promptBuilder: PromptBuilder
+    private lateinit var interviewPromptBuilder: InterviewPromptBuilder
+
+    @Mock
+    private lateinit var evaluationPromptBuilder: EvaluationPromptBuilder
 
     @Mock
     private lateinit var interviewResponseParser: InterviewResponseParser
@@ -98,9 +103,9 @@ class InterviewAiServiceTest {
             )
         )
 
-        whenever(promptBuilder.buildInterviewSystemPrompt(interview.selectedJobField.name))
+        whenever(interviewPromptBuilder.buildInterviewSystemPrompt(interview.selectedJobField.name))
             .thenReturn(systemPrompt)
-        whenever(promptBuilder.buildFirstQuestionPrompt(
+        whenever(interviewPromptBuilder.buildFirstQuestionPrompt(
             jobField = interview.selectedJobField.displayName,
             companyName = null,
             jobTitle = null
@@ -117,8 +122,8 @@ class InterviewAiServiceTest {
         assertThat(result.question).isEqualTo("간단히 자기소개를 해주세요.")
         assertThat(result.reasoning).isEqualTo("지원자의 배경을 파악하기 위함")
 
-        verify(promptBuilder).buildInterviewSystemPrompt(interview.selectedJobField.name)
-        verify(promptBuilder).buildFirstQuestionPrompt(
+        verify(interviewPromptBuilder).buildInterviewSystemPrompt(interview.selectedJobField.name)
+        verify(interviewPromptBuilder).buildFirstQuestionPrompt(
             jobField = interview.selectedJobField.displayName,
             companyName = null,
             jobTitle = null
@@ -159,7 +164,7 @@ class InterviewAiServiceTest {
             )
         )
 
-        whenever(promptBuilder.buildInterviewSystemPromptWithJobPosting(
+        whenever(interviewPromptBuilder.buildInterviewSystemPromptWithJobPosting(
             jobField = interview.selectedJobField.name,
             companyName = jobPosting.companyName,
             jobTitle = jobPosting.jobTitle,
@@ -167,7 +172,7 @@ class InterviewAiServiceTest {
             requiredSkills = jobPosting.requiredSkills,
             preferredSkills = jobPosting.preferredSkills
         )).thenReturn(systemPrompt)
-        whenever(promptBuilder.buildFirstQuestionPrompt(
+        whenever(interviewPromptBuilder.buildFirstQuestionPrompt(
             jobField = interview.selectedJobField.displayName,
             companyName = jobPosting.companyName,
             jobTitle = jobPosting.jobTitle
@@ -182,7 +187,7 @@ class InterviewAiServiceTest {
         assertThat(result.question).contains("테크컴퍼니")
         assertThat(result.question).contains("백엔드 개발자")
 
-        verify(promptBuilder).buildInterviewSystemPromptWithJobPosting(any(), any(), any(), any(), any(), any())
+        verify(interviewPromptBuilder).buildInterviewSystemPromptWithJobPosting(any(), any(), any(), any(), any(), any())
     }
 
     // ===== generateFollowUpQuestion 테스트 =====
@@ -224,9 +229,9 @@ class InterviewAiServiceTest {
             )
         )
 
-        whenever(promptBuilder.buildInterviewSystemPrompt(interview.selectedJobField.name))
+        whenever(interviewPromptBuilder.buildInterviewSystemPrompt(interview.selectedJobField.name))
             .thenReturn(systemPrompt)
-        whenever(promptBuilder.buildFollowUpPrompt(any())).thenReturn(userPrompt)
+        whenever(interviewPromptBuilder.buildFollowUpPrompt(any())).thenReturn(userPrompt)
         whenever(aiClient.requestFeedback(systemPrompt, userPrompt)).thenReturn(rawResponse)
         whenever(interviewResponseParser.parseInterviewResponse(rawResponse)).thenReturn(parsedResponse)
 
@@ -244,7 +249,7 @@ class InterviewAiServiceTest {
         assertThat(nextQuestion.question).contains("기술적 도전")
         assertThat(nextQuestion.reasoning).contains("문제 해결 능력")
 
-        verify(promptBuilder).buildFollowUpPrompt(any())
+        verify(interviewPromptBuilder).buildFollowUpPrompt(any())
         verify(aiClient).requestFeedback(systemPrompt, userPrompt)
     }
 
@@ -281,9 +286,9 @@ class InterviewAiServiceTest {
             )
         )
 
-        whenever(promptBuilder.buildInterviewSystemPromptWithJobPosting(any(), any(), any(), any(), any(), any()))
+        whenever(interviewPromptBuilder.buildInterviewSystemPromptWithJobPosting(any(), any(), any(), any(), any(), any()))
             .thenReturn(systemPrompt)
-        whenever(promptBuilder.buildFollowUpPrompt(any())).thenReturn(userPrompt)
+        whenever(interviewPromptBuilder.buildFollowUpPrompt(any())).thenReturn(userPrompt)
         whenever(aiClient.requestFeedback(systemPrompt, userPrompt)).thenReturn(rawResponse)
         whenever(interviewResponseParser.parseInterviewResponse(rawResponse)).thenReturn(parsedResponse)
 
@@ -330,7 +335,7 @@ class InterviewAiServiceTest {
             recommendation = "기술 역량과 커뮤니케이션 능력이 우수하여 적극 추천합니다."
         )
 
-        whenever(promptBuilder.buildFinalEvaluationPrompt(
+        whenever(evaluationPromptBuilder.buildFinalEvaluationPrompt(
             jobField = anyOrNull(),
             companyName = isNull(),
             jobTitle = isNull(),
@@ -349,7 +354,7 @@ class InterviewAiServiceTest {
         assertThat(result.keyImprovements).contains("팀 협업 경험")
         assertThat(result.recommendation).contains("적극 추천")
 
-        verify(promptBuilder).buildFinalEvaluationPrompt(anyOrNull(), isNull(), isNull(), any())
+        verify(evaluationPromptBuilder).buildFinalEvaluationPrompt(anyOrNull(), isNull(), isNull(), any())
         verify(aiClient).requestFeedback(any(), any())
         verify(interviewResponseParser).parseFinalEvaluation(rawResponse)
     }
@@ -384,7 +389,7 @@ class InterviewAiServiceTest {
             recommendation = "필수 기술 스택을 충분히 갖추어 추천합니다."
         )
 
-        whenever(promptBuilder.buildFinalEvaluationPrompt(
+        whenever(evaluationPromptBuilder.buildFinalEvaluationPrompt(
             jobField = anyOrNull(),
             companyName = anyOrNull(),
             jobTitle = anyOrNull(),

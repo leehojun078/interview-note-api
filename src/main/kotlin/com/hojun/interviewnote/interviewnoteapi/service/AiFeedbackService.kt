@@ -8,7 +8,7 @@ import com.hojun.interviewnote.interviewnoteapi.domain.Question
 import com.hojun.interviewnote.interviewnoteapi.exception.AiException
 import com.hojun.interviewnote.interviewnoteapi.repository.AiFeedbackRepository
 import com.hojun.interviewnote.interviewnoteapi.service.ai.AiClient
-import com.hojun.interviewnote.interviewnoteapi.service.ai.PromptBuilder
+import com.hojun.interviewnote.interviewnoteapi.service.ai.prompt.FeedbackPromptBuilder
 import com.hojun.interviewnote.interviewnoteapi.service.ai.ResponseParser
 import com.hojun.interviewnote.interviewnoteapi.service.cache.DuplicateRequestCache
 import io.micrometer.core.instrument.MeterRegistry
@@ -24,7 +24,7 @@ class AiFeedbackService(
     private val aiFeedbackRepository: AiFeedbackRepository,
     private val objectMapper: ObjectMapper,
     private val aiClient: AiClient,
-    private val promptBuilder: PromptBuilder,
+    private val feedbackPromptBuilder: FeedbackPromptBuilder,
     private val responseParser: ResponseParser,
     private val openAiProperties: OpenAiProperties,
     private val duplicateRequestCache: DuplicateRequestCache,
@@ -97,8 +97,8 @@ class AiFeedbackService(
             cacheMissesCounter.increment()
 
             // 2. 프롬프트 생성
-            val systemPrompt = promptBuilder.buildSystemPrompt(question.jobField, question.targetJob)
-            val userPrompt = promptBuilder.buildUserPrompt(question, answer.answerText)
+            val systemPrompt = feedbackPromptBuilder.buildSystemPrompt(question.jobField, question.targetJob)
+            val userPrompt = feedbackPromptBuilder.buildUserPrompt(question, answer.answerText)
 
             // 3. AI 클라이언트 호출 (메트릭 기록)
             val (rawResponse, parsedFeedback) = aiCallsTimer.recordCallable {

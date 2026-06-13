@@ -1,29 +1,27 @@
 package com.hojun.interviewnote.interviewnoteapi.service.ai
 
-import com.hojun.interviewnote.interviewnoteapi.config.OpenAiProperties
+import com.hojun.interviewnote.interviewnoteapi.service.ai.prompt.InterviewPromptBuilder
+import com.hojun.interviewnote.interviewnoteapi.service.ai.prompt.EvaluationPromptBuilder
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.mock
 
 /**
- * PromptBuilder 면접용 프롬프트 테스트
+ * InterviewPromptBuilder 및 EvaluationPromptBuilder 테스트
  *
- * Phase 7B: 5개 면접 메서드 테스트
- * - buildInterviewSystemPrompt
- * - buildInterviewSystemPromptWithJobPosting
- * - buildFirstQuestionPrompt
- * - buildFollowUpPrompt
- * - buildFinalEvaluationPrompt
+ * Phase 2 리팩토링: PromptBuilder에서 분리된 Builder 테스트
+ * - InterviewPromptBuilder: buildInterviewSystemPrompt, buildFirstQuestionPrompt, buildFollowUpPrompt
+ * - EvaluationPromptBuilder: buildFinalEvaluationPrompt
  */
-class PromptBuilderInterviewTest {
+class InterviewPromptBuilderTest {
 
-    private lateinit var promptBuilder: PromptBuilder
-    private val mockProperties: OpenAiProperties = mock()
+    private lateinit var interviewPromptBuilder: InterviewPromptBuilder
+    private lateinit var evaluationPromptBuilder: EvaluationPromptBuilder
 
     @BeforeEach
     fun setUp() {
-        promptBuilder = PromptBuilder(mockProperties)
+        interviewPromptBuilder = InterviewPromptBuilder()
+        evaluationPromptBuilder = EvaluationPromptBuilder()
     }
 
     // ===== buildInterviewSystemPrompt 테스트 =====
@@ -31,7 +29,7 @@ class PromptBuilderInterviewTest {
     @Test
     fun `buildInterviewSystemPrompt - IT 직무 프롬프트 생성`() {
         // When
-        val prompt = promptBuilder.buildInterviewSystemPrompt("IT")
+        val prompt = interviewPromptBuilder.buildInterviewSystemPrompt("IT")
 
         // Then
         assertTrue(prompt.contains("면접관"))
@@ -46,7 +44,7 @@ class PromptBuilderInterviewTest {
     @Test
     fun `buildInterviewSystemPrompt - SALES 직무 프롬프트 생성`() {
         // When
-        val prompt = promptBuilder.buildInterviewSystemPrompt("SALES")
+        val prompt = interviewPromptBuilder.buildInterviewSystemPrompt("SALES")
 
         // Then
         assertTrue(prompt.contains("면접관"))
@@ -57,7 +55,7 @@ class PromptBuilderInterviewTest {
     @Test
     fun `buildInterviewSystemPrompt - DESIGN 직무 프롬프트 생성`() {
         // When
-        val prompt = promptBuilder.buildInterviewSystemPrompt("DESIGN")
+        val prompt = interviewPromptBuilder.buildInterviewSystemPrompt("DESIGN")
 
         // Then
         assertTrue(prompt.contains("면접관"))
@@ -76,7 +74,7 @@ class PromptBuilderInterviewTest {
         val preferredSkills = "Kotlin, Redis, Docker"
 
         // When
-        val prompt = promptBuilder.buildInterviewSystemPromptWithJobPosting(
+        val prompt = interviewPromptBuilder.buildInterviewSystemPromptWithJobPosting(
             jobField = "IT",
             companyName = companyName,
             jobTitle = jobTitle,
@@ -106,7 +104,7 @@ class PromptBuilderInterviewTest {
         val preferredSkills = null
 
         // When
-        val prompt = promptBuilder.buildInterviewSystemPromptWithJobPosting(
+        val prompt = interviewPromptBuilder.buildInterviewSystemPromptWithJobPosting(
             jobField = "IT",
             companyName = companyName,
             jobTitle = jobTitle,
@@ -127,7 +125,7 @@ class PromptBuilderInterviewTest {
     @Test
     fun `buildFirstQuestionPrompt - 직무 기반 첫 질문 프롬프트`() {
         // When
-        val prompt = promptBuilder.buildFirstQuestionPrompt(
+        val prompt = interviewPromptBuilder.buildFirstQuestionPrompt(
             jobField = "백엔드 개발자",
             companyName = null,
             jobTitle = null
@@ -146,7 +144,7 @@ class PromptBuilderInterviewTest {
         val jobTitle = "시니어 백엔드 개발자"
 
         // When
-        val prompt = promptBuilder.buildFirstQuestionPrompt(
+        val prompt = interviewPromptBuilder.buildFirstQuestionPrompt(
             jobField = "백엔드 개발자",
             companyName = companyName,
             jobTitle = jobTitle
@@ -172,7 +170,7 @@ class PromptBuilderInterviewTest {
         """.trimIndent()
 
         // When
-        val prompt = promptBuilder.buildFollowUpPrompt(conversationHistory)
+        val prompt = interviewPromptBuilder.buildFollowUpPrompt(conversationHistory)
 
         // Then
         assertTrue(prompt.contains(conversationHistory))
@@ -188,7 +186,7 @@ class PromptBuilderInterviewTest {
         val conversationHistory = ""
 
         // When
-        val prompt = promptBuilder.buildFollowUpPrompt(conversationHistory)
+        val prompt = interviewPromptBuilder.buildFollowUpPrompt(conversationHistory)
 
         // Then
         assertTrue(prompt.contains("평가"))
@@ -207,7 +205,7 @@ class PromptBuilderInterviewTest {
         """.trimIndent()
 
         // When
-        val prompt = promptBuilder.buildFinalEvaluationPrompt(
+        val prompt = evaluationPromptBuilder.buildFinalEvaluationPrompt(
             jobField = "백엔드 개발자",
             companyName = null,
             jobTitle = null,
@@ -237,7 +235,7 @@ class PromptBuilderInterviewTest {
         """.trimIndent()
 
         // When
-        val prompt = promptBuilder.buildFinalEvaluationPrompt(
+        val prompt = evaluationPromptBuilder.buildFinalEvaluationPrompt(
             jobField = "백엔드 개발자",
             companyName = companyName,
             jobTitle = jobTitle,
@@ -256,10 +254,10 @@ class PromptBuilderInterviewTest {
     @Test
     fun `모든 면접 프롬프트가 JSON 응답 형식을 요구한다`() {
         // When
-        val systemPrompt = promptBuilder.buildInterviewSystemPrompt("IT")
-        val firstPrompt = promptBuilder.buildFirstQuestionPrompt("IT", null, null)
-        val followUpPrompt = promptBuilder.buildFollowUpPrompt("대화 내용")
-        val finalPrompt = promptBuilder.buildFinalEvaluationPrompt("IT", null, null, "답변들")
+        val systemPrompt = interviewPromptBuilder.buildInterviewSystemPrompt("IT")
+        val firstPrompt = interviewPromptBuilder.buildFirstQuestionPrompt("IT", null, null)
+        val followUpPrompt = interviewPromptBuilder.buildFollowUpPrompt("대화 내용")
+        val finalPrompt = evaluationPromptBuilder.buildFinalEvaluationPrompt("IT", null, null, "답변들")
 
         // Then
         assertTrue(systemPrompt.contains("JSON"))
@@ -271,8 +269,8 @@ class PromptBuilderInterviewTest {
     @Test
     fun `면접 질문은 200자 제한을 명시한다`() {
         // When
-        val firstPrompt = promptBuilder.buildFirstQuestionPrompt("IT", null, null)
-        val followUpPrompt = promptBuilder.buildFollowUpPrompt("대화 내용")
+        val firstPrompt = interviewPromptBuilder.buildFirstQuestionPrompt("IT", null, null)
+        val followUpPrompt = interviewPromptBuilder.buildFollowUpPrompt("대화 내용")
 
         // Then
         assertTrue(firstPrompt.contains("200자"))

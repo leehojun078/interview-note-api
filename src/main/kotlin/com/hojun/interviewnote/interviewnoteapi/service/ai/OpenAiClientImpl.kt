@@ -22,15 +22,19 @@ import java.net.SocketTimeoutException
  *
  * RestTemplate을 사용하여 OpenAI Chat Completions API를 직접 호출합니다.
  * JSON 모드를 강제하여 구조화된 응답을 보장합니다.
+ *
+ * Week 1 High Priority #3: RestTemplate 커넥션 풀링 적용
+ * - RestTemplateConfig에서 설정된 RestTemplate 주입
+ * - 타임아웃 및 커넥션 풀링 자동 적용
  */
 @Service
 class OpenAiClientImpl(
     private val properties: OpenAiProperties,
-    private val objectMapper: ObjectMapper
+    private val objectMapper: ObjectMapper,
+    private val restTemplate: RestTemplate
 ) : AiClient {
 
     private val logger = LoggerFactory.getLogger(javaClass)
-    private val restTemplate = RestTemplate()
 
     companion object {
         private const val OPENAI_API_URL = "https://api.openai.com/v1/chat/completions"

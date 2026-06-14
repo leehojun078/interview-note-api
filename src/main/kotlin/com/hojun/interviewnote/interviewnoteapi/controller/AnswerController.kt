@@ -58,20 +58,20 @@ class AnswerController(
         try {
             rateLimitService.checkAndRecordRequest(user.id.toString())
         } catch (e: RateLimitExceededException) {
-            return "redirect:/questions/$questionId/answer?error=ratelimit"
+            return ControllerConstants.buildRedirectWithError("/questions/$questionId/answer", ControllerConstants.ERROR_RATELIMIT)
         }
 
         // Bean Validation 체크
         if (bindingResult.hasErrors()) {
             model.addAttribute("errors", bindingResult.allErrors)
-            return "redirect:/questions/$questionId/answer?error=validation"
+            return ControllerConstants.buildRedirectWithError("/questions/$questionId/answer", ControllerConstants.ERROR_VALIDATION)
         }
 
         // Phase 3A: 답변 품질 사전 검증
         val validationResult = answerValidator.validate(dto.answerText ?: "")
         if (validationResult is ValidationResult.Invalid) {
             redirectAttributes.addFlashAttribute("validationError", validationResult.message)
-            return "redirect:/questions/$questionId/answer?error=invalid_answer"
+            return ControllerConstants.buildRedirectWithError("/questions/$questionId/answer", ControllerConstants.ERROR_INVALID_ANSWER)
         }
 
         // Phase 8D: 중복 답변 제출 방지
@@ -89,7 +89,7 @@ class AnswerController(
             redirectAttributes.addFlashAttribute("info",
                 "이전과 동일한 답변입니다. 답변을 수정해서 더 나은 평가를 받아보세요!")
 
-            return "redirect:/answers/${existingAnswer.id}/feedback?duplicate=true"
+            return ControllerConstants.buildRedirectWithDuplicate("/answers/${existingAnswer.id}/feedback")
         }
 
         // 답변 제출 및 AI 평가 (userId 전달)
@@ -105,14 +105,14 @@ class AnswerController(
 
             // Phase 3A: 저품질 경고 체크
             if (result.feedback.averageScore < 1.5) {
-                return "redirect:/answers/${result.answerId}/feedback?warning=low_quality"
+                return ControllerConstants.buildRedirectWithWarning("/answers/${result.answerId}/feedback", ControllerConstants.WARNING_LOW_QUALITY)
             }
 
             "redirect:/answers/${result.answerId}/feedback"
         } catch (e: Exception) {
             logger.error("답변 제출 중 오류 발생 - questionId: $questionId, userId: ${user.id}", e)
             redirectAttributes.addFlashAttribute("error", "답변 처리 중 오류가 발생했습니다: ${e.message}")
-            "redirect:/questions/$questionId/answer?error=submit_failed"
+            ControllerConstants.buildRedirectWithError("/questions/$questionId/answer", ControllerConstants.ERROR_SUBMIT_FAILED)
         }
     }
 
@@ -145,12 +145,12 @@ class AnswerController(
         model.addAttribute("averageScore", answerWithFeedback.feedback.averageScore)
 
         // Phase 3A: 저품질 경고
-        if (warning == "low_quality") {
+        if (warning == ControllerConstants.WARNING_LOW_QUALITY) {
             model.addAttribute("lowQualityWarning", true)
         }
 
         // Phase 8D: 중복 답변 알림
-        if (duplicate == "true") {
+        if (duplicate == ControllerConstants.VALUE_TRUE) {
             model.addAttribute("duplicateAnswer", true)
         }
 

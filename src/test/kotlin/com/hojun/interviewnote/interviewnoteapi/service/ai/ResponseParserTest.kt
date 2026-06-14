@@ -78,7 +78,7 @@ class ResponseParserTest {
               "strengths": ["강점1", "강점2"],
               "improvements": ["개선1", "개선2"],
               "modelAnswer": "${"x".repeat(400)}",
-              "overallComment": "코멘트"
+              "overallComment": "전반적으로 좋은 답변입니다."
             }
         """.trimIndent()
 
@@ -103,7 +103,7 @@ class ResponseParserTest {
               "strengths": ["강점1", "강점2"],
               "improvements": ["개선1", "개선2"],
               "modelAnswer": "${"x".repeat(400)}",
-              "overallComment": "코멘트"
+              "overallComment": "전반적으로 좋은 답변입니다."
             }
         """.trimIndent()
 
@@ -144,7 +144,7 @@ class ResponseParserTest {
               "strengths": ["강점1", "강점2", "강점3", "강점4", "강점5", "강점6"],
               "improvements": ["개선1", "개선2"],
               "modelAnswer": "${"x".repeat(400)}",
-              "overallComment": "코멘트"
+              "overallComment": "전반적으로 좋은 답변입니다."
             }
         """.trimIndent()
 
@@ -164,7 +164,7 @@ class ResponseParserTest {
               "strengths": ["강점1", "강점2"],
               "improvements": [],
               "modelAnswer": "${"x".repeat(400)}",
-              "overallComment": "코멘트"
+              "overallComment": "전반적으로 좋은 답변입니다."
             }
         """.trimIndent()
 
@@ -184,7 +184,7 @@ class ResponseParserTest {
               "strengths": ["강점1", ""],
               "improvements": ["개선1", "개선2"],
               "modelAnswer": "${"x".repeat(400)}",
-              "overallComment": "코멘트"
+              "overallComment": "전반적으로 좋은 답변입니다."
             }
         """.trimIndent()
 
@@ -204,7 +204,7 @@ class ResponseParserTest {
               "strengths": ["강점1", "강점2"],
               "improvements": ["개선1", "개선2"],
               "modelAnswer": "짧은 답변",
-              "overallComment": "코멘트"
+              "overallComment": "전반적으로 좋은 답변입니다."
             }
         """.trimIndent()
 
@@ -224,7 +224,7 @@ class ResponseParserTest {
               "strengths": ["강점1", "강점2"],
               "improvements": ["개선1", "개선2"],
               "modelAnswer": "${"x".repeat(1001)}",
-              "overallComment": "코멘트"
+              "overallComment": "전반적으로 좋은 답변입니다."
             }
         """.trimIndent()
 
@@ -261,7 +261,7 @@ class ResponseParserTest {
               "strengths": ["강점1", "강점2"],
               "improvements": ["개선1", "개선2"],
               "modelAnswer": "${"x".repeat(400)}",
-              "overallComment": "코멘트"
+              "overallComment": "전반적으로 좋은 답변입니다."
             }
         """.trimIndent()
 
@@ -280,7 +280,7 @@ class ResponseParserTest {
               "strengths": ["강점1", "강점2", "강점3"],
               "improvements": ["개선1", "개선2"],
               "modelAnswer": "${"x".repeat(400)}",
-              "overallComment": "코멘트"
+              "overallComment": "전반적으로 좋은 답변입니다."
             }
         """.trimIndent()
 
@@ -300,7 +300,7 @@ class ResponseParserTest {
               "strengths": ["강점1", "강점2"],
               "improvements": ["개선1", "개선2"],
               "modelAnswer": "${"x".repeat(100)}",
-              "overallComment": "코멘트"
+              "overallComment": "전반적으로 좋은 답변입니다."
             }
         """.trimIndent()
 
@@ -320,7 +320,7 @@ class ResponseParserTest {
               "strengths": ["강점1", "강점2"],
               "improvements": ["개선1", "개선2"],
               "modelAnswer": "${"x".repeat(1000)}",
-              "overallComment": "코멘트"
+              "overallComment": "전반적으로 좋은 답변입니다."
             }
         """.trimIndent()
 
@@ -340,7 +340,7 @@ class ResponseParserTest {
               "strengths": ["강점1", "강점2"],
               "improvements": ["개선1", "개선2"],
               "modelAnswer": "${"x".repeat(400)}",
-              "overallComment": "코멘트"
+              "overallComment": "전반적으로 좋은 답변입니다."
             }
         """.trimIndent()
 
@@ -363,7 +363,7 @@ class ResponseParserTest {
               "strengths": ["강점1", "강점2"],
               "improvements": ["개선1", "개선2"],
               "modelAnswer": "${"x".repeat(400)}",
-              "overallComment": "코멘트"
+              "overallComment": "전반적으로 좋은 답변입니다."
             }
         """.trimIndent()
 
@@ -375,5 +375,107 @@ class ResponseParserTest {
         assertEquals(5, result.specificityScore)
         assertEquals(5, result.jobFitScore)
         assertEquals(5, result.deliveryScore)
+    }
+
+    // ========== Week 2 Day 1: Null-Safety 개선 테스트 ==========
+
+    @Test
+    fun `parseOpenAiResponse - overallComment가 비어있으면 예외 발생`() {
+        // Given
+        val invalidJson = """
+            {
+              "scores": {"logic": 4, "specificity": 3, "jobFit": 4, "delivery": 3},
+              "strengths": ["강점1", "강점2"],
+              "improvements": ["개선1", "개선2"],
+              "modelAnswer": "${"x".repeat(400)}",
+              "overallComment": ""
+            }
+        """.trimIndent()
+
+        // When & Then
+        val exception = assertThrows<AiResponseParseException> {
+            responseParser.parseOpenAiResponse(invalidJson)
+        }
+        assert(exception.message!!.contains("종합 코멘트가 비어있습니다"))
+    }
+
+    @Test
+    fun `parseOpenAiResponse - overallComment가 너무 짧으면 예외 발생`() {
+        // Given
+        val invalidJson = """
+            {
+              "scores": {"logic": 4, "specificity": 3, "jobFit": 4, "delivery": 3},
+              "strengths": ["강점1", "강점2"],
+              "improvements": ["개선1", "개선2"],
+              "modelAnswer": "${"x".repeat(400)}",
+              "overallComment": "짧음"
+            }
+        """.trimIndent()
+
+        // When & Then
+        val exception = assertThrows<AiResponseParseException> {
+            responseParser.parseOpenAiResponse(invalidJson)
+        }
+        assert(exception.message!!.contains("종합 코멘트 길이는 10-500자 사이여야 합니다"))
+    }
+
+    @Test
+    fun `parseOpenAiResponse - overallComment가 너무 길면 예외 발생`() {
+        // Given
+        val invalidJson = """
+            {
+              "scores": {"logic": 4, "specificity": 3, "jobFit": 4, "delivery": 3},
+              "strengths": ["강점1", "강점2"],
+              "improvements": ["개선1", "개선2"],
+              "modelAnswer": "${"x".repeat(400)}",
+              "overallComment": "${"x".repeat(501)}"
+            }
+        """.trimIndent()
+
+        // When & Then
+        val exception = assertThrows<AiResponseParseException> {
+            responseParser.parseOpenAiResponse(invalidJson)
+        }
+        assert(exception.message!!.contains("종합 코멘트 길이는 10-500자 사이여야 합니다"))
+    }
+
+    @Test
+    fun `parseOpenAiResponse - overallComment가 정확히 10자일 때 정상 처리`() {
+        // Given
+        val validJson = """
+            {
+              "scores": {"logic": 4, "specificity": 3, "jobFit": 4, "delivery": 3},
+              "strengths": ["강점1", "강점2"],
+              "improvements": ["개선1", "개선2"],
+              "modelAnswer": "${"x".repeat(400)}",
+              "overallComment": "${"x".repeat(10)}"
+            }
+        """.trimIndent()
+
+        // When
+        val result = responseParser.parseOpenAiResponse(validJson)
+
+        // Then
+        assertEquals(10, result.overallComment.length)
+    }
+
+    @Test
+    fun `parseOpenAiResponse - overallComment가 정확히 500자일 때 정상 처리`() {
+        // Given
+        val validJson = """
+            {
+              "scores": {"logic": 4, "specificity": 3, "jobFit": 4, "delivery": 3},
+              "strengths": ["강점1", "강점2"],
+              "improvements": ["개선1", "개선2"],
+              "modelAnswer": "${"x".repeat(400)}",
+              "overallComment": "${"x".repeat(500)}"
+            }
+        """.trimIndent()
+
+        // When
+        val result = responseParser.parseOpenAiResponse(validJson)
+
+        // Then
+        assertEquals(500, result.overallComment.length)
     }
 }

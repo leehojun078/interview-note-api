@@ -93,20 +93,20 @@ class GeneratedQuestionController(
         try {
             rateLimitService.checkAndRecordRequest(user.id.toString())
         } catch (e: RateLimitExceededException) {
-            return "redirect:/generated-questions/$id/answer?error=ratelimit"
+            return ControllerConstants.buildRedirectWithError("/generated-questions/$id/answer", ControllerConstants.ERROR_RATELIMIT)
         }
 
         // Bean Validation 체크
         if (bindingResult.hasErrors()) {
             model.addAttribute("errors", bindingResult.allErrors)
-            return "redirect:/generated-questions/$id/answer?error=validation"
+            return ControllerConstants.buildRedirectWithError("/generated-questions/$id/answer", ControllerConstants.ERROR_VALIDATION)
         }
 
         // 답변 품질 사전 검증
         val validationResult = answerValidator.validate(dto.answerText ?: "")
         if (validationResult is ValidationResult.Invalid) {
             redirectAttributes.addFlashAttribute("validationError", validationResult.message)
-            return "redirect:/generated-questions/$id/answer?error=invalid_answer"
+            return ControllerConstants.buildRedirectWithError("/generated-questions/$id/answer", ControllerConstants.ERROR_INVALID_ANSWER)
         }
 
         // 답변 제출 및 AI 평가 (generatedQuestionId 포함)
@@ -122,14 +122,14 @@ class GeneratedQuestionController(
 
             // 저품질 경고 체크
             if (result.feedback.averageScore < 1.5) {
-                return "redirect:/answers/${result.answerId}/feedback?warning=low_quality"
+                return ControllerConstants.buildRedirectWithWarning("/answers/${result.answerId}/feedback", ControllerConstants.WARNING_LOW_QUALITY)
             }
 
             "redirect:/answers/${result.answerId}/feedback"
         } catch (e: Exception) {
             logger.error("생성된 질문 답변 제출 중 오류 - generatedQuestionId: $id, userId: ${user.id}", e)
             redirectAttributes.addFlashAttribute("error", "답변 처리 중 오류가 발생했습니다: ${e.message}")
-            "redirect:/generated-questions/$id/answer?error=submit_failed"
+            ControllerConstants.buildRedirectWithError("/generated-questions/$id/answer", ControllerConstants.ERROR_SUBMIT_FAILED)
         }
     }
 }

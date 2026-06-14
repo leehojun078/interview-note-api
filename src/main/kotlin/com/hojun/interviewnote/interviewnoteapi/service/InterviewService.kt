@@ -20,6 +20,7 @@ class InterviewService(
     private val questionService: QuestionService,
     private val aiFeedbackService: AiFeedbackService,
     private val generatedQuestionRepository: GeneratedQuestionRepository,
+    private val jobPostingRepository: com.hojun.interviewnote.interviewnoteapi.repository.JobPostingRepository,
     private val duplicateRequestCache: DuplicateRequestCache
 ) {
     /**
@@ -79,7 +80,11 @@ class InterviewService(
         val generatedQuestion = generatedQuestionRepository.findById(generatedQuestionId)
             .orElseThrow { IllegalArgumentException("생성된 질문을 찾을 수 없습니다: ID=$generatedQuestionId") }
 
-        // 2. 답변 저장 (generatedQuestionId 포함, questionId는 null, Phase 8D: answerTextHash 추가)
+        // 2. 채용 공고 조회 (Week 1 High Priority #4: 하드코딩된 값 제거)
+        val jobPosting = jobPostingRepository.findById(generatedQuestion.jobPostingId)
+            .orElseThrow { IllegalStateException("채용 공고를 찾을 수 없습니다: ID=${generatedQuestion.jobPostingId}") }
+
+        // 3. 답변 저장 (generatedQuestionId 포함, questionId는 null, Phase 8D: answerTextHash 추가)
         // generatedQuestionId를 사용하여 해시 생성
         val answerHash = duplicateRequestCache.generateHash(generatedQuestionId, answerText)
         val answer = InterviewAnswer(
@@ -93,11 +98,13 @@ class InterviewService(
         )
         val savedAnswer = interviewAnswerRepository.save(answer)
 
-        // 3. AI 피드백 생성 (GeneratedQuestion을 Question처럼 변환)
+        // 4. AI 피드백 생성 (Week 1 High Priority #4: 실제 공고 정보 사용)
+        // GeneratedQuestion을 Question처럼 변환하되, jobPosting의 실제 정보 사용
+        val effectiveJobField = jobPosting.effectiveJobField?.code ?: "IT"  // fallback to IT
         val questionForFeedback = com.hojun.interviewnote.interviewnoteapi.domain.Question(
             id = generatedQuestion.id,
-            jobField = "IT",  // 임시값, AI 피드백에서 실제로는 사용 안 함
-            targetJob = "개발자",
+            jobField = effectiveJobField,  // ✓ 실제 직무 필드 사용
+            targetJob = jobPosting.jobTitle,  // ✓ 실제 직무명 사용
             category = generatedQuestion.category,
             content = generatedQuestion.content,
             difficulty = generatedQuestion.difficulty,

@@ -50,12 +50,10 @@ class OpenAiClientImplTest {
             timeout = 30000
         }
         objectMapper = ObjectMapper().registerKotlinModule()
-        openAiClient = OpenAiClientImpl(properties, objectMapper)
 
-        // Reflection을 사용하여 private RestTemplate 필드에 접근
-        val restTemplateField: Field = OpenAiClientImpl::class.java.getDeclaredField("restTemplate")
-        restTemplateField.isAccessible = true
-        val restTemplate = restTemplateField.get(openAiClient) as RestTemplate
+        // Week 1 High Priority #3: RestTemplate 주입으로 변경
+        val restTemplate = RestTemplate()
+        openAiClient = OpenAiClientImpl(properties, objectMapper, restTemplate)
         mockServer = MockRestServiceServer.createServer(restTemplate)
     }
 

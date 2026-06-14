@@ -59,6 +59,8 @@ class ResponseParser(
         private const val MAX_FEEDBACK_ITEMS = 5      // 유연하게 최대 5개까지 허용
         private const val MIN_MODEL_ANSWER_LENGTH = 100
         private const val MAX_MODEL_ANSWER_LENGTH = 1000
+        private const val MIN_OVERALL_COMMENT_LENGTH = 10
+        private const val MAX_OVERALL_COMMENT_LENGTH = 500
     }
 
     /**
@@ -74,6 +76,7 @@ class ResponseParser(
             validateStrengths(response.strengths)
             validateImprovements(response.improvements)
             validateModelAnswer(response.modelAnswer)
+            validateOverallComment(response.overallComment)  // Week 2: Null-Safety 개선
 
             logger.info("OpenAI 응답 파싱 성공 - strengths: ${response.strengths.size}개, improvements: ${response.improvements.size}개")
 
@@ -137,6 +140,18 @@ class ResponseParser(
     private fun validateModelAnswer(answer: String) {
         require(answer.length in MIN_MODEL_ANSWER_LENGTH..MAX_MODEL_ANSWER_LENGTH) {
             "모범답변 길이는 ${MIN_MODEL_ANSWER_LENGTH}-${MAX_MODEL_ANSWER_LENGTH}자 사이여야 합니다 (현재: ${answer.length}자)"
+        }
+    }
+
+    /**
+     * overallComment 검증 (Week 2: Null-Safety 개선)
+     */
+    private fun validateOverallComment(comment: String) {
+        require(comment.isNotBlank()) {
+            "종합 코멘트가 비어있습니다"
+        }
+        require(comment.length in MIN_OVERALL_COMMENT_LENGTH..MAX_OVERALL_COMMENT_LENGTH) {
+            "종합 코멘트 길이는 ${MIN_OVERALL_COMMENT_LENGTH}-${MAX_OVERALL_COMMENT_LENGTH}자 사이여야 합니다 (현재: ${comment.length}자)"
         }
     }
 }

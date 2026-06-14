@@ -37,6 +37,9 @@ class InterviewServiceTest {
     private lateinit var generatedQuestionRepository: GeneratedQuestionRepository
 
     @Mock
+    private lateinit var jobPostingRepository: com.hojun.interviewnote.interviewnoteapi.repository.JobPostingRepository
+
+    @Mock
     private lateinit var duplicateRequestCache: DuplicateRequestCache
 
     @InjectMocks

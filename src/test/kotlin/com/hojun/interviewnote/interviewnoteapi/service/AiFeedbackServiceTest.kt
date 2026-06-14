@@ -451,6 +451,62 @@ class AiFeedbackServiceTest {
     }
 
     @Test
+    fun `generateFeedback - AI 응답 성공 후 파싱 실패 시 더미 피드백으로 fallback한다`() {
+        // given
+        val answer = createAnswer("테스트 답변")
+        val question = createQuestion()
+
+        // AI 호출은 성공하지만 응답 파싱 실패 시나리오
+        whenever(duplicateRequestCache.findCached(question.id, answer.answerText)).thenReturn(null)
+        whenever(feedbackPromptBuilder.buildSystemPrompt(any(), any())).thenReturn("system")
+        whenever(feedbackPromptBuilder.buildUserPrompt(any(), any())).thenReturn("user")
+        whenever(aiClient.requestFeedback(any(), any())).thenReturn("{invalid json}")
+        whenever(responseParser.parseOpenAiResponse(any(), any()))
+            .thenThrow(com.hojun.interviewnote.interviewnoteapi.exception.AiResponseParseException("JSON 파싱 실패", "{invalid json}"))
+        whenever(objectMapper.writeValueAsString(any())).thenReturn("[]")
+
+        doAnswer { invocation ->
+            val arg = invocation.arguments[0] as AiFeedback
+            AiFeedback(
+                id = 1L,
+                interviewAnswerId = arg.interviewAnswerId,
+                logicScore = arg.logicScore,
+                specificityScore = arg.specificityScore,
+                jobFitScore = arg.jobFitScore,
+                deliveryScore = arg.deliveryScore,
+                strengths = arg.strengths,
+                improvements = arg.improvements,
+                modelAnswer = arg.modelAnswer,
+                overallComment = arg.overallComment,
+                jobField = arg.jobField,
+                modelName = arg.modelName,
+                promptVersion = arg.promptVersion,
+                tokenUsageInput = arg.tokenUsageInput,
+                tokenUsageOutput = arg.tokenUsageOutput,
+                rawResponse = arg.rawResponse,
+                answerTextHash = arg.answerTextHash,
+                createdAt = arg.createdAt
+            )
+        }.whenever(aiFeedbackRepository).save(any())
+
+        // when
+        val result = aiFeedbackService.generateFeedback(answer, question)
+
+        // then
+        // 더미 피드백으로 fallback되었는지 확인
+        assertThat(result.modelName).isEqualTo("dummy-model-v1")
+        assertThat(result.promptVersion).isEqualTo("v1.0-dummy")
+        assertThat(result.overallComment).contains("더미 피드백")
+
+        // AI 클라이언트 호출 확인
+        org.mockito.kotlin.verify(aiClient).requestFeedback(any(), any())
+        // 파서도 호출되었지만 실패함
+        org.mockito.kotlin.verify(responseParser).parseOpenAiResponse(any(), any())
+        // repository.save는 1번만 호출되어야 함 (더미 피드백만)
+        org.mockito.kotlin.verify(aiFeedbackRepository).save(any())
+    }
+
+    @Test
     fun `generateFeedback - 토큰 사용량을 올바르게 추정한다`() {
         // given
         val answer = createAnswer("x".repeat(400)) // 400자 = 약 100 토큰

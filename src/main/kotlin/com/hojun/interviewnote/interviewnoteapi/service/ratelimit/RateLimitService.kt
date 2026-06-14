@@ -52,27 +52,31 @@ class RateLimitService {
      *
      * @param ip 클라이언트 IP 주소
      * @throws RateLimitExceededException 한도 초과 시
+     *
+     * Thread-safe: synchronized 블록으로 동시성 문제 해결
      */
     fun checkAndRecordRequest(ip: String) {
-        val now = LocalDateTime.now()
-        val cutoffTime = now.minusMinutes(WINDOW_DURATION_MINUTES)
+        synchronized(requestCache) {
+            val now = LocalDateTime.now()
+            val cutoffTime = now.minusMinutes(WINDOW_DURATION_MINUTES)
 
-        // 현재 IP의 요청 기록 가져오기
-        val requests = requestCache.get(ip) { mutableListOf() }!!
+            // 현재 IP의 요청 기록 가져오기
+            val requests = requestCache.get(ip) { mutableListOf() }!!
 
-        // 1시간 이내 요청만 필터링
-        requests.removeIf { it.isBefore(cutoffTime) }
+            // 1시간 이내 요청만 필터링
+            requests.removeIf { it.isBefore(cutoffTime) }
 
-        // 한도 확인
-        if (requests.size >= MAX_REQUESTS_PER_HOUR) {
-            val resetTime = requests.first().plusMinutes(WINDOW_DURATION_MINUTES)
-            logger.warn("Rate limit 초과 - IP: $ip, 현재 요청 수: ${requests.size}/$MAX_REQUESTS_PER_HOUR")
-            throw RateLimitExceededException(ip, MAX_REQUESTS_PER_HOUR, resetTime)
+            // 한도 확인
+            if (requests.size >= MAX_REQUESTS_PER_HOUR) {
+                val resetTime = requests.first().plusMinutes(WINDOW_DURATION_MINUTES)
+                logger.warn("Rate limit 초과 - IP: $ip, 현재 요청 수: ${requests.size}/$MAX_REQUESTS_PER_HOUR")
+                throw RateLimitExceededException(ip, MAX_REQUESTS_PER_HOUR, resetTime)
+            }
+
+            // 요청 기록
+            requests.add(now)
+            logger.debug("요청 기록 - IP: $ip, 현재 요청 수: ${requests.size}/$MAX_REQUESTS_PER_HOUR")
         }
-
-        // 요청 기록
-        requests.add(now)
-        logger.debug("요청 기록 - IP: $ip, 현재 요청 수: ${requests.size}/$MAX_REQUESTS_PER_HOUR")
     }
 
     /**
@@ -98,37 +102,41 @@ class RateLimitService {
      *
      * @param userId 사용자 ID
      * @throws RateLimitExceededException 한도 초과 시
+     *
+     * Thread-safe: synchronized 블록으로 동시성 문제 해결
      */
     fun checkAndRecordQuestionGeneration(userId: Long) {
-        val now = LocalDateTime.now()
-        val cutoffTime = now.minusHours(QUESTION_GENERATION_WINDOW_HOURS)
+        synchronized(questionGenerationCache) {
+            val now = LocalDateTime.now()
+            val cutoffTime = now.minusHours(QUESTION_GENERATION_WINDOW_HOURS)
 
-        // 현재 사용자의 질문 생성 기록 가져오기
-        val generations = questionGenerationCache.get(userId) { mutableListOf() }!!
+            // 현재 사용자의 질문 생성 기록 가져오기
+            val generations = questionGenerationCache.get(userId) { mutableListOf() }!!
 
-        // 24시간 이내 생성 기록만 필터링
-        generations.removeIf { it.isBefore(cutoffTime) }
+            // 24시간 이내 생성 기록만 필터링
+            generations.removeIf { it.isBefore(cutoffTime) }
 
-        // 한도 확인
-        if (generations.size >= MAX_QUESTION_GENERATIONS_PER_DAY) {
-            val resetTime = generations.first().plusHours(QUESTION_GENERATION_WINDOW_HOURS)
-            logger.warn(
-                "질문 생성 한도 초과 - 사용자 ID: $userId, " +
+            // 한도 확인
+            if (generations.size >= MAX_QUESTION_GENERATIONS_PER_DAY) {
+                val resetTime = generations.first().plusHours(QUESTION_GENERATION_WINDOW_HOURS)
+                logger.warn(
+                    "질문 생성 한도 초과 - 사용자 ID: $userId, " +
+                            "현재 생성 수: ${generations.size}/$MAX_QUESTION_GENERATIONS_PER_DAY"
+                )
+                throw RateLimitExceededException(
+                    ip = "User#$userId",
+                    limit = MAX_QUESTION_GENERATIONS_PER_DAY,
+                    resetTime = resetTime
+                )
+            }
+
+            // 생성 기록
+            generations.add(now)
+            logger.debug(
+                "질문 생성 기록 - 사용자 ID: $userId, " +
                         "현재 생성 수: ${generations.size}/$MAX_QUESTION_GENERATIONS_PER_DAY"
             )
-            throw RateLimitExceededException(
-                ip = "User#$userId",
-                limit = MAX_QUESTION_GENERATIONS_PER_DAY,
-                resetTime = resetTime
-            )
         }
-
-        // 생성 기록
-        generations.add(now)
-        logger.debug(
-            "질문 생성 기록 - 사용자 ID: $userId, " +
-                    "현재 생성 수: ${generations.size}/$MAX_QUESTION_GENERATIONS_PER_DAY"
-        )
     }
 
     /**
@@ -159,32 +167,36 @@ class RateLimitService {
      *
      * @param userId 사용자 ID
      * @throws RateLimitExceededException 한도 초과 시
+     *
+     * Thread-safe: synchronized 블록으로 동시성 문제 해결
      */
     fun checkMockInterviewLimit(userId: Long) {
-        val now = LocalDateTime.now()
-        val cutoffTime = now.minusHours(MOCK_INTERVIEW_WINDOW_HOURS)
+        synchronized(mockInterviewCache) {
+            val now = LocalDateTime.now()
+            val cutoffTime = now.minusHours(MOCK_INTERVIEW_WINDOW_HOURS)
 
-        val interviews = mockInterviewCache.get(userId) { mutableListOf() }!!
-        interviews.removeIf { it.isBefore(cutoffTime) }
+            val interviews = mockInterviewCache.get(userId) { mutableListOf() }!!
+            interviews.removeIf { it.isBefore(cutoffTime) }
 
-        if (interviews.size >= MAX_MOCK_INTERVIEWS_PER_DAY) {
-            val resetTime = interviews.first().plusHours(MOCK_INTERVIEW_WINDOW_HOURS)
-            logger.warn(
-                "모의 면접 한도 초과 - 사용자 ID: $userId, " +
+            if (interviews.size >= MAX_MOCK_INTERVIEWS_PER_DAY) {
+                val resetTime = interviews.first().plusHours(MOCK_INTERVIEW_WINDOW_HOURS)
+                logger.warn(
+                    "모의 면접 한도 초과 - 사용자 ID: $userId, " +
+                            "현재: ${interviews.size}/$MAX_MOCK_INTERVIEWS_PER_DAY"
+                )
+                throw RateLimitExceededException(
+                    ip = "User#$userId",
+                    limit = MAX_MOCK_INTERVIEWS_PER_DAY,
+                    resetTime = resetTime
+                )
+            }
+
+            interviews.add(now)
+            logger.debug(
+                "모의 면접 기록 - 사용자 ID: $userId, " +
                         "현재: ${interviews.size}/$MAX_MOCK_INTERVIEWS_PER_DAY"
             )
-            throw RateLimitExceededException(
-                ip = "User#$userId",
-                limit = MAX_MOCK_INTERVIEWS_PER_DAY,
-                resetTime = resetTime
-            )
         }
-
-        interviews.add(now)
-        logger.debug(
-            "모의 면접 기록 - 사용자 ID: $userId, " +
-                    "현재: ${interviews.size}/$MAX_MOCK_INTERVIEWS_PER_DAY"
-        )
     }
 
     /**

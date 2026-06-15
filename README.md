@@ -6,10 +6,12 @@
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5.14-brightgreen.svg)](https://spring.io/projects/spring-boot)
 [![OpenAI](https://img.shields.io/badge/OpenAI-gpt--4o--mini-orange.svg)](https://openai.com)
 [![Job Fields](https://img.shields.io/badge/Job%20Fields-17-purple.svg)](#주요-기능)
-[![Tests](https://img.shields.io/badge/Tests-245%20Passing-success.svg)](#테스트)
+[![Tests](https://img.shields.io/badge/Tests-43%20Files-success.svg)](#테스트)
+[![Live Demo](https://img.shields.io/badge/Live-interviewmock.xyz-blue.svg)](https://interviewmock.xyz)
 
 ## 📋 목차
 
+- [라이브 데모](#라이브-데모)
 - [프로젝트 소개](#프로젝트-소개)
 - [주요 기능](#주요-기능)
 - [기술 스택](#기술-스택)
@@ -19,6 +21,18 @@
 - [비용 정보](#비용-정보)
 - [프로젝트 구조](#프로젝트-구조)
 - [개발 문서](#개발-문서)
+
+---
+
+## 라이브 데모
+
+**프로덕션 URL**: https://interviewmock.xyz
+
+- **호스팅**: AWS EC2
+- **도메인**: interviewmock.xyz
+- **HTTPS**: SSL 인증서 적용 완료
+
+> 실제 서비스를 체험해보세요!
 
 ---
 
@@ -69,7 +83,7 @@
   - 권한 기반 접근 제어 (타 사용자 답변 차단)
   - 개인화된 홈페이지 및 리뷰 이력
 
-### ✅ Phase 5 (완료) ✨ NEW
+### ✅ Phase 5 (완료)
 - 🎯 **17개 직무 분야 지원**
   - IT개발, 기획·전략, 마케팅·홍보, 회계·세무·재무
   - 인사·노무, 총무·법무, 디자인, 영업·판매·무역
@@ -85,7 +99,7 @@
   - 사용자 직무 기반 추천 질문
   - 직무 미설정 시 안내 배너
 
-### ✅ Phase 6 (완료) 🚀
+### ✅ Phase 6 (완료)
 - 🎯 **채용 공고 기반 맞춤형 질문 생성**
   - 원티드, 사람인, 잡코리아 URL 입력
   - AI가 공고 분석하여 **10개 맞춤 질문** 자동 생성
@@ -103,7 +117,7 @@
   - GeneratedQuestion ↔ InterviewAnswer 연결
   - 올바른 질문 매칭 (질문 ID 분리)
 
-### ✅ Phase 7 (완료) 🎉 NEW
+### ✅ Phase 7 (완료)
 - 💬 **실시간 AI 채팅 면접 시스템**
   - AI 면접관과 실시간 대화 형태의 모의 면접
   - **직무 기반 면접**: 17개 직무 중 선택하여 일반 면접 연습
@@ -133,6 +147,21 @@
   - 통합 테스트 10개 (전체 플로우)
   - 단위 테스트 20개 (Parser, Service, Controller)
 
+### ⏳ Phase 8 (완료)
+- ✅ **8C: 리뷰 통합 및 재개 기능** (완료)
+  - 2개 탭 리뷰 시스템 (질문 연습 / AI 면접)
+  - 면접 재개 기능 ("이어서 연습하기" vs "새로 연습하기")
+  - MockInterviewReviewDto (채용 공고, 경력 수준 정보 포함)
+  - 8개 통합 테스트 추가
+- ✅ **8A: 점수 계산 개선** (완료)
+  - 가중 평균 점수 (첫 답변 제외, 저품질 패널티)
+  - 종합 피드백 길이 증가 (400-600자 → 800-1200자)
+  - 강점/개선점 유연화 (0-5개)
+- ✅ **8B: 경력 수준 및 UI 개선** (완료)
+  - 경력 수준 선택 UI (신입/주니어/시니어/시니어+)
+  - 사용 방법 안내 모달
+  - 채용 공고 기반 AI 면접 버튼
+
 ---
 
 ## 기술 스택
@@ -143,7 +172,9 @@
 - **Security**: Spring Security (세션 기반 인증, BCrypt)
 - **ORM**: Spring Data JPA + Hibernate
 - **Database**: H2 (개발) / PostgreSQL 15 (프로덕션)
-- **Migration**: Flyway (10개 마이그레이션)
+- **Migration**: Flyway (14개 마이그레이션: V1-V14)
+- **Real-time**: SSE (Server-Sent Events)
+- **Async**: @Async + ThreadPoolTaskExecutor
 - **Build Tool**: Gradle (Kotlin DSL)
 
 ### AI Integration
@@ -168,6 +199,8 @@
 - **Container**: Docker (Multi-stage build)
 - **Orchestration**: Docker Compose
 - **Environments**: dev (H2) / prod (PostgreSQL)
+- **Hosting**: AWS EC2
+- **Domain**: interviewmock.xyz (HTTPS)
 
 ### Testing
 - **Framework**: JUnit 5, Spring Boot Test
@@ -393,17 +426,17 @@ docker-compose restart app
 ### 비용 절감 기능
 
 1. **중복 요청 방지** (24시간 캐싱)
-   - 동일 질문 + 답변 재평가 차단
-   - API 호출 0회 (캐시 히트 시)
-   - 속도: 1,700배+ 빠름
+  - 동일 질문 + 답변 재평가 차단
+  - API 호출 0회 (캐시 히트 시)
+  - 속도: 1,700배+ 빠름
 
 2. **Rate Limiting** (IP당 33회/시간)
-   - 악의적 사용 방지
-   - 예산 초과 방지
+  - 악의적 사용 방지
+  - 예산 초과 방지
 
 3. **Fallback 메커니즘**
-   - API 오류 시 더미 피드백 제공
-   - 사용자 경험 보장
+  - API 오류 시 더미 피드백 제공
+  - 사용자 경험 보장
 
 ---
 
@@ -414,25 +447,40 @@ src/
 ├── main/
 │   ├── kotlin/.../interviewnoteapi/
 │   │   ├── config/
+│   │   │   ├── AsyncConfig.kt             # Phase 7 - 비동기 설정
 │   │   │   ├── ObjectMapperConfig.kt
 │   │   │   ├── OpenAiConfig.kt
+│   │   │   ├── RestTemplateConfig.kt
 │   │   │   └── SecurityConfig.kt           # Phase 4A
 │   │   ├── controller/
+│   │   │   ├── AdminController.kt
 │   │   │   ├── AnswerController.kt
 │   │   │   ├── AuthController.kt          # Phase 4A - 회원가입/로그인
+│   │   │   ├── GeneratedQuestionController.kt  # Phase 6
 │   │   │   ├── HomeController.kt
+│   │   │   ├── JobPostingController.kt    # Phase 6 - 채용 공고
+│   │   │   ├── MockInterviewController.kt # Phase 7 - AI 채팅 면접
 │   │   │   ├── ProfileController.kt       # Phase 5 - 프로필 설정
 │   │   │   ├── QuestionController.kt
 │   │   │   └── ReviewController.kt
 │   │   ├── domain/
 │   │   │   ├── AiFeedback.kt
 │   │   │   ├── CareerLevel.kt            # Phase 5 - 경력 수준 Enum
+│   │   │   ├── GeneratedQuestion.kt      # Phase 6
 │   │   │   ├── InterviewAnswer.kt
+│   │   │   ├── InterviewDraft.kt         # Phase 6/8
+│   │   │   ├── InterviewMessage.kt       # Phase 7 - 채팅 메시지
 │   │   │   ├── JobField.kt               # Phase 5 - 17개 직무 Enum
+│   │   │   ├── JobPosting.kt             # Phase 6 - 채용 공고
+│   │   │   ├── MockInterview.kt          # Phase 7 - 모의 면접 세션
+│   │   │   ├── MockInterviewStatus.kt    # Phase 7
 │   │   │   ├── Question.kt
 │   │   │   ├── User.kt                   # Phase 4A
 │   │   │   └── UserRole.kt               # Phase 4A
 │   │   ├── dto/
+│   │   │   ├── JobPostingDto.kt          # Phase 6
+│   │   │   ├── MockInterviewDto.kt       # Phase 7
+│   │   │   ├── MockInterviewReviewDto.kt # Phase 8C
 │   │   │   ├── UpdateProfileRequest.kt   # Phase 5
 │   │   │   └── UserProfileDto.kt         # Phase 5
 │   │   ├── exception/
@@ -445,7 +493,12 @@ src/
 │   │   │   └── OpenAiHealthIndicator.kt  # Phase 3B
 │   │   ├── repository/
 │   │   │   ├── AiFeedbackRepository.kt
+│   │   │   ├── GeneratedQuestionRepository.kt  # Phase 6
 │   │   │   ├── InterviewAnswerRepository.kt
+│   │   │   ├── InterviewDraftRepository.kt     # Phase 6/8
+│   │   │   ├── InterviewMessageRepository.kt   # Phase 7
+│   │   │   ├── JobPostingRepository.kt         # Phase 6
+│   │   │   ├── MockInterviewRepository.kt      # Phase 7
 │   │   │   ├── QuestionRepository.kt
 │   │   │   └── UserRepository.kt         # Phase 4A
 │   │   ├── security/
@@ -454,18 +507,33 @@ src/
 │   │   │   ├── ai/
 │   │   │   │   ├── AiClient.kt
 │   │   │   │   ├── OpenAiClientImpl.kt
-│   │   │   │   ├── PromptBuilder.kt      # Phase 5: 17개 직무 프롬프트
-│   │   │   │   └── ResponseParser.kt
+│   │   │   │   ├── InterviewResponseParser.kt  # Phase 7
+│   │   │   │   ├── QuestionResponseParser.kt   # Phase 6
+│   │   │   │   ├── ResponseParser.kt
+│   │   │   │   └── prompt/               # Phase 7 - 프롬프트 빌더
+│   │   │   │       ├── EvaluationPromptBuilder.kt
+│   │   │   │       ├── FeedbackPromptBuilder.kt
+│   │   │   │       ├── InterviewPromptBuilder.kt
+│   │   │   │       ├── JobFieldPromptConfig.kt
+│   │   │   │       └── QuestionPromptBuilder.kt
 │   │   │   ├── cache/
-│   │   │   │   └── DuplicateRequestCache.kt
+│   │   │   │   ├── DuplicateRequestCache.kt
+│   │   │   │   ├── JobPostingCache.kt    # Phase 6
+│   │   │   │   └── QuestionCache.kt
 │   │   │   ├── ratelimit/
 │   │   │   │   └── RateLimitService.kt
 │   │   │   ├── validation/
 │   │   │   │   └── AnswerValidator.kt    # Phase 2B
 │   │   │   ├── AiFeedbackService.kt
+│   │   │   ├── InterviewAiService.kt     # Phase 7 - AI 면접 서비스
 │   │   │   ├── InterviewService.kt
+│   │   │   ├── JobPostingParserService.kt # Phase 6
+│   │   │   ├── JobPostingService.kt      # Phase 6
+│   │   │   ├── MockInterviewService.kt   # Phase 7 - 모의 면접 관리
+│   │   │   ├── QuestionGeneratorService.kt # Phase 6
 │   │   │   ├── QuestionService.kt        # Phase 5: jobField 필터링
 │   │   │   ├── ReviewService.kt
+│   │   │   ├── SseEmitterService.kt      # Phase 7 - SSE 관리
 │   │   │   └── UserService.kt            # Phase 4A, 5
 │   │   └── InterviewNoteApiApplication.kt
 │   └── resources/
@@ -476,12 +544,21 @@ src/
 │       │   ├── V4__Create_users_table.sql       # Phase 4A
 │       │   ├── V5__add_user_id_to_interview_answers.sql # Phase 4B
 │       │   ├── V6__add_user_job_preferences.sql # Phase 5
-│       │   └── V7__insert_multi_job_field_questions.sql # Phase 5 (340개 질문)
+│       │   ├── V7__insert_multi_job_field_questions.sql # Phase 5 (340개 질문)
+│       │   ├── V8__create_interview_drafts_table.sql    # Phase 6
+│       │   ├── V9__create_job_postings_table.sql        # Phase 6
+│       │   ├── V10__add_generated_question_id.sql       # Phase 6
+│       │   ├── V11__make_question_id_nullable.sql       # Phase 6
+│       │   ├── V12__create_mock_interview_tables.sql    # Phase 7
+│       │   ├── V13__enhance_mock_interview_scoring.sql  # Phase 8
+│       │   └── V14__add_answer_text_hash.sql            # Phase 8
 │       ├── templates/
 │       │   ├── answers/
 │       │   ├── auth/                     # Phase 4A - 로그인/회원가입
 │       │   ├── error/
 │       │   ├── fragments/
+│       │   ├── job-postings/             # Phase 6 - 채용 공고
+│       │   ├── mock-interviews/          # Phase 7 - AI 채팅 면접
 │       │   ├── profile/                  # Phase 5 - 프로필 설정
 │       │   ├── questions/
 │       │   ├── reviews/
@@ -492,42 +569,49 @@ src/
 │       └── logback-spring.xml
 └── test/
     └── kotlin/.../interviewnoteapi/
-        ├── controller/                   # 6개 컨트롤러 테스트
+        ├── bugfix/                       # 버그 수정 테스트
+        ├── controller/                   # 7개 컨트롤러 테스트
+        ├── integration/                  # 수동 통합 테스트
         ├── repository/                   # 3개 저장소 테스트
-        ├── service/                      # 7개 서비스 테스트
-        │   ├── ai/                       # AI 관련 테스트 (3개)
+        ├── service/                      # 9개 서비스 테스트
+        │   ├── ai/                       # AI 관련 테스트 (5개)
         │   ├── cache/
         │   ├── ratelimit/
         │   └── validation/
         ├── Phase1IntegrationTest.kt
-        └── Phase5IntegrationTest.kt     # Phase 5: 23개 통합 테스트
+        ├── Phase5IntegrationTest.kt
+        ├── Phase6*IntegrationTest.kt    # Phase 6: 5개 통합 테스트
+        ├── Phase7IntegrationTest.kt     # Phase 7: AI 채팅 면접
+        ├── Phase8*IntegrationTest.kt    # Phase 8: 5개 통합 테스트
+        └── Week1CriticalFixIntegrationTest.kt
 ```
 
 ---
 
 ## 개발 문서
 
-프로젝트 세부 사항은 다음 문서를 참조하세요:
+프로젝트 세부 사항은 다음 문서를 참조하세요. 전체 문서 목록은 **[docs/README.md](./docs/README.md)**를 참조하세요.
 
 ### 핵심 가이드
 - **[CLAUDE.md](./CLAUDE.md)** - 프로젝트 전체 가이드 (아키텍처, 도메인 모델, 코딩 규칙)
-- **[SETUP_GUIDE.md](./SETUP_GUIDE.md)** - 환경 설정 가이드 (OpenAI API, IntelliJ 등)
-- **[CHANGELOG.md](./CHANGELOG.md)** - 버전별 변경 이력 (0.1.0 ~ 0.7.0)
+- **[CHANGELOG.md](./CHANGELOG.md)** - 버전별 변경 이력 (0.1.0 ~ 0.8.0)
+- **[docs/guides/SETUP_GUIDE.md](./docs/guides/SETUP_GUIDE.md)** - 환경 설정 가이드
 
-### Phase별 구현 계획
-- **[PHASE7_AI_CHAT_INTERVIEW.md](./PHASE7_AI_CHAT_INTERVIEW.md)** - Phase 7: 실시간 AI 채팅 면접 PRD 🎉
-- **[phase5_implementation_plan.md](./phase5_implementation_plan.md)** - Phase 5: 17개 직무 확장 상세 설계
-- **[phase4_implementation_plan.md](./phase4_implementation_plan.md)** - Phase 4: 사용자 관리 및 권한 제어
-- **[phase3_implementation_plan.md](./phase3_implementation_plan.md)** - Phase 3: UI/UX, 모니터링, Docker
-- **[phase2_implementation_plan.md](./phase2_implementation_plan.md)** - Phase 2: AI 연동 및 최적화
+### Phase별 구현 계획 (docs/archive/)
+- **[PHASE8_AI_CHAT_INTERVIEW_IMPROVEMENTS.md](./docs/archive/PHASE8_AI_CHAT_INTERVIEW_IMPROVEMENTS.md)** - Phase 8: AI 면접 개선 🔧
+- **[PHASE7_AI_CHAT_INTERVIEW.md](./docs/archive/PHASE7_AI_CHAT_INTERVIEW.md)** - Phase 7: 실시간 AI 채팅 면접 PRD
+- **[PHASE6_JOB_POSTING_QUESTIONS.md](./docs/archive/PHASE6_JOB_POSTING_QUESTIONS.md)** - Phase 6: 채용 공고 기반 질문 생성
+- **[phase5_implementation_plan.md](./docs/archive/phase5_implementation_plan.md)** - Phase 5: 17개 직무 확장
 
-### Phase 완료 보고서
-- **[PHASE7_COMPLETION_REPORT.md](./PHASE7_COMPLETION_REPORT.md)** - Phase 7 완료 보고서 (SSE, 비동기 처리, 테스트) 🎉
-- **[PHASE5_STEP17_TEST_REPORT.md](./PHASE5_STEP17_TEST_REPORT.md)** - Phase 5 통합 테스트 보고서 (245개 테스트)
+### Phase 완료 보고서 (docs/archive/)
+- **[PHASE8C_COMPLETION_REPORT.md](./docs/archive/PHASE8C_COMPLETION_REPORT.md)** - Phase 8C 완료 보고서 (리뷰 통합, 재개 기능) 🎉
+- **[PHASE7_COMPLETION_REPORT.md](./docs/archive/PHASE7_COMPLETION_REPORT.md)** - Phase 7 완료 보고서 (SSE, 비동기 처리)
+- **[PHASE6D_COMPLETION_REPORT.md](./docs/archive/PHASE6D_COMPLETION_REPORT.md)** - Phase 6D 완료 보고서 (HTML 파싱 최적화)
 
-### 마이그레이션 가이드
-- **[PHASE5_MIGRATION_GUIDE.md](./PHASE5_MIGRATION_GUIDE.md)** - Phase 5 마이그레이션 가이드 (V6, V7)
-- **[UNIT_TEST_PLAN.md](./UNIT_TEST_PLAN.md)** - 단위 테스트 전략
+### 가이드 문서 (docs/guides/)
+- **[NGINX_SSE_SETUP.md](./docs/guides/NGINX_SSE_SETUP.md)** - Nginx SSE 프록시 설정
+- **[CODE_QUALITY_GUIDE.md](./docs/guides/CODE_QUALITY_GUIDE.md)** - 코드 품질 가이드
+- **[PHASE5_MIGRATION_GUIDE.md](./docs/guides/PHASE5_MIGRATION_GUIDE.md)** - Phase 5 마이그레이션 가이드
 
 ---
 

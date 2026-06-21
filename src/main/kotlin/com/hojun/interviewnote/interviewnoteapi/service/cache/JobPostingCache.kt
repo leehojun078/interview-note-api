@@ -1,5 +1,6 @@
 package com.hojun.interviewnote.interviewnoteapi.service.cache
 
+import com.hojun.interviewnote.interviewnoteapi.config.CacheProperties
 import com.hojun.interviewnote.interviewnoteapi.domain.JobPosting
 import com.hojun.interviewnote.interviewnoteapi.repository.JobPostingRepository
 import org.slf4j.LoggerFactory
@@ -10,7 +11,7 @@ import java.time.LocalDateTime
  * 채용 공고 캐시 서비스
  *
  * Phase 6B에서 추가됨
- * - 동일 URL의 공고를 7일 이내에 재생성하지 않도록 방지
+ * - 동일 URL의 공고를 설정된 기간 이내에 재생성하지 않도록 방지
  * - 비용 절감 및 중복 방지
  *
  * **Phase 6E에서 Deprecated**:
@@ -25,25 +26,22 @@ import java.time.LocalDateTime
 )
 @Service
 class JobPostingCache(
-    private val jobPostingRepository: JobPostingRepository
+    private val jobPostingRepository: JobPostingRepository,
+    private val cacheProperties: CacheProperties
 ) {
 
     private val logger = LoggerFactory.getLogger(javaClass)
 
-    companion object {
-        private const val CACHE_DURATION_DAYS = 7L
-    }
-
     /**
-     * 캐시된 공고 조회 (7일 이내)
+     * 캐시된 공고 조회 (설정된 기간 이내)
      *
-     * 동일 URL로 7일 내 생성된 공고가 있으면 반환
+     * 동일 URL로 설정된 기간 내 생성된 공고가 있으면 반환
      *
      * @param originalUrl 원본 공고 URL
      * @return 캐시된 공고 (없으면 null)
      */
     fun findCachedByUrl(originalUrl: String): JobPosting? {
-        val cutoffTime = LocalDateTime.now().minusDays(CACHE_DURATION_DAYS)
+        val cutoffTime = LocalDateTime.now().minusDays(cacheProperties.jobPostingDays)
 
         val cached = jobPostingRepository.findFirstByOriginalUrlAndCreatedAtAfterOrderByCreatedAtDesc(
             originalUrl = originalUrl,

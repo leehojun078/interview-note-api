@@ -1,5 +1,6 @@
 package com.hojun.interviewnote.interviewnoteapi.service.cache
 
+import com.hojun.interviewnote.interviewnoteapi.config.CacheProperties
 import com.hojun.interviewnote.interviewnoteapi.domain.GeneratedQuestion
 import com.hojun.interviewnote.interviewnoteapi.repository.GeneratedQuestionRepository
 import com.hojun.interviewnote.interviewnoteapi.repository.JobPostingRepository
@@ -11,7 +12,7 @@ import java.time.LocalDateTime
  * 질문 캐시 서비스
  *
  * Phase 6E에서 추가됨 (버그 수정)
- * - 동일 URL의 질문을 7일 이내에 재생성하지 않도록 방지
+ * - 동일 URL의 질문을 설정된 기간 이내에 재생성하지 않도록 방지
  * - JobPosting은 사용자별로 독립 생성하되, 질문만 캐싱하여 재사용
  * - 비용 절감 및 중복 방지
  *
@@ -22,26 +23,23 @@ import java.time.LocalDateTime
 @Service
 class QuestionCache(
     private val jobPostingRepository: JobPostingRepository,
-    private val generatedQuestionRepository: GeneratedQuestionRepository
+    private val generatedQuestionRepository: GeneratedQuestionRepository,
+    private val cacheProperties: CacheProperties
 ) {
 
     private val logger = LoggerFactory.getLogger(javaClass)
 
-    companion object {
-        private const val CACHE_DURATION_DAYS = 7L
-    }
-
     /**
-     * 캐시된 질문 조회 (7일 이내)
+     * 캐시된 질문 조회 (설정된 기간 이내)
      *
-     * 동일 URL로 7일 내 생성된 공고가 있으면 해당 질문들을 반환
+     * 동일 URL로 설정된 기간 내 생성된 공고가 있으면 해당 질문들을 반환
      * userId와 무관하게 전역적으로 캐싱 (AI 비용 절감)
      *
      * @param originalUrl 원본 공고 URL
      * @return 캐시된 질문 리스트 (없으면 emptyList)
      */
     fun findCachedQuestions(originalUrl: String): List<GeneratedQuestion> {
-        val cutoffTime = LocalDateTime.now().minusDays(CACHE_DURATION_DAYS)
+        val cutoffTime = LocalDateTime.now().minusDays(cacheProperties.questionDays)
 
         // 1. 동일 URL의 최근 공고 찾기
         val cachedPosting = jobPostingRepository.findFirstByOriginalUrlAndCreatedAtAfterOrderByCreatedAtDesc(

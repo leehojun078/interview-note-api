@@ -1,5 +1,6 @@
 package com.hojun.interviewnote.interviewnoteapi.service.ratelimit
 
+import com.hojun.interviewnote.interviewnoteapi.config.RateLimitProperties
 import com.hojun.interviewnote.interviewnoteapi.exception.RateLimitExceededException
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -17,9 +18,18 @@ class RateLimitServiceTest {
 
     private lateinit var rateLimitService: RateLimitService
 
+    private val rateLimitProperties = RateLimitProperties(
+        maxRequestsPerHour = 33,
+        windowDurationMinutes = 60,
+        maxQuestionGenerationsPerDay = 10,
+        questionGenerationWindowHours = 24,
+        maxMockInterviewsPerDay = 5,
+        mockInterviewWindowHours = 24
+    )
+
     @BeforeEach
     fun setUp() {
-        rateLimitService = RateLimitService()
+        rateLimitService = RateLimitService(rateLimitProperties)
     }
 
     @Test

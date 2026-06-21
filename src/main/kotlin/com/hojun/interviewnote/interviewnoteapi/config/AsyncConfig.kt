@@ -14,26 +14,30 @@ import java.util.concurrent.Executor
  */
 @Configuration
 @EnableAsync
-class AsyncConfig {
+class AsyncConfig(
+    private val asyncProperties: AsyncProperties
+) {
 
     /**
      * 비동기 AI 응답 생성용 ThreadPool
      *
-     * - corePoolSize: 10 (기본 유지 스레드)
-     * - maxPoolSize: 50 (최대 동시 AI 응답 생성)
-     * - queueCapacity: 100 (대기 큐)
+     * 설정값은 AsyncProperties에서 주입받음:
+     * - corePoolSize: 기본 유지 스레드
+     * - maxPoolSize: 최대 동시 AI 응답 생성
+     * - queueCapacity: 대기 큐
+     * - awaitTerminationSeconds: 셧다운 대기 시간
      *
      * 동시 면접 세션이 많을 때 스레드 풀로 AI 호출을 비동기 처리
      */
     @Bean(name = ["taskExecutor"])
     fun taskExecutor(): Executor {
         return ThreadPoolTaskExecutor().apply {
-            corePoolSize = 10
-            maxPoolSize = 50
-            queueCapacity = 100
+            corePoolSize = asyncProperties.corePoolSize
+            maxPoolSize = asyncProperties.maxPoolSize
+            queueCapacity = asyncProperties.queueCapacity
             setThreadNamePrefix("async-interview-")
             setWaitForTasksToCompleteOnShutdown(true)
-            setAwaitTerminationSeconds(30)
+            setAwaitTerminationSeconds(asyncProperties.awaitTerminationSeconds)
             initialize()
         }
     }

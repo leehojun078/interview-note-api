@@ -2,6 +2,7 @@ package com.hojun.interviewnote.interviewnoteapi.service.ratelimit
 
 import com.github.benmanes.caffeine.cache.Cache
 import com.github.benmanes.caffeine.cache.Caffeine
+import com.hojun.interviewnote.interviewnoteapi.config.RateLimitProperties
 import com.hojun.interviewnote.interviewnoteapi.exception.RateLimitExceededException
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
@@ -15,37 +16,32 @@ import java.util.concurrent.TimeUnit
  * Caffeine Cache를 사용한 in-memory 저장 방식으로 구현되었습니다.
  */
 @Service
-class RateLimitService {
+class RateLimitService(
+    private val properties: RateLimitProperties
+) {
 
     private val logger = LoggerFactory.getLogger(javaClass)
 
-    companion object {
-        private const val MAX_REQUESTS_PER_HOUR = 33
-        private const val WINDOW_DURATION_MINUTES = 60L
-
-        // Phase 6B: 질문 생성 Rate Limiting
-        private const val MAX_QUESTION_GENERATIONS_PER_DAY = 10
-        private const val QUESTION_GENERATION_WINDOW_HOURS = 24L
-
-        // Phase 7B: 모의 면접 Rate Limiting
-        private const val MAX_MOCK_INTERVIEWS_PER_DAY = 5
-        private const val MOCK_INTERVIEW_WINDOW_HOURS = 24L
+    // IP별 요청 기록 (설정된 시간 자동 만료)
+    private val requestCache: Cache<String, MutableList<LocalDateTime>> by lazy {
+        Caffeine.newBuilder()
+            .expireAfterWrite(properties.windowDurationMinutes, TimeUnit.MINUTES)
+            .build()
     }
 
-    // IP별 요청 기록 (1시간 자동 만료)
-    private val requestCache: Cache<String, MutableList<LocalDateTime>> = Caffeine.newBuilder()
-        .expireAfterWrite(WINDOW_DURATION_MINUTES, TimeUnit.MINUTES)
-        .build()
-
     // Phase 6B: 사용자별 질문 생성 기록 (24시간 자동 만료)
-    private val questionGenerationCache: Cache<Long, MutableList<LocalDateTime>> = Caffeine.newBuilder()
-        .expireAfterWrite(QUESTION_GENERATION_WINDOW_HOURS, TimeUnit.HOURS)
-        .build()
+    private val questionGenerationCache: Cache<Long, MutableList<LocalDateTime>> by lazy {
+        Caffeine.newBuilder()
+            .expireAfterWrite(properties.questionGenerationWindowHours, TimeUnit.HOURS)
+            .build()
+    }
 
     // Phase 7B: 사용자별 모의 면접 기록 (24시간 자동 만료)
-    private val mockInterviewCache: Cache<Long, MutableList<LocalDateTime>> = Caffeine.newBuilder()
-        .expireAfterWrite(MOCK_INTERVIEW_WINDOW_HOURS, TimeUnit.HOURS)
-        .build()
+    private val mockInterviewCache: Cache<Long, MutableList<LocalDateTime>> by lazy {
+        Caffeine.newBuilder()
+            .expireAfterWrite(properties.mockInterviewWindowHours, TimeUnit.HOURS)
+            .build()
+    }
 
     /**
      * 요청 허용 여부 확인 및 기록
@@ -58,24 +54,24 @@ class RateLimitService {
     fun checkAndRecordRequest(ip: String) {
         synchronized(requestCache) {
             val now = LocalDateTime.now()
-            val cutoffTime = now.minusMinutes(WINDOW_DURATION_MINUTES)
+            val cutoffTime = now.minusMinutes(properties.windowDurationMinutes)
 
             // 현재 IP의 요청 기록 가져오기
             val requests = requestCache.get(ip) { mutableListOf() }!!
 
-            // 1시간 이내 요청만 필터링
+            // 윈도우 이내 요청만 필터링
             requests.removeIf { it.isBefore(cutoffTime) }
 
             // 한도 확인
-            if (requests.size >= MAX_REQUESTS_PER_HOUR) {
-                val resetTime = requests.first().plusMinutes(WINDOW_DURATION_MINUTES)
-                logger.warn("Rate limit 초과 - IP: $ip, 현재 요청 수: ${requests.size}/$MAX_REQUESTS_PER_HOUR")
-                throw RateLimitExceededException(ip, MAX_REQUESTS_PER_HOUR, resetTime)
+            if (requests.size >= properties.maxRequestsPerHour) {
+                val resetTime = requests.first().plusMinutes(properties.windowDurationMinutes)
+                logger.warn("Rate limit 초과 - IP: $ip, 현재 요청 수: ${requests.size}/${properties.maxRequestsPerHour}")
+                throw RateLimitExceededException(ip, properties.maxRequestsPerHour, resetTime)
             }
 
             // 요청 기록
             requests.add(now)
-            logger.debug("요청 기록 - IP: $ip, 현재 요청 수: ${requests.size}/$MAX_REQUESTS_PER_HOUR")
+            logger.debug("요청 기록 - IP: $ip, 현재 요청 수: ${requests.size}/${properties.maxRequestsPerHour}")
         }
     }
 
@@ -84,7 +80,7 @@ class RateLimitService {
      */
     fun getCurrentRequestCount(ip: String): Int {
         val now = LocalDateTime.now()
-        val cutoffTime = now.minusMinutes(WINDOW_DURATION_MINUTES)
+        val cutoffTime = now.minusMinutes(properties.windowDurationMinutes)
         val requests = requestCache.getIfPresent(ip) ?: return 0
 
         requests.removeIf { it.isBefore(cutoffTime) }
@@ -98,7 +94,7 @@ class RateLimitService {
     /**
      * 질문 생성 허용 여부 확인 및 기록
      *
-     * Phase 6B: 사용자당 10회/24시간 제한
+     * Phase 6B: 사용자당 설정된 횟수/24시간 제한
      *
      * @param userId 사용자 ID
      * @throws RateLimitExceededException 한도 초과 시
@@ -108,7 +104,7 @@ class RateLimitService {
     fun checkAndRecordQuestionGeneration(userId: Long) {
         synchronized(questionGenerationCache) {
             val now = LocalDateTime.now()
-            val cutoffTime = now.minusHours(QUESTION_GENERATION_WINDOW_HOURS)
+            val cutoffTime = now.minusHours(properties.questionGenerationWindowHours)
 
             // 현재 사용자의 질문 생성 기록 가져오기
             val generations = questionGenerationCache.get(userId) { mutableListOf() }!!
@@ -117,15 +113,15 @@ class RateLimitService {
             generations.removeIf { it.isBefore(cutoffTime) }
 
             // 한도 확인
-            if (generations.size >= MAX_QUESTION_GENERATIONS_PER_DAY) {
-                val resetTime = generations.first().plusHours(QUESTION_GENERATION_WINDOW_HOURS)
+            if (generations.size >= properties.maxQuestionGenerationsPerDay) {
+                val resetTime = generations.first().plusHours(properties.questionGenerationWindowHours)
                 logger.warn(
                     "질문 생성 한도 초과 - 사용자 ID: $userId, " +
-                            "현재 생성 수: ${generations.size}/$MAX_QUESTION_GENERATIONS_PER_DAY"
+                            "현재 생성 수: ${generations.size}/${properties.maxQuestionGenerationsPerDay}"
                 )
                 throw RateLimitExceededException(
                     ip = "User#$userId",
-                    limit = MAX_QUESTION_GENERATIONS_PER_DAY,
+                    limit = properties.maxQuestionGenerationsPerDay,
                     resetTime = resetTime
                 )
             }
@@ -134,7 +130,7 @@ class RateLimitService {
             generations.add(now)
             logger.debug(
                 "질문 생성 기록 - 사용자 ID: $userId, " +
-                        "현재 생성 수: ${generations.size}/$MAX_QUESTION_GENERATIONS_PER_DAY"
+                        "현재 생성 수: ${generations.size}/${properties.maxQuestionGenerationsPerDay}"
             )
         }
     }
@@ -149,7 +145,7 @@ class RateLimitService {
      */
     fun getCurrentQuestionGenerationCount(userId: Long): Int {
         val now = LocalDateTime.now()
-        val cutoffTime = now.minusHours(QUESTION_GENERATION_WINDOW_HOURS)
+        val cutoffTime = now.minusHours(properties.questionGenerationWindowHours)
         val generations = questionGenerationCache.getIfPresent(userId) ?: return 0
 
         generations.removeIf { it.isBefore(cutoffTime) }
@@ -163,7 +159,7 @@ class RateLimitService {
     /**
      * 모의 면접 시작 허용 여부 확인 및 기록
      *
-     * Phase 7B: 사용자당 5회/24시간 제한
+     * Phase 7B: 사용자당 설정된 횟수/24시간 제한
      *
      * @param userId 사용자 ID
      * @throws RateLimitExceededException 한도 초과 시
@@ -173,20 +169,20 @@ class RateLimitService {
     fun checkMockInterviewLimit(userId: Long) {
         synchronized(mockInterviewCache) {
             val now = LocalDateTime.now()
-            val cutoffTime = now.minusHours(MOCK_INTERVIEW_WINDOW_HOURS)
+            val cutoffTime = now.minusHours(properties.mockInterviewWindowHours)
 
             val interviews = mockInterviewCache.get(userId) { mutableListOf() }!!
             interviews.removeIf { it.isBefore(cutoffTime) }
 
-            if (interviews.size >= MAX_MOCK_INTERVIEWS_PER_DAY) {
-                val resetTime = interviews.first().plusHours(MOCK_INTERVIEW_WINDOW_HOURS)
+            if (interviews.size >= properties.maxMockInterviewsPerDay) {
+                val resetTime = interviews.first().plusHours(properties.mockInterviewWindowHours)
                 logger.warn(
                     "모의 면접 한도 초과 - 사용자 ID: $userId, " +
-                            "현재: ${interviews.size}/$MAX_MOCK_INTERVIEWS_PER_DAY"
+                            "현재: ${interviews.size}/${properties.maxMockInterviewsPerDay}"
                 )
                 throw RateLimitExceededException(
                     ip = "User#$userId",
-                    limit = MAX_MOCK_INTERVIEWS_PER_DAY,
+                    limit = properties.maxMockInterviewsPerDay,
                     resetTime = resetTime
                 )
             }
@@ -194,7 +190,7 @@ class RateLimitService {
             interviews.add(now)
             logger.debug(
                 "모의 면접 기록 - 사용자 ID: $userId, " +
-                        "현재: ${interviews.size}/$MAX_MOCK_INTERVIEWS_PER_DAY"
+                        "현재: ${interviews.size}/${properties.maxMockInterviewsPerDay}"
             )
         }
     }
@@ -209,7 +205,7 @@ class RateLimitService {
      */
     fun getCurrentMockInterviewCount(userId: Long): Int {
         val now = LocalDateTime.now()
-        val cutoffTime = now.minusHours(MOCK_INTERVIEW_WINDOW_HOURS)
+        val cutoffTime = now.minusHours(properties.mockInterviewWindowHours)
         val interviews = mockInterviewCache.getIfPresent(userId) ?: return 0
 
         interviews.removeIf { it.isBefore(cutoffTime) }

@@ -1,5 +1,6 @@
 package com.hojun.interviewnote.interviewnoteapi.service.cache
 
+import com.hojun.interviewnote.interviewnoteapi.config.CacheProperties
 import com.hojun.interviewnote.interviewnoteapi.domain.AiFeedback
 import com.hojun.interviewnote.interviewnoteapi.repository.AiFeedbackRepository
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -29,9 +30,15 @@ class DuplicateRequestCacheTest {
 
     private lateinit var duplicateRequestCache: DuplicateRequestCache
 
+    private val cacheProperties = CacheProperties(
+        duplicateRequestHours = 24,
+        questionDays = 7,
+        jobPostingDays = 7
+    )
+
     @BeforeEach
     fun setUp() {
-        duplicateRequestCache = DuplicateRequestCache(aiFeedbackRepository)
+        duplicateRequestCache = DuplicateRequestCache(aiFeedbackRepository, cacheProperties)
     }
 
     @Test

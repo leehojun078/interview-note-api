@@ -15,7 +15,7 @@ cd "$PROJECT_DIR"
 # Step 1: Git Pull
 echo ""
 echo "[1/8] 최신 코드 가져오기..."
-git pull origin dev
+git pull origin main
 
 # Step 2: 환경변수 로드
 echo ""
